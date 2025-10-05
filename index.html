@@ -1,250 +1,53 @@
-<meta http-equiv="refresh" content="0; url=log-in.html">
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4118288704086018"
-     crossorigin="anonymous"></script>
-<script src="https://houselearning.github.io/cookiebanner.js"></script>  
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="A Safe, Open-source website developed by HouseLearning">
-  <meta name="keywords" content="Open Source,Learning,GitHub,HouseLearning,HTML,CSS,JS,Coding,Math,Games,Programs,Safe">
-  <meta name="author" content="HouseLearning">
-     <link rel="canonical" href="https://houselearning.github.io/home">
-  <title>CoolMathTime - Fun Math, Science & Coding</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f9f9f9;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    .navbar {
-      background-color: #20232a;
-      padding: 12px 20px;
-      display: flex;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      overflow-x: auto;
-      white-space: nowrap;
-      position: relative;
-    }
-
-    .navbar-content {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .navbar a {
-      color: #61dafb;
-      text-decoration: none;
-      padding: 10px 18px;
-      font-weight: 600;
-      font-size: 14px;
-      border-radius: 6px;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .navbar a:hover {
-      background-color: #61dafb;
-      color: #20232a;
-    }
-
-    .github-button {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      background-color: #24292e;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: background-color 0.3s ease;
-    }
-
-    .github-button:hover {
-      background-color: #000;
-    }
-
-    .github-button img {
-      width: 20px;
-      height: 20px;
-      filter: invert(1);
-    }
-
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      padding: 20px;
-      max-width: 1200px;
-      margin: 20px auto;
-    }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.05);
-      width: 280px;
-      text-align: center;
-      transition: transform 0.3s ease;
-    }
-    .card:hover { transform: translateY(-5px); }
-    .card img {
-      width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      object-fit: cover;
-      user-select: none;
-    }
-    .card h2 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #20232a;
-      margin: 16px 0 10px;
-    }
-    .card p {
-      font-size: 15px;
-      color: #555;
-      margin-bottom: 12px;
-    }
-    .card a {
-      text-decoration: none;
-      color: #61dafb;
-      font-weight: 600;
-      padding: 8px 12px;
-      border-radius: 6px;
-      background: #20232a;
-      display: inline-block;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .card a:hover { background: #61dafb; color: #20232a; }
-
-    .games-layout {
-      max-width: 1200px;
-      margin: 20px auto 40px;
-      background: #20232a;
-      color: #61dafb;
-      border-radius: 8px;
-      padding: 25px 30px;
-      text-align: center;
-      box-shadow: 0 6px 16px rgb(0 0 0 / 0.1);
-    }
-    .games-layout h1 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      color: #61dafb;
-    }
-    .game-card {
-      display: inline-block;
-      background: white;
-      padding: 15px;
-      margin: 10px;
-      border-radius: 10px;
-      box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
-      width: 220px;
-      text-align: center;
-      transition: transform 0.3s ease;
-    }
-    .game-card:hover { transform: scale(1.05); }
-    .game-card img {
-      width: 100%;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-    .game-card h3 {
-      font-size: 18px;
-      color: #20232a;
-      margin-bottom: 10px;
-    }
-    .game-card a {
-      text-decoration: none;
-      color: #61dafb;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 5px;
-      background: #20232a;
-      display: inline-block;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .game-card a:hover { background: #61dafb; color: #20232a; }
-
-    /* Sidebar for Blog of the Week */
-    .sidebar {
-      max-width: 300px;
-      background: #fff;
-      padding: 20px;
-      margin: 20px auto;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .sidebar h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
-      color: #20232a;
-    }
-    .sidebar a {
-      text-decoration: none;
-      color: #61dafb;
-      font-weight: 600;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CoolMathTime - Login / Sign Up</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="#">Home</a>
+            <a href="#">Math Games</a>
+            <a href="#">Science Fun</a>
+            <a href="#">Coding Challenges</a>
+        </div>
+    </nav>
 
-  <nav class="navbar">
-    <div class="navbar-content">
-      
-    </div>
+    <main class="container">
+        <div class="auth-card">
+            <h2 id="form-title">Login</h2>
+            <p id="error-message" class="error-message"></p>
+
+            <form id="auth-form">
+                <div class="input-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required>
+                </div>
+                
+                <button type="submit" id="submit-button">Log In</button>
+            </form>
+
+            <p class="toggle-link">
+                Don't have an account? 
+                <a href="#" id="toggle-auth">Sign Up</a>
+            </p>
+
+            <div id="success-message" class="success-message" style="display: none;"></div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     
-  </nav>
-
-  <div style="background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <strong>🛠️ Renovation:</strong> We’re currently making updates.
-    <a href="https://github.com/houselearning/developer-notes/discussions/5" target="_blank" style="color: #856404; font-weight: bold; text-decoration: underline;">
-      Learn more here
-    </a>.
-  </div>
-
-  <main class="container">
-    <div class="card">
-      <img src="" alt="">
-      <h2></h2>
-      <p></p>
-      <a href=""></a>
-    </div>
-    <div class="card">
-      <img src="" alt="">
-      <h2></h2>
-      <p></p>
-      <a href=""></a>
-    </div>
-    <div class="card">
-      <img src="" alt="">
-      <h2></h2>
-      <p></p>
-      <a href=""></a>
-    </div>
-  </main>
-
-  <!-- ✅ Blog of the Week Section -->
-  <aside class="sidebar">
-    <h2>📰</h2>
-    <p><a href=""></a></p>
-  </aside>
-
-  
+    <script src="auth.js"></script>
 
 </body>
 </html>
