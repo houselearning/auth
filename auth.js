@@ -74,15 +74,25 @@ authForm.addEventListener('submit', async (e) => {
     } else {
         // --- SIGN UP LOGIC ---
         try {
-            // Firebase automatically logs the user in after successful sign-up
-            await auth.createUserWithEmailAndPassword(email, password);
-            successMessage.textContent = `Account created and logged in! Welcome, ${email}!`;
-            successMessage.style.display = 'block';
-            authForm.reset();
-            // Optional: Switch to login mode after successful sign-up
-            isLoginMode = true;
-            updateUI();
-        } catch (error) {
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const user = userCredential.user;
+
+    // 🚀 NEW STEP: Send the email verification link to the user
+    await user.sendEmailVerification(); 
+    
+    // Optional: Log data to Firestore if you are using a database
+    // await db.collection("users").doc(user.uid).set({...}); 
+    
+    successMessage.innerHTML = `
+        Account created! A **verification link** has been sent to **${email}**. 
+        Please check your inbox to verify your email address.
+    `;
+    successMessage.style.display = 'block';
+    authForm.reset();
+    isLoginMode = true;
+    updateUI();
+
+} catch (error) {
             console.error('Sign Up Error:', error);
             // Display a user-friendly error message
             errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
