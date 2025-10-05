@@ -1,0 +1,148 @@
+/* Core Global Styles from your provided code */
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f9f9f9; /* Light background */
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Navbar Styling */
+.navbar {
+    background-color: #20232a; /* Dark background */
+    padding: 12px 20px;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+}
+.navbar-content {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.navbar a {
+    color: #61dafb; /* Light blue/cyan */
+    text-decoration: none;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.navbar a:hover {
+    background-color: #61dafb;
+    color: #20232a;
+}
+
+/* Container for the Auth Card */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; /* Makes the container take up remaining vertical space */
+    padding: 20px;
+}
+
+/* Auth Card Styling (based on your .card style) */
+.auth-card {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.05);
+    width: 100%;
+    max-width: 400px; /* Max width for a form */
+    text-align: center;
+}
+
+.auth-card h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #20232a;
+    margin-bottom: 20px;
+}
+
+/* Form and Input Styling */
+.input-group {
+    text-align: left;
+    margin-bottom: 15px;
+}
+.input-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+}
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+.input-group input:focus {
+    border-color: #61dafb; /* Focus color from your theme */
+    outline: none;
+}
+
+/* Button Styling (based on your .card a style) */
+#submit-button {
+    width: 100%;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    color: #61dafb;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 6px;
+    background: #20232a;
+    display: inline-block;
+    font-size: 16px;
+    margin-top: 15px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+#submit-button:hover { 
+    background: #61dafb; 
+    color: #20232a; 
+}
+
+/* Toggle Link Styling */
+.toggle-link {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #555;
+}
+.toggle-link a {
+    color: #20232a;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+.toggle-link a:hover {
+    color: #61dafb;
+    text-decoration: underline;
+}
+
+/* Message Styles */
+.error-message {
+    color: #dc3545; /* Red for errors */
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    min-height: 18px; /* Reserve space to prevent layout shift */
+}
+
+.success-message {
+    color: #28a745; /* Green for success */
+    font-size: 16px;
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #c3e6cb;
+    background-color: #d4edda;
+    border-radius: 6px;
+}
