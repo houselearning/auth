@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CoolMathTime - Student Learning Dashboard</title>
-    <!-- Assuming your original style.css contains common styles (body, etc.) -->
+    <title>CoolMathTime - Learning Dashboard</title>
     <link rel="stylesheet" href="style.css"> 
     <script src="https://houselearning.github.io/cookiebanner.js"></script> 
     
-    <!-- 1. Firebase SDK Imports -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <!-- NEW: Import Firestore SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     
     <style>
@@ -60,8 +57,8 @@
             color: var(--ka-blue-bright);
         }
 
-        /* NEW: Join Class Button Style */
-        .join-class-button {
+        /* Join Class Button Style (Applies to Teacher's 'Create Assignment' as well) */
+        .action-button {
             background-color: var(--ka-blue-bright);
             color: white;
             padding: 8px 15px;
@@ -72,7 +69,7 @@
             font-size: 0.9em;
             transition: background-color 0.1s;
         }
-        .join-class-button:hover {
+        .action-button:hover {
             background-color: #0d8cb5; 
         }
 
@@ -164,7 +161,8 @@
         /* FEATURE CARD STYLE */
         .feature-card {
             display: flex;
-            align-items: center;
+            flex-direction: column; /* Allows content stacking */
+            align-items: flex-start;
             padding: 20px;
             border-radius: 4px;
             border: 1px solid #ddd;
@@ -177,6 +175,19 @@
             border-color: var(--ka-blue-bright);
             box-shadow: 0 2px 8px rgba(20, 164, 204, 0.15);
             cursor: pointer;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--ka-blue-dark);
+        }
+        .card-meta {
+            font-size: 0.85em;
+            color: #777;
+            margin-top: 5px;
         }
 
         /* Icon styling */
@@ -273,23 +284,20 @@
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
             
-            <!-- Join Class Button -->
-            <button class="join-class-button" onclick="alert('Join Class functionality is not yet implemented.');">
+            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
                 Join Class
             </button>
         </div>
     </nav>
 
     <main class="dashboard-container" id="dashboard-content">
-        <!-- Content will be injected by renderDashboard() -->
-    </main>
+        </main>
 
-    <!-- Confirmation Modal Structure -->
     <div id="role-switch-modal" class="modal">
       <div class="modal-content">
         <h2>⚠️ Warning: Role Change</h2>
         <p id="modal-message">
-            Are you sure you want to switch account types? All your student progress will be lost.
+            Are you sure you want to switch account types? **All your student progress will be lost.**
         </p>
         <div class="modal-actions">
             <button id="cancel-switch">Cancel</button>
@@ -322,6 +330,7 @@
         const roleSwitchModal = document.getElementById('role-switch-modal');
         const confirmSwitchBtn = document.getElementById('confirm-switch');
         const cancelSwitchBtn = document.getElementById('cancel-switch');
+        const navActionButton = document.getElementById('nav-action-button');
         
         let currentUserId = null;
 
@@ -338,6 +347,16 @@
             let content = '';
             let header = '';
             
+            // 1. Update the main navigation button
+            if (role === 'teacher') {
+                 navActionButton.textContent = 'Create Assignment';
+                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+            } else {
+                navActionButton.textContent = 'Join Class';
+                navActionButton.onclick = () => alert('Join Class functionality is not yet implemented.');
+            }
+
+            // 2. Render the dashboard body
             if (role === 'student') {
                 header = `
                     <div class="header-controls">
@@ -408,28 +427,46 @@
                         <button id="teacher-role-btn">Switch to Student View</button>
                     </div>
                 `;
-                // Teacher Placeholder View
+                // Teacher View Content
                 content = `
-                    <div style="text-align: center; padding: 60px; background: #fff8e1; border: 2px solid #ffcc80; border-radius: 4px;">
-                        <h2 style="color: #f57c00;">👩‍🏫 Welcome, Coach!</h2>
-                        <p style="font-size: 1.1em; color: #555;">
-                            This is your dedicated workspace. Future features here will include:
-                        </p>
-                        <ul style="list-style: none; padding: 0; line-height: 2;">
-                            <li><span style="color: #f57c00;">•</span> Class Rosters & Management</li>
-                            <li><span style="color: #f57c00;">•</span> Assignment Creation & Scheduling</li>
-                            <li><span style="color: #f57c00;">•</span> Student Progress Monitoring</li>
-                        </ul>
-                        <p style="margin-top: 30px;">For now, you can explore the settings or switch back to Student View.</p>
+                    <h2 class="section-title">📚 My Classes & Groups</h2>
+                    <div id="loading-classes" class="loading-message">
+                        Loading your classes...
+                    </div>
+                    <div class="feature-grid class-grid">
+                        </div>
+                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                        ✨ No classes found. Create one to get started!
+                    </div>
+
+                    <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📋</span> View All Students</div>
+                            <div class="card-meta">Access full roster and student accounts.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+                            <div class="card-meta">0 students pending approval.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+                            <div class="card-meta">Change class codes, grading scales, and permissions.</div>
+                        </div>
                     </div>
                 `;
             }
             
             dashboardContent.innerHTML = header + content;
             
-            // Re-attach event listeners after DOM is updated
+            // Re-attach listeners and load dynamic data
             if (currentUserId) {
                 attachDashboardListeners(role);
+                if (role === 'teacher') {
+                    loadTeacherData(currentUserId);
+                } else {
+                    loadAssignments(currentUserId);
+                }
             }
         }
 
@@ -456,9 +493,6 @@
                 }
                 
                 renderDashboard(role);
-                if (role === 'student') {
-                    loadAssignments(userId); // Load assignments only if student
-                }
 
             } catch (error) {
                 console.error("Error loading user role:", error);
@@ -481,26 +515,21 @@
                 });
                 roleSwitchModal.style.display = 'none';
                 renderDashboard(newRole);
-                if (newRole === 'student') {
-                    loadAssignments(currentUserId);
-                }
             } catch (error) {
                 console.error("Error saving new role:", error);
-                alert('Could not save role change to database. Please try again.');
+                alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
             }
         }
 
         /**
-         * Fetches and displays assignments from Firestore based on the current user's UID.
-         * @param {string} userId - The Firebase UID of the logged-in user.
+         * Fetches and displays assignments for the student.
          */
         function loadAssignments(userId) {
-            // Find elements within the dynamically rendered content
             const assignmentGrid = document.querySelector('.assignment-grid');
             const noAssignmentsMsg = document.getElementById('no-assignments-message');
             const loadingMsg = document.getElementById('loading-assignments');
             
-            if (!assignmentGrid || !loadingMsg) return; // Exit if not in student view
+            if (!assignmentGrid || !loadingMsg) return;
 
             loadingMsg.style.display = 'block';
             assignmentGrid.style.display = 'none';
@@ -511,39 +540,31 @@
                                      .where('studentId', '==', userId)
                                      .orderBy('dueDate', 'asc'); 
 
-            // Using onSnapshot to ensure real-time updates
             assignmentsRef.onSnapshot((snapshot) => {
                 assignmentGrid.innerHTML = ''; 
                 const assignments = [];
 
-                snapshot.forEach(doc => {
-                    assignments.push({ id: doc.id, ...doc.data() });
-                });
+                snapshot.forEach(doc => assignments.push({ id: doc.id, ...doc.data() }));
                 
                 loadingMsg.style.display = 'none'; 
 
                 if (assignments.length > 0) {
                     assignments.forEach(assignment => {
-                        const icon = assignment.type === 'quiz' ? '🎯' : 
-                                     assignment.type === 'video' ? '📽️' : 
-                                     '📝'; 
-                        
+                        const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝'; 
                         const title = assignment.title || 'Untitled Assignment';
-                        // Format dueDate (assuming it's a Firestore Timestamp)
                         const dueDate = assignment.dueDate && assignment.dueDate.seconds ? 
-                                        `(Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()})` : '';
+                                        `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
                         
                         const cardHtml = `
                             <div class="feature-card">
-                                <span class="icon">${icon}</span> 
-                                ${title} ${dueDate}
+                                <div class="card-header"><span class="icon">${icon}</span> ${title}</div> 
+                                ${dueDate}
                             </div>
                         `;
                         assignmentGrid.innerHTML += cardHtml;
                     });
                     assignmentGrid.style.display = 'grid'; 
                     noAssignmentsMsg.style.display = 'none'; 
-
                 } else {
                     assignmentGrid.style.display = 'none'; 
                     noAssignmentsMsg.style.display = 'block'; 
@@ -554,6 +575,60 @@
             });
         }
         
+        /**
+         * Fetches and displays the teacher's classes.
+         */
+        function loadTeacherData(userId) {
+            const classGrid = document.querySelector('.class-grid');
+            const noClassesMsg = document.getElementById('no-classes-message');
+            const loadingMsg = document.getElementById('loading-classes');
+            
+            if (!classGrid || !loadingMsg) return;
+
+            loadingMsg.style.display = 'block';
+            classGrid.innerHTML = ''; 
+            noClassesMsg.style.display = 'none';
+
+            // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
+            const classesRef = db.collection('classes')
+                                 .where('teacherId', '==', userId)
+                                 .orderBy('name', 'asc'); 
+
+            classesRef.onSnapshot((snapshot) => {
+                classGrid.innerHTML = ''; 
+                const classes = [];
+
+                snapshot.forEach(doc => classes.push({ id: doc.id, ...doc.data() }));
+                
+                loadingMsg.style.display = 'none'; 
+
+                if (classes.length > 0) {
+                    classes.forEach(cls => {
+                        const studentCount = cls.studentCount !== undefined ? cls.studentCount : '...';
+                        const classCode = cls.code || 'N/A';
+                        
+                        const cardHtml = `
+                            <div class="feature-card">
+                                <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div> 
+                                <div class="card-meta">
+                                    Students: ${studentCount} | Code: <strong>${classCode}</strong>
+                                </div>
+                            </div>
+                        `;
+                        classGrid.innerHTML += cardHtml;
+                    });
+                    classGrid.style.display = 'grid'; 
+                } else {
+                    classGrid.style.display = 'grid'; // Keep the grid visible to show empty message
+                    noClassesMsg.style.display = 'block'; 
+                }
+            }, (error) => {
+                console.error("Error loading classes: ", error);
+                loadingMsg.textContent = "Error loading classes. Please check your Firestore rules.";
+            });
+        }
+
+
         // ======================================================================
         // 4. EVENT LISTENERS
         // ======================================================================
@@ -579,13 +654,13 @@
                 teacherRoleBtn.onclick = () => {
                     const targetRole = currentRole === 'student' ? 'teacher' : 'student';
                     
-                    if (currentRole === 'student') {
+                    if (currentRole === 'student' && targetRole === 'teacher') {
                         // Show warning modal for Student to Teacher switch
                         roleSwitchModal.style.display = 'block';
                         confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
                         cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
                     } else {
-                        // Direct switch for Teacher to Student (no warning)
+                        // Teacher to Student switch (no warning)
                         saveNewRole(targetRole);
                     }
                 };
