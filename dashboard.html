@@ -633,14 +633,18 @@
         /**
          * Fetches all user profiles with the role 'student' from Firestore.
          */
-        async function loadAllStudents() {
-            console.log("Attempting to load all student profiles...");
-            // You may want to display a loading indicator here
-            try {
-                // Query for all documents in 'user_profiles' where 'role' is 'student'
-                const studentsSnapshot = await db.collection('user_profiles')
-                                                  .where('role', '==', 'student')
-                                                  .get();
+async function loadAllStudents() {
+    console.log("Attempting to load all student profiles...");
+
+    // TEMPORARY: Add a small delay to ensure the user profile has finished writing
+    // when the role switch occurred.
+    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+
+    try {
+        // Query for all documents in 'user_profiles' where 'role' is 'student'
+        const studentsSnapshot = await db.collection('user_profiles')
+                                          .where('role', '==', 'student')
+                                          .get();
 
                 const students = [];
                 studentsSnapshot.forEach(doc => {
