@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CoolMathTime - Dashboard</title>
+    <link rel="stylesheet" href="style.css"> 
+    <script src="https://houselearning.github.io/cookiebanner.js"></script>  
+    <style>
+        /* DASHBOARD SPECIFIC STYLES based on your provided CSS */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgb(0 0 0 / 0.05);
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #eee;
+            transition: background 0.3s;
+        }
+        .feature-card:hover {
+            background: #61dafb;
+            color: #20232a;
+            cursor: pointer;
+        }
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .logout-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+        .role-switch {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .role-switch button {
+            background: #20232a;
+            color: #61dafb;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+        .role-switch button:hover {
+            background: #61dafb;
+            color: #20232a;
+        }
+        .active-role {
+            padding: 6px 10px;
+            border-radius: 4px;
+            background: #61dafb;
+            color: #20232a;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="https://houselearning.github.io/home/#">Home</a>
+            <a href="https://houselearning.github.io/home/math-page.html">Math Games</a>
+            <a href="https://houselearning.github.io/home/science-page.html#">Science Fun</a>
+            <a href="https://houselearning.github.io/home/computer-science-page.html#">Coding Challenges</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <div class="header-controls">
+            <h1>Welcome to Your <span id="current-role">Student</span> Dashboard</h1>
+            <button id="logout-btn" class="logout-button">Sign Out</button>
+        </div>
+        
+        <div class="role-switch">
+            <span>Switch Role:</span>
+            <span id="student-role" class="active-role">Student</span>
+            <button id="teacher-role-btn">Switch to Teacher</button>
+        </div>
+
+        <h2 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Account Features (15)</h2>
+        <div class="feature-grid">
+            <div class="feature-card">1. Profile Settings</div>
+            <div class="feature-card">2. Change Password</div>
+            <div class="feature-card">3. Email Notifications</div>
+            <div class="feature-card">4. My Grades / Progress</div>
+            <div class="feature-card">5. Course Enrollment</div>
+            <div class="feature-card">6. Math Challenges</div>
+            <div class="feature-card">7. Science Labs</div>
+            <div class="feature-card">8. Coding Projects</div>
+            <div class="feature-card">9. Safe Library Access</div>
+            <div class="feature-card">10. Blog Subscriptions</div>
+            <div class="feature-card">11. Saved Games</div>
+            <div class="feature-card">12. Billing Information</div>
+            <div class="feature-card">13. Help & Support</div>
+            <div class="feature-card">14. Refer a Friend</div>
+            <div class="feature-card">15. Data Export</div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Use the same config as your auth.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+            authDomain: "contract-center-llc-10.firebaseapp.com",
+            projectId: "contract-center-llc-10",
+            storageBucket: "contract-center-llc-10.firebasestorage.app",
+            messagingSenderId: "323221512767",
+            appId: "1:323221512767:web:6421260f875997dbf64e8a",
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const roleDisplay = document.getElementById('current-role');
+        const studentRoleEl = document.getElementById('student-role');
+        const teacherRoleBtn = document.getElementById('teacher-role-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // --- 1. CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                // If the user is NOT logged in, redirect them back to the login page
+                window.location.replace('index.html');
+            } else {
+                // User is logged in, load the local storage role
+                loadUserRole();
+            }
+        });
+
+        // --- 2. SIGN OUT LOGIC ---
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                // Clear the local storage role
+                localStorage.removeItem('userRole'); 
+                await auth.signOut();
+                // The onAuthStateChanged listener will handle the redirect to index.html
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        });
+
+        // --- 3. STUDENT/TEACHER SWITCH LOGIC ---
+        function loadUserRole() {
+            // Get the role from localStorage, default to 'student'
+            const currentRole = localStorage.getItem('userRole') || 'student';
+            updateRoleUI(currentRole);
+        }
+
+        function updateRoleUI(role) {
+            roleDisplay.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            
+            if (role === 'student') {
+                studentRoleEl.textContent = 'Student';
+                studentRoleEl.className = 'active-role';
+                teacherRoleBtn.textContent = 'Switch to Teacher';
+                teacherRoleBtn.className = '';
+            } else {
+                studentRoleEl.textContent = 'Switch to Student';
+                studentRoleEl.className = '';
+                teacherRoleBtn.textContent = 'Teacher';
+                teacherRoleBtn.className = 'active-role';
+            }
+            localStorage.setItem('userRole', role);
+            // In a real app, you'd reload the page content here based on the role
+        }
+
+        teacherRoleBtn.addEventListener('click', () => {
+            const currentRole = localStorage.getItem('userRole') === 'teacher' ? 'student' : 'teacher';
+            updateRoleUI(currentRole);
+        });
+        
+        studentRoleEl.addEventListener('click', () => {
+             // Only switch if the user is currently on the teacher button (or vice-versa, depending on your UI flow)
+             if (localStorage.getItem('userRole') === 'teacher') {
+                updateRoleUI('student');
+             }
+        });
+
+    </script>
+</body>
+</html>
