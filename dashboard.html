@@ -4,274 +4,274 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
+    <script src="houselearning.github.io/cookiebanner.js"></script>
     <link rel="stylesheet" href="style.css">
-    <script src="https://houselearning.github.io/cookiebanner.js"></script>
-
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <!-- Removed external cookiebanner.js and unnecessary external scripts to simplify -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>    
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
-    <style>
-        /* KHAN ACADEMY STYLE VARIABLES & RESET */
-        :root {
-            --ka-blue-dark: #142838;
-            --ka-blue-bright: #14a4cc;
-            --ka-gray-light: #f7f7f7;
-            --ka-text-color: #2e333b;
-            --ka-accent-green: #008064; /* For progress/success */
+    <style>        /* KHAN ACADEMY STYLE VARIABLES & RESET */        
+        :root {            
+            --ka-blue-dark: #142838;            
+            --ka-blue-bright: #14a4cc;            
+            --ka-gray-light: #f7f7f7;            
+            --ka-text-color: #2e333b;            
+            --ka-accent-green: #008064; /* For progress/success */        
         }
-
-        body {
-            background-color: var(--ka-gray-light);
-            color: var(--ka-text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        body {            
+            background-color: var(--ka-gray-light);            
+            color: var(--ka-text-color);            
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;            
+            margin: 0;            
+            padding: 0;        
         }
-
-        /* NAVBAR - Minimal and clean */
-        .navbar {
-            background-color: white;
-            border-bottom: 1px solid #ddd;
-            padding: 15px 0;
+        /* NAVBAR - Minimal and clean */        
+        .navbar {            
+            background-color: white;            
+            border-bottom: 1px solid #ddd;            
+            padding: 15px 0;        
+        }        
+        .navbar-content {            
+            max-width: 1000px;            
+            margin: 0 auto;            
+            padding: 0 20px;            
+            display: flex;            
+            justify-content: space-between;            
+            align-items: center;        
+        }        
+        .nav-links {            
+            display: flex;            
+            gap: 25px;        
+        }        
+        .navbar-content a {            
+            color: var(--ka-blue-dark);            
+            font-weight: 500;            
+            text-decoration: none;            
+            font-size: 0.95em;        
+        }        
+        .navbar-content a:hover {            
+            color: var(--ka-blue-bright);        
         }
-        .navbar-content {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 20px;
+        /* Join Class Button Style (Applies to Teacher's 'Create Assignment' as well) */        
+        .action-button {            
+            background-color: var(--ka-blue-bright);            
+            color: white;            
+            padding: 8px 15px;            
+            border: none;            
+            border-radius: 4px;            
+            cursor: pointer;            
+            font-weight: 600;            
+            font-size: 0.9em;            
+            transition: background-color 0.1s;        
+        }        
+        .action-button:hover {            
+            background-color: #0d8cb5;        
+        }
+        /* MAIN DASHBOARD CONTAINER */        
+        .dashboard-container {            
+            max-width: 1000px;            
+            margin: 40px auto;            
+            padding: 30px;            
+            background: white;            
+            border-radius: 4px;            
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);        
+        }
+        /* HEADER AND CONTROLS */        
+        .header-controls {            
+            display: flex;            
+            justify-content: space-between;            
+            align-items: center;            
+            margin-bottom: 30px;            
+            padding-bottom: 15px;            
+            border-bottom: 2px solid var(--ka-gray-light);        
+        }
+        h1 {            
+            font-size: 2em;            
+            color: var(--ka-blue-dark);            
+            margin: 0;        
+        }
+        .logout-button {            
+            background-color: #f0f0f0;            
+            color: var(--ka-blue-dark);            
+            padding: 8px 15px;            
+            border: 1px solid #ccc;            
+            border-radius: 4px;            
+            cursor: pointer;            
+            font-weight: 600;            
+            transition: background-color 0.1s;        
+        }        
+        .logout-button:hover {            
+            background-color: #e5e5e5;        
+        }
+        .role-switch {            
+            font-size: 0.9em;            
+            font-weight: 500;            
+            margin-bottom: 25px;            
+            padding: 10px 0;            
+            border-bottom: 1px solid #eee;            
+            display: flex;            
+            align-items: center;            
+            gap: 10px;        
+        }        
+        .role-switch button, .active-role {            
+            padding: 4px 8px;            
+            border: 1px solid #ccc;            
+            border-radius: 3px;            
+            background: white;            
+            color: var(--ka-text-color);            
+            cursor: pointer;            
+            transition: all 0.1s;        
+        }        
+        .active-role {            
+            background: var(--ka-blue-bright);            
+            color: white;            
+            border-color: var(--ka-blue-bright);            
+            font-weight: 700;        
+        }        
+        .role-switch button:hover:not(.active-role) {            
+            background: #eee;        
+        }
+        /* FEATURE SECTIONS */        
+        .section-title {            
+            font-size: 1.5em;            
+            color: var(--ka-blue-dark);            
+            margin-top: 30px;            
+            margin-bottom: 15px;            
+            font-weight: 600;        
+        }
+        .feature-grid {            
+            display: grid;            
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));            
+            gap: 20px;            
+            margin-bottom: 30px;        
+        }
+        /* FEATURE CARD STYLE */        
+        .feature-card {            
+            display: flex;            
+            flex-direction: column; /* Allows content stacking */            
+            align-items: flex-start;            
+            padding: 20px;            
+            border-radius: 4px;            
+            border: 1px solid #ddd;            
+            background: white;            
+            transition: border-color 0.2s, box-shadow 0.2s;            
+            font-weight: 500;            
+            color: var(--ka-text-color);        
+        }        
+        .feature-card:hover {            
+            border-color: var(--ka-blue-bright);            
+            box-shadow: 0 2px 8px rgba(20, 164, 204, 0.15);            
+            cursor: pointer;        
+        }        
+        .card-header {            
+            display: flex;            
+            align-items: center;            
+            margin-bottom: 5px;            
+            font-weight: 600;            
+            font-size: 1.1em;            
+            color: var(--ka-blue-dark);        
+        }        
+        .card-meta {            
+            font-size: 0.85em;            
+            color: #777;            
+            margin-top: 5px;        
+        }
+        /* Icon styling */        
+        .feature-card span.icon {            
+            font-size: 1.5em;            
+            margin-right: 15px;            
+            line-height: 1;        
+        }
+        /* Highlight card (Progress/Mastery) */        
+        .highlight-progress {            
+            background: var(--ka-accent-green);            
+            color: white;            
+            border-color: var(--ka-accent-green);            
+            font-weight: 700;        
+        }        
+        .highlight-progress span.icon {            
+            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));        
+        }        
+        .highlight-progress:hover {            
+            background: #006b51;            
+            border-color: #006b51;            
+            box-shadow: 0 4px 10px rgba(0, 128, 100, 0.3);        
+        }
+        /* EMPTY STATE MESSAGE - Neutral and encouraging */        
+        .empty-state-message {            
+            text-align: center;            
+            padding: 40px 20px;            
+            background: var(--ka-gray-light);            
+            border: 2px dashed #ccc;            
+            border-radius: 4px;            
+            color: var(--ka-text-color);            
+            font-size: 1.3em;            
+            font-weight: 600;            
+            margin-top: 20px;        
+        }        
+        /* Style for a loading state */        
+        .loading-message {            
+            text-align: center;            
+            padding: 40px 20px;            
+            font-size: 1.1em;            
+            color: #888;        
+        }
+        /* ROSTER LIST STYLES */
+        .roster-list-item {
+            padding: 15px;
+            margin-bottom: 8px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .nav-links {
-            display: flex;
-            gap: 25px;
-        }
-        .navbar-content a {
-            color: var(--ka-blue-dark);
-            font-weight: 500;
-            text-decoration: none;
             font-size: 0.95em;
         }
-        .navbar-content a:hover {
-            color: var(--ka-blue-bright);
-        }
-
-        /* Join Class Button Style (Applies to Teacher's 'Create Assignment' as well) */
-        .action-button {
-            background-color: var(--ka-blue-bright);
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9em;
-            transition: background-color 0.1s;
-        }
-        .action-button:hover {
-            background-color: #0d8cb5;
-        }
-
-        /* MAIN DASHBOARD CONTAINER */
-        .dashboard-container {
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* HEADER AND CONTROLS */
-        .header-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--ka-gray-light);
-        }
-
-        h1 {
-            font-size: 2em;
-            color: var(--ka-blue-dark);
-            margin: 0;
-        }
-
-        .logout-button {
-            background-color: #f0f0f0;
-            color: var(--ka-blue-dark);
-            padding: 8px 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.1s;
-        }
-        .logout-button:hover {
-            background-color: #e5e5e5;
-        }
-
-        .role-switch {
-            font-size: 0.9em;
-            font-weight: 500;
-            margin-bottom: 25px;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .role-switch button, .active-role {
-            padding: 4px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            background: white;
-            color: var(--ka-text-color);
-            cursor: pointer;
-            transition: all 0.1s;
-        }
-        .active-role {
-            background: var(--ka-blue-bright);
-            color: white;
-            border-color: var(--ka-blue-bright);
-            font-weight: 700;
-        }
-        .role-switch button:hover:not(.active-role) {
-            background: #eee;
-        }
-
-        /* FEATURE SECTIONS */
-        .section-title {
-            font-size: 1.5em;
-            color: var(--ka-blue-dark);
-            margin-top: 30px;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        /* FEATURE CARD STYLE */
-        .feature-card {
-            display: flex;
-            flex-direction: column; /* Allows content stacking */
-            align-items: flex-start;
-            padding: 20px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            background: white;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            font-weight: 500;
-            color: var(--ka-text-color);
-        }
-        .feature-card:hover {
-            border-color: var(--ka-blue-bright);
-            box-shadow: 0 2px 8px rgba(20, 164, 204, 0.15);
-            cursor: pointer;
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 1.1em;
-            color: var(--ka-blue-dark);
-        }
-        .card-meta {
-            font-size: 0.85em;
-            color: #777;
-            margin-top: 5px;
-        }
-
-        /* Icon styling */
-        .feature-card span.icon {
-            font-size: 1.5em;
-            margin-right: 15px;
-            line-height: 1;
-        }
-
-        /* Highlight card (Progress/Mastery) */
-        .highlight-progress {
-            background: var(--ka-accent-green);
-            color: white;
-            border-color: var(--ka-accent-green);
-            font-weight: 700;
-        }
-        .highlight-progress span.icon {
-            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));
-        }
-        .highlight-progress:hover {
-            background: #006b51;
-            border-color: #006b51;
-            box-shadow: 0 4px 10px rgba(0, 128, 100, 0.3);
-        }
-
-        /* EMPTY STATE MESSAGE - Neutral and encouraging */
-        .empty-state-message {
-            text-align: center;
-            padding: 40px 20px;
-            background: var(--ka-gray-light);
-            border: 2px dashed #ccc;
-            border-radius: 4px;
-            color: var(--ka-text-color);
-            font-size: 1.3em;
-            font-weight: 600;
-            margin-top: 20px;
-        }
-        /* Style for a loading state */
-        .loading-message {
-            text-align: center;
-            padding: 40px 20px;
-            font-size: 1.1em;
+        .student-id {
+            font-size: 0.8em;
             color: #888;
         }
-
-        /* MODAL STYLES (Confirmation Dialog) */
-        .modal {
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            display: none; /* Hidden by default */
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-actions button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        #confirm-switch {
-            background-color: #dc3545; /* Red for warning */
-            color: white;
-        }
-        #cancel-switch {
-            background-color: #f0f0f0;
-            color: var(--ka-text-color);
-        }
+        
+        /* MODAL STYLES (Confirmation Dialog) */        
+        .modal {            
+            position: fixed;            
+            z-index: 1000;            
+            left: 0;            
+            top: 0;            
+            width: 100%;            
+            height: 100%;            
+            overflow: auto;            
+            background-color: rgba(0,0,0,0.4);            
+            display: none; /* Hidden by default */        
+        }        
+        .modal-content {            
+            background-color: #fefefe;            
+            margin: 15% auto;            
+            padding: 20px;            
+            border: 1px solid #888;            
+            border-radius: 8px;            
+            width: 80%;            
+            max-width: 400px;            
+            text-align: center;            
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);        
+        }        
+        .modal-actions button {            
+            padding: 10px 20px;            
+            margin: 5px;            
+            border: none;            
+            border-radius: 4px;            
+            cursor: pointer;            
+            font-weight: 600;        
+        }        
+        #confirm-switch {            
+            background-color: #dc3545; /* Red for warning */            
+            color: white;        
+        }        
+        #cancel-switch {            
+            background-color: #f0f0f0;            
+            color: var(--ka-text-color);        
+        }    
     </style>
 </head>
 <body>
@@ -283,16 +283,13 @@
                 <a href="https://houselearning.github.io/home/science-page.html#">Coaches</a>
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
-
             <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
                 Join Class
             </button>
         </div>
     </nav>
-
-    <main class="dashboard-container" id="dashboard-content">
+    <main class="dashboard-container" id="dashboard-content">    
     </main>
-
     <div id="role-switch-modal" class="modal">
       <div class="modal-content">
         <h2>⚠️ Warning: Role Change</h2>
@@ -306,12 +303,11 @@
       </div>
     </div>
 
-
     <script>
         // ======================================================================
         // 1. FIREBASE INITIALIZATION & SETUP
         // ======================================================================
-
+        
         // ⚠️ IMPORTANT: The config must match the one used in your auth.js
         const firebaseConfig = {
             apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
@@ -324,21 +320,20 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-
+        
         // DOM Elements
         const dashboardContent = document.getElementById('dashboard-content');
         const roleSwitchModal = document.getElementById('role-switch-modal');
         const confirmSwitchBtn = document.getElementById('confirm-switch');
         const cancelSwitchBtn = document.getElementById('cancel-switch');
         const navActionButton = document.getElementById('nav-action-button');
-
+        
         let currentUserId = null;
-
 
         // ======================================================================
         // 2. DASHBOARD RENDERING LOGIC
         // ======================================================================
-
+        
         /**
          * Renders the appropriate dashboard view (Student or Teacher)
          * @param {string} role - 'student' or 'teacher'
@@ -346,7 +341,7 @@
         function renderDashboard(role) {
             let content = '';
             let header = '';
-
+            
             // 1. Update the main navigation button
             if (role === 'teacher') {
                 navActionButton.textContent = 'Create Assignment';
@@ -355,7 +350,7 @@
                 navActionButton.textContent = 'Join Class';
                 navActionButton.onclick = () => alert('Join Class functionality is not yet implemented.');
             }
-
+            
             // 2. Render the dashboard body
             if (role === 'student') {
                 header = `
@@ -379,7 +374,7 @@
                     <div id="no-assignments-message" class="empty-state-message" style="display: none;">
                         🎉 Woohoo! No assignments here. Go explore!
                     </div>
-
+                    
                     <h2 class="section-title">📊 Progress & Mastery</h2>
                     <div class="feature-grid">
                         <div class="feature-card highlight-progress">
@@ -395,7 +390,6 @@
                             <span class="icon">📌</span> Review Course Enrollment
                         </div>
                     </div>
-
                     <h2 class="section-title">🛠️ Tools & Account</h2>
                     <div class="feature-grid">
                         <div class="feature-card">
@@ -433,17 +427,27 @@
                     <div id="loading-classes" class="loading-message">
                         Loading your classes...
                     </div>
-                    <div class="feature-grid class-grid">
-                        </div>
+                    <div class="feature-grid class-grid"></div>
                     <div id="no-classes-message" class="empty-state-message" style="display: none;">
                         ✨ No classes found. Create one to get started!
                     </div>
+                    
+                    <h2 class="section-title">👩‍🎓 Student Roster (VULNERABLE)</h2>
+                    <p style="font-size: 0.9em; color: #cc3333; margin-top: -10px; margin-bottom: 15px;">
+                        ⚠️ **Insecure Access:** This roster is loaded via client-side filtering and is **not** protected by secure Firestore rules.
+                    </p>
+                    <div id="student-roster-loading" class="loading-message">
+                        Loading student roster...
+                    </div>
+                    <div id="student-roster-list">
+                        <!-- Student list will be rendered here -->
+                    </div>
 
-                    <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+                    <h2 class="section-title">⚙️ Teacher Tools</h2>
                     <div class="feature-grid">
-                        <div class="feature-card" id="view-all-students-card">
-                            <div class="card-header"><span class="icon">📋</span> View All Students</div>
-                            <div class="card-meta">Access full roster and student accounts.</div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📈</span> View Assignment Reports</div>
+                            <div class="card-meta">Track student performance by assignment.</div>
                         </div>
                         <div class="feature-card">
                             <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
@@ -456,25 +460,23 @@
                     </div>
                 `;
             }
-
             dashboardContent.innerHTML = header + content;
-
             // Re-attach listeners and load dynamic data
             if (currentUserId) {
                 attachDashboardListeners(role);
                 if (role === 'teacher') {
                     loadTeacherData(currentUserId);
+                    loadAndRenderStudentRoster(); // <<< START ROSTER LOADING
                 } else {
                     loadAssignments(currentUserId);
                 }
             }
         }
 
-
         // ======================================================================
         // 3. FIREBASE DATA & ROLE MANAGEMENT
         // ======================================================================
-
+        
         /**
          * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
          * @param {string} userId - The Firebase UID.
@@ -486,6 +488,7 @@
                 let role = 'student';
 
                 if (doc.exists) {
+                    // Uses the insecure 'role' field from Firestore document
                     role = doc.data().role || 'student';
                 } else {
                     // Initialize profile for new user
@@ -493,7 +496,6 @@
                 }
 
                 renderDashboard(role);
-
             } catch (error) {
                 console.error("Error loading user role:", error);
                 // Fallback to student view if Firestore read fails
@@ -501,29 +503,90 @@
                 loadAssignments(userId);
             }
         }
-
+        
         /**
          * Saves the new role to Firestore and updates the UI.
          * @param {string} newRole - 'student' or 'teacher'
          */
         async function saveNewRole(newRole) {
-    if (!currentUserId) return;
-    try {
-        // ⚠️ THIS LINE IS CRUCIAL: 'await' ensures the update completes before proceeding.
-        await db.collection('user_profiles').doc(currentUserId).update({ 
-            role: newRole,
-            lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        roleSwitchModal.style.display = 'none';
-        
-        // This must be called *after* the update is guaranteed to be finished.
-        renderDashboard(newRole); 
-    } catch (error) {
+            if (!currentUserId) return;
+            try {
+                // ⚠️ THIS IS THE INSECURE CLIENT-SIDE UPDATE
+                await db.collection('user_profiles').doc(currentUserId).update({ 
+                    role: newRole,
+                    lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                roleSwitchModal.style.display = 'none';
+                // This must be called *after* the update is guaranteed to be finished.
+                renderDashboard(newRole); 
+            } catch (error) {
                 console.error("Error saving new role:", error);
                 alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
             }
         }
+        
+        // --- NEW FUNCTION TO LOAD AND RENDER STUDENT ROSTER (INSECURE FILTERING) ---
+        /**
+         * Fetches all user profiles with the role 'student' using client-side filtering.
+         */
+        function loadAndRenderStudentRoster() {
+            const listContainer = document.getElementById('student-roster-list');
+            const loadingMsg = document.getElementById('student-roster-loading');
+
+            if (!listContainer || !loadingMsg) return;
+
+            loadingMsg.style.display = 'block';
+            listContainer.innerHTML = '';
+            
+            const studentsQuery = db.collection('user_profiles')
+                                    .where('role', '==', 'student')
+                                    .orderBy('createdAt', 'desc'); // Order by creation to see new users easily
+
+            // Use onSnapshot for real-time list updates
+            studentsQuery.onSnapshot((snapshot) => {
+                const students = [];
+                snapshot.forEach(doc => students.push({ id: doc.id, ...doc.data() }));
+
+                loadingMsg.style.display = 'none';
+                
+                if (students.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="empty-state-message" style="font-size: 1em; padding: 20px;">
+                            No students found in the database.
+                        </div>
+                    `;
+                } else {
+                    let html = '<div style="margin-top: 10px;">';
+                    students.forEach(student => {
+                        const email = student.email && student.email !== 'anonymous' ? student.email : 'Anonymous User';
+                        const joined = student.createdAt && student.createdAt.seconds ? 
+                                       new Date(student.createdAt.seconds * 1000).toLocaleDateString() : 'Unknown Date';
+                        
+                        html += `
+                            <div class="roster-list-item">
+                                <div>
+                                    <strong>${email}</strong>
+                                    <div class="student-id">ID: ${student.id.substring(0, 10)}... | Joined: ${joined}</div>
+                                </div>
+                                <span style="color: var(--ka-accent-green);">STUDENT</span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    listContainer.innerHTML = html;
+                }
+            }, (error) => {
+                console.error("Error loading student roster:", error);
+                loadingMsg.style.display = 'none';
+                listContainer.innerHTML = `
+                    <div class="roster-list-item" style="background: #fdd; color: #b00;">
+                        Error loading roster: ${error.message}. Please check your open Firestore rules.
+                    </div>
+                `;
+            });
+        }
+        // --- END OF NEW FUNCTION ---
 
         /**
          * Fetches and displays assignments for the student.
@@ -532,33 +595,33 @@
             const assignmentGrid = document.querySelector('.assignment-grid');
             const noAssignmentsMsg = document.getElementById('no-assignments-message');
             const loadingMsg = document.getElementById('loading-assignments');
-
+            
             if (!assignmentGrid || !loadingMsg) return;
-
+            
             loadingMsg.style.display = 'block';
             assignmentGrid.style.display = 'none';
             noAssignmentsMsg.style.display = 'none';
             assignmentGrid.innerHTML = '';
-
+            
             const assignmentsRef = db.collection('assignments')
                                        .where('studentId', '==', userId)
                                        .orderBy('dueDate', 'asc');
-
+            
             assignmentsRef.onSnapshot((snapshot) => {
                 assignmentGrid.innerHTML = '';
                 const assignments = [];
-
+                
                 snapshot.forEach(doc => assignments.push({ id: doc.id, ...doc.data() }));
-
+                
                 loadingMsg.style.display = 'none';
-
+                
                 if (assignments.length > 0) {
                     assignments.forEach(assignment => {
                         const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝';
                         const title = assignment.title || 'Untitled Assignment';
-                        const dueDate = assignment.dueDate && assignment.dueDate.seconds ?
+                        const dueDate = assignment.dueDate && assignment.dueDate.seconds ? 
                                                 `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
-
+                        
                         const cardHtml = `
                             <div class="feature-card">
                                 <div class="card-header"><span class="icon">${icon}</span> ${title}</div>
@@ -578,7 +641,7 @@
                 loadingMsg.textContent = "Error loading data. Please refresh.";
             });
         }
-
+        
         /**
          * Fetches and displays the teacher's classes.
          */
@@ -586,31 +649,31 @@
             const classGrid = document.querySelector('.class-grid');
             const noClassesMsg = document.getElementById('no-classes-message');
             const loadingMsg = document.getElementById('loading-classes');
-
+            
             if (!classGrid || !loadingMsg) return;
-
+            
             loadingMsg.style.display = 'block';
             classGrid.innerHTML = '';
             noClassesMsg.style.display = 'none';
-
+            
             // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
             const classesRef = db.collection('classes')
                                    .where('teacherId', '==', userId)
                                    .orderBy('name', 'asc');
-
+            
             classesRef.onSnapshot((snapshot) => {
                 classGrid.innerHTML = '';
                 const classes = [];
-
+                
                 snapshot.forEach(doc => classes.push({ id: doc.id, ...doc.data() }));
-
+                
                 loadingMsg.style.display = 'none';
-
+                
                 if (classes.length > 0) {
                     classes.forEach(cls => {
                         const studentCount = cls.studentCount !== undefined ? cls.studentCount : '...';
                         const classCode = cls.code || 'N/A';
-
+                        
                         const cardHtml = `
                             <div class="feature-card">
                                 <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>
@@ -631,93 +694,36 @@
                 loadingMsg.textContent = "Error loading classes. Please check your Firestore rules.";
             });
         }
-
-        // --- NEW FUNCTION TO FETCH ALL STUDENTS ---
-
-        /**
-         * Fetches all user profiles with the role 'student' from Firestore.
-         */
-async function loadAllStudents() {
-    console.log("Attempting to load all student profiles...");
-
-    // TEMPORARY: Add a small delay to ensure the user profile has finished writing
-    // when the role switch occurred.
-    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-
-    try {
-        // Query for all documents in 'user_profiles' where 'role' is 'student'
-        const studentsSnapshot = await db.collection('user_profiles')
-                                          .where('role', '==', 'student')
-                                          .get();
-
-                const students = [];
-                studentsSnapshot.forEach(doc => {
-                    // Include the UID as the id for each student
-                    students.push({ id: doc.id, ...doc.data() });
-                });
-
-                console.log(`Found ${students.length} students.`, students);
-                renderAllStudents(students); // Call the function to display the data
-
-            } catch (error) {
-                console.error("Error fetching all students:", error);
-                alert('Failed to retrieve student data from Firebase. Check console for details. Ensure your Firestore rules allow the read operation.');
-            }
-        }
-
-        /**
-         * Placeholder to display the fetched student data (Replace with a proper modal/table render later).
-         * @param {Array<Object>} students - Array of student profile objects.
-         */
-        function renderAllStudents(students) {
-            if (students.length === 0) {
-                alert('No student accounts found.');
-                return;
-            }
-
-            let studentList = `Found ${students.length} Students:\n\n`;
-            // Create a list of the first 10 student UIDs/emails
-            students.slice(0, 10).forEach((student, index) => {
-                // Assumes you might have an 'email' field in the user_profiles
-                const displayId = student.email || student.id;
-                studentList += `${index + 1}. ${displayId}\n`;
-            });
-
-            if (students.length > 10) {
-                studentList += `\n...and ${students.length - 10} more. Check console for the full list.`;
-            }
-
-            // NOTE: In a real app, you would create a modal or new page to display a sortable, filterable list/table.
-            alert(studentList);
-        }
+        
+        // --- ⚠️ Placeholder functions removed: loadAllStudents and renderAllStudents ---
 
 
         // ======================================================================
         // 4. EVENT LISTENERS
         // ======================================================================
-
+        
         /**
          * Attaches listeners to dynamically created elements.
          */
         function attachDashboardListeners(currentRole) {
             const logoutBtn = document.getElementById('logout-btn');
             const teacherRoleBtn = document.getElementById('teacher-role-btn');
-            const viewAllStudentsCard = document.getElementById('view-all-students-card'); // New Element
-
+            
             if (logoutBtn) {
                 logoutBtn.onclick = async () => {
                     try {
                         await auth.signOut();
+                        // Redirect handled by onAuthStateChanged listener
                     } catch (error) {
                         console.error("Logout Error:", error);
                     }
                 };
             }
-
+            
             if (teacherRoleBtn) {
                 teacherRoleBtn.onclick = () => {
                     const targetRole = currentRole === 'student' ? 'teacher' : 'student';
-
+                    
                     if (currentRole === 'student' && targetRole === 'teacher') {
                         // Show warning modal for Student to Teacher switch
                         roleSwitchModal.style.display = 'block';
@@ -729,13 +735,8 @@ async function loadAllStudents() {
                     }
                 };
             }
-
-            // --- NEW LISTENER FOR THE 'VIEW ALL STUDENTS' BUTTON ---
-            if (viewAllStudentsCard && currentRole === 'teacher') {
-                viewAllStudentsCard.addEventListener('click', loadAllStudents);
-            }
+            // The listener for 'view-all-students-card' is removed as the list loads immediately.
         }
-
 
         // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
         auth.onAuthStateChanged(user => {
