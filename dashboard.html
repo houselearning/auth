@@ -507,15 +507,19 @@
          * @param {string} newRole - 'student' or 'teacher'
          */
         async function saveNewRole(newRole) {
-            if (!currentUserId) return;
-            try {
-                await db.collection('user_profiles').doc(currentUserId).update({
-                    role: newRole,
-                    lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                roleSwitchModal.style.display = 'none';
-                renderDashboard(newRole);
-            } catch (error) {
+    if (!currentUserId) return;
+    try {
+        // ⚠️ THIS LINE IS CRUCIAL: 'await' ensures the update completes before proceeding.
+        await db.collection('user_profiles').doc(currentUserId).update({ 
+            role: newRole,
+            lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        roleSwitchModal.style.display = 'none';
+        
+        // This must be called *after* the update is guaranteed to be finished.
+        renderDashboard(newRole); 
+    } catch (error) {
                 console.error("Error saving new role:", error);
                 alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
             }
