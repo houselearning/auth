@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
-    <link rel="stylesheet" href="style.css"> 
-    <script src="https://houselearning.github.io/cookiebanner.js"></script> 
-    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://houselearning.github.io/cookiebanner.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-    
+
     <style>
         /* KHAN ACADEMY STYLE VARIABLES & RESET */
         :root {
@@ -20,9 +20,9 @@
             --ka-text-color: #2e333b;
             --ka-accent-green: #008064; /* For progress/success */
         }
-        
+
         body {
-            background-color: var(--ka-gray-light); 
+            background-color: var(--ka-gray-light);
             color: var(--ka-text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
@@ -39,13 +39,13 @@
             max-width: 1000px;
             margin: 0 auto;
             padding: 0 20px;
-            display: flex; 
-            justify-content: space-between; 
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
         .nav-links {
             display: flex;
-            gap: 25px; 
+            gap: 25px;
         }
         .navbar-content a {
             color: var(--ka-blue-dark);
@@ -70,7 +70,7 @@
             transition: background-color 0.1s;
         }
         .action-button:hover {
-            background-color: #0d8cb5; 
+            background-color: #0d8cb5;
         }
 
         /* MAIN DASHBOARD CONTAINER */
@@ -79,10 +79,10 @@
             margin: 40px auto;
             padding: 30px;
             background: white;
-            border-radius: 4px; 
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); 
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         /* HEADER AND CONTROLS */
         .header-controls {
             display: flex;
@@ -92,15 +92,15 @@
             padding-bottom: 15px;
             border-bottom: 2px solid var(--ka-gray-light);
         }
-        
+
         h1 {
             font-size: 2em;
             color: var(--ka-blue-dark);
             margin: 0;
         }
-        
+
         .logout-button {
-            background-color: #f0f0f0; 
+            background-color: #f0f0f0;
             color: var(--ka-blue-dark);
             padding: 8px 15px;
             border: 1px solid #ccc;
@@ -112,7 +112,7 @@
         .logout-button:hover {
             background-color: #e5e5e5;
         }
-        
+
         .role-switch {
             font-size: 0.9em;
             font-weight: 500;
@@ -150,14 +150,14 @@
             margin-bottom: 15px;
             font-weight: 600;
         }
-        
+
         .feature-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-        
+
         /* FEATURE CARD STYLE */
         .feature-card {
             display: flex;
@@ -205,7 +205,7 @@
             font-weight: 700;
         }
         .highlight-progress span.icon {
-            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7)); 
+            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7));
         }
         .highlight-progress:hover {
             background: #006b51;
@@ -232,7 +232,7 @@
             font-size: 1.1em;
             color: #888;
         }
-        
+
         /* MODAL STYLES (Confirmation Dialog) */
         .modal {
             position: fixed;
@@ -247,11 +247,11 @@
         }
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto; 
+            margin: 15% auto;
             padding: 20px;
             border: 1px solid #888;
             border-radius: 8px;
-            width: 80%; 
+            width: 80%;
             max-width: 400px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -283,7 +283,7 @@
                 <a href="https://houselearning.github.io/home/science-page.html#">Coaches</a>
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
-            
+
             <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
                 Join Class
             </button>
@@ -291,7 +291,7 @@
     </nav>
 
     <main class="dashboard-container" id="dashboard-content">
-        </main>
+    </main>
 
     <div id="role-switch-modal" class="modal">
       <div class="modal-content">
@@ -311,7 +311,7 @@
         // ======================================================================
         // 1. FIREBASE INITIALIZATION & SETUP
         // ======================================================================
-        
+
         // ⚠️ IMPORTANT: The config must match the one used in your auth.js
         const firebaseConfig = {
             apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
@@ -323,15 +323,15 @@
         };
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const db = firebase.firestore(); 
-        
+        const db = firebase.firestore();
+
         // DOM Elements
         const dashboardContent = document.getElementById('dashboard-content');
         const roleSwitchModal = document.getElementById('role-switch-modal');
         const confirmSwitchBtn = document.getElementById('confirm-switch');
         const cancelSwitchBtn = document.getElementById('cancel-switch');
         const navActionButton = document.getElementById('nav-action-button');
-        
+
         let currentUserId = null;
 
 
@@ -346,11 +346,11 @@
         function renderDashboard(role) {
             let content = '';
             let header = '';
-            
+
             // 1. Update the main navigation button
             if (role === 'teacher') {
-                 navActionButton.textContent = 'Create Assignment';
-                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+                navActionButton.textContent = 'Create Assignment';
+                navActionButton.onclick = () => alert('Assignment creation form would open here!');
             } else {
                 navActionButton.textContent = 'Join Class';
                 navActionButton.onclick = () => alert('Join Class functionality is not yet implemented.');
@@ -441,7 +441,7 @@
 
                     <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
                     <div class="feature-grid">
-                        <div class="feature-card">
+                        <div class="feature-card" id="view-all-students-card">
                             <div class="card-header"><span class="icon">📋</span> View All Students</div>
                             <div class="card-meta">Access full roster and student accounts.</div>
                         </div>
@@ -456,9 +456,9 @@
                     </div>
                 `;
             }
-            
+
             dashboardContent.innerHTML = header + content;
-            
+
             // Re-attach listeners and load dynamic data
             if (currentUserId) {
                 attachDashboardListeners(role);
@@ -483,7 +483,7 @@
             const docRef = db.collection('user_profiles').doc(userId);
             try {
                 const doc = await docRef.get();
-                let role = 'student'; 
+                let role = 'student';
 
                 if (doc.exists) {
                     role = doc.data().role || 'student';
@@ -491,7 +491,7 @@
                     // Initialize profile for new user
                     await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                 }
-                
+
                 renderDashboard(role);
 
             } catch (error) {
@@ -501,7 +501,7 @@
                 loadAssignments(userId);
             }
         }
-        
+
         /**
          * Saves the new role to Firestore and updates the UI.
          * @param {string} newRole - 'student' or 'teacher'
@@ -528,53 +528,53 @@
             const assignmentGrid = document.querySelector('.assignment-grid');
             const noAssignmentsMsg = document.getElementById('no-assignments-message');
             const loadingMsg = document.getElementById('loading-assignments');
-            
+
             if (!assignmentGrid || !loadingMsg) return;
 
             loadingMsg.style.display = 'block';
             assignmentGrid.style.display = 'none';
             noAssignmentsMsg.style.display = 'none';
-            assignmentGrid.innerHTML = ''; 
+            assignmentGrid.innerHTML = '';
 
             const assignmentsRef = db.collection('assignments')
-                                     .where('studentId', '==', userId)
-                                     .orderBy('dueDate', 'asc'); 
+                                       .where('studentId', '==', userId)
+                                       .orderBy('dueDate', 'asc');
 
             assignmentsRef.onSnapshot((snapshot) => {
-                assignmentGrid.innerHTML = ''; 
+                assignmentGrid.innerHTML = '';
                 const assignments = [];
 
                 snapshot.forEach(doc => assignments.push({ id: doc.id, ...doc.data() }));
-                
-                loadingMsg.style.display = 'none'; 
+
+                loadingMsg.style.display = 'none';
 
                 if (assignments.length > 0) {
                     assignments.forEach(assignment => {
-                        const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝'; 
+                        const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝';
                         const title = assignment.title || 'Untitled Assignment';
-                        const dueDate = assignment.dueDate && assignment.dueDate.seconds ? 
-                                        `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
-                        
+                        const dueDate = assignment.dueDate && assignment.dueDate.seconds ?
+                                                `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
+
                         const cardHtml = `
                             <div class="feature-card">
-                                <div class="card-header"><span class="icon">${icon}</span> ${title}</div> 
+                                <div class="card-header"><span class="icon">${icon}</span> ${title}</div>
                                 ${dueDate}
                             </div>
                         `;
                         assignmentGrid.innerHTML += cardHtml;
                     });
-                    assignmentGrid.style.display = 'grid'; 
-                    noAssignmentsMsg.style.display = 'none'; 
+                    assignmentGrid.style.display = 'grid';
+                    noAssignmentsMsg.style.display = 'none';
                 } else {
-                    assignmentGrid.style.display = 'none'; 
-                    noAssignmentsMsg.style.display = 'block'; 
+                    assignmentGrid.style.display = 'none';
+                    noAssignmentsMsg.style.display = 'block';
                 }
             }, (error) => {
                 console.error("Error loading assignments: ", error);
                 loadingMsg.textContent = "Error loading data. Please refresh.";
             });
         }
-        
+
         /**
          * Fetches and displays the teacher's classes.
          */
@@ -582,34 +582,34 @@
             const classGrid = document.querySelector('.class-grid');
             const noClassesMsg = document.getElementById('no-classes-message');
             const loadingMsg = document.getElementById('loading-classes');
-            
+
             if (!classGrid || !loadingMsg) return;
 
             loadingMsg.style.display = 'block';
-            classGrid.innerHTML = ''; 
+            classGrid.innerHTML = '';
             noClassesMsg.style.display = 'none';
 
             // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
             const classesRef = db.collection('classes')
-                                 .where('teacherId', '==', userId)
-                                 .orderBy('name', 'asc'); 
+                                   .where('teacherId', '==', userId)
+                                   .orderBy('name', 'asc');
 
             classesRef.onSnapshot((snapshot) => {
-                classGrid.innerHTML = ''; 
+                classGrid.innerHTML = '';
                 const classes = [];
 
                 snapshot.forEach(doc => classes.push({ id: doc.id, ...doc.data() }));
-                
-                loadingMsg.style.display = 'none'; 
+
+                loadingMsg.style.display = 'none';
 
                 if (classes.length > 0) {
                     classes.forEach(cls => {
                         const studentCount = cls.studentCount !== undefined ? cls.studentCount : '...';
                         const classCode = cls.code || 'N/A';
-                        
+
                         const cardHtml = `
                             <div class="feature-card">
-                                <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div> 
+                                <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>
                                 <div class="card-meta">
                                     Students: ${studentCount} | Code: <strong>${classCode}</strong>
                                 </div>
@@ -617,10 +617,10 @@
                         `;
                         classGrid.innerHTML += cardHtml;
                     });
-                    classGrid.style.display = 'grid'; 
+                    classGrid.style.display = 'grid';
                 } else {
                     classGrid.style.display = 'grid'; // Keep the grid visible to show empty message
-                    noClassesMsg.style.display = 'block'; 
+                    noClassesMsg.style.display = 'block';
                 }
             }, (error) => {
                 console.error("Error loading classes: ", error);
@@ -628,18 +628,74 @@
             });
         }
 
+        // --- NEW FUNCTION TO FETCH ALL STUDENTS ---
+
+        /**
+         * Fetches all user profiles with the role 'student' from Firestore.
+         */
+        async function loadAllStudents() {
+            console.log("Attempting to load all student profiles...");
+            // You may want to display a loading indicator here
+            try {
+                // Query for all documents in 'user_profiles' where 'role' is 'student'
+                const studentsSnapshot = await db.collection('user_profiles')
+                                                  .where('role', '==', 'student')
+                                                  .get();
+
+                const students = [];
+                studentsSnapshot.forEach(doc => {
+                    // Include the UID as the id for each student
+                    students.push({ id: doc.id, ...doc.data() });
+                });
+
+                console.log(`Found ${students.length} students.`, students);
+                renderAllStudents(students); // Call the function to display the data
+
+            } catch (error) {
+                console.error("Error fetching all students:", error);
+                alert('Failed to retrieve student data from Firebase. Check console for details. Ensure your Firestore rules allow the read operation.');
+            }
+        }
+
+        /**
+         * Placeholder to display the fetched student data (Replace with a proper modal/table render later).
+         * @param {Array<Object>} students - Array of student profile objects.
+         */
+        function renderAllStudents(students) {
+            if (students.length === 0) {
+                alert('No student accounts found.');
+                return;
+            }
+
+            let studentList = `Found ${students.length} Students:\n\n`;
+            // Create a list of the first 10 student UIDs/emails
+            students.slice(0, 10).forEach((student, index) => {
+                // Assumes you might have an 'email' field in the user_profiles
+                const displayId = student.email || student.id;
+                studentList += `${index + 1}. ${displayId}\n`;
+            });
+
+            if (students.length > 10) {
+                studentList += `\n...and ${students.length - 10} more. Check console for the full list.`;
+            }
+
+            // NOTE: In a real app, you would create a modal or new page to display a sortable, filterable list/table.
+            alert(studentList);
+        }
+
 
         // ======================================================================
         // 4. EVENT LISTENERS
         // ======================================================================
-        
+
         /**
          * Attaches listeners to dynamically created elements.
          */
         function attachDashboardListeners(currentRole) {
             const logoutBtn = document.getElementById('logout-btn');
             const teacherRoleBtn = document.getElementById('teacher-role-btn');
-            
+            const viewAllStudentsCard = document.getElementById('view-all-students-card'); // New Element
+
             if (logoutBtn) {
                 logoutBtn.onclick = async () => {
                     try {
@@ -649,11 +705,11 @@
                     }
                 };
             }
-            
+
             if (teacherRoleBtn) {
                 teacherRoleBtn.onclick = () => {
                     const targetRole = currentRole === 'student' ? 'teacher' : 'student';
-                    
+
                     if (currentRole === 'student' && targetRole === 'teacher') {
                         // Show warning modal for Student to Teacher switch
                         roleSwitchModal.style.display = 'block';
@@ -664,6 +720,11 @@
                         saveNewRole(targetRole);
                     }
                 };
+            }
+
+            // --- NEW LISTENER FOR THE 'VIEW ALL STUDENTS' BUTTON ---
+            if (viewAllStudentsCard && currentRole === 'teacher') {
+                viewAllStudentsCard.addEventListener('click', loadAllStudents);
             }
         }
 
@@ -676,7 +737,7 @@
             } else {
                 // User is signed in
                 currentUserId = user.uid;
-                loadUserRole(user.uid); 
+                loadUserRole(user.uid);
             }
         });
     </script>
