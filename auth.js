@@ -25,7 +25,21 @@ const toggleLink = document.getElementById('toggle-auth');
 const errorMessage = document.getElementById('error-message');
 const successMessage = document.getElementById('success-message');
 
-let isLoginMode = true; // State tracker for the form
+let isLoginMode = true; 
+const DASHBOARD_URL = 'dashboard.html'; // The page to redirect to
+
+/**
+ * Checks if a user is already logged in and redirects them.
+ * This listener runs whenever the user's sign-in state changes.
+ */
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // User is signed in. Redirect to the dashboard.
+        window.location.replace(DASHBOARD_URL);
+    }
+    // If no user, stay on the login page.
+});
+
 
 /**
  * Updates the UI to switch between Login and Sign Up modes.
@@ -48,59 +62,6 @@ function updateUI() {
 }
 
 /**
- * Handles the submission of the form (Login or Sign Up).
- * @param {Event} e - The form submission event.
- */
-authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errorMessage.textContent = ''; // Clear previous errors
-    successMessage.style.display = 'none'; // Clear success message
-
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
-    if (isLoginMode) {
-        // --- LOGIN LOGIC ---
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            successMessage.textContent = `Successfully logged in as ${email}!`;
-            successMessage.style.display = 'block';
-            authForm.reset();
-        } catch (error) {
-            console.error('Login Error:', error);
-            // Display a user-friendly error message
-            errorMessage.textContent = 'Login failed: ' + formatFirebaseError(error.code);
-        }
-    } else {
-        // --- SIGN UP LOGIC ---
-        try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-    const user = userCredential.user;
-
-    // 🚀 NEW STEP: Send the email verification link to the user
-    await user.sendEmailVerification(); 
-    
-    // Optional: Log data to Firestore if you are using a database
-    // await db.collection("users").doc(user.uid).set({...}); 
-    
-    successMessage.innerHTML = `
-        Account created! A **verification link** has been sent to **${email}**. 
-        Please check your inbox to verify your email address.
-    `;
-    successMessage.style.display = 'block';
-    authForm.reset();
-    isLoginMode = true;
-    updateUI();
-
-} catch (error) {
-            console.error('Sign Up Error:', error);
-            // Display a user-friendly error message
-            errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
-        }
-    }
-});
-
-/**
  * Toggles between Login and Sign Up modes.
  */
 toggleLink.addEventListener('click', (e) => {
@@ -108,6 +69,56 @@ toggleLink.addEventListener('click', (e) => {
     isLoginMode = !isLoginMode;
     updateUI();
 });
+
+
+/**
+ * Handles the submission of the form (Login or Sign Up).
+ */
+authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMessage.textContent = '';
+    successMessage.style.display = 'none';
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    if (isLoginMode) {
+        // --- LOGIN LOGIC (With Persistence) ---
+        try {
+            // Set persistence to LOCAL so the user stays logged in
+            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            await auth.signInWithEmailAndPassword(email, password);
+            
+            submitButton.textContent = 'Logged In... Redirecting!'; 
+            // Redirection is handled by the onAuthStateChanged listener above.
+
+        } catch (error) {
+            console.error('Login Error:', error);
+            errorMessage.textContent = 'Login failed: ' + formatFirebaseError(error.code);
+            submitButton.textContent = 'Log In'; // Reset button text
+        }
+    } else {
+        // --- SIGN UP LOGIC ---
+        try {
+            await auth.createUserWithEmailAndPassword(email, password);
+            
+            // Initialize user role (set default to 'student' in localStorage)
+            // This role will be accessed by dashboard.html
+            localStorage.setItem('userRole', 'student');
+            
+            successMessage.innerHTML = `Account created! Redirecting to dashboard...`;
+            successMessage.style.display = 'block';
+            authForm.reset();
+            
+            // Redirection is handled by the onAuthStateChanged listener above.
+            
+        } catch (error) {
+            console.error('Sign Up Error:', error);
+            errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
+        }
+    }
+});
+
 
 /**
  * Helper function to format Firebase error codes into readable messages.
