@@ -11,9 +11,9 @@ const firebaseConfig = {
   measurementId: "G-S2RJ0C6BWH"
 };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+// Declare app and auth globally, but initialize them later.
+let app;
+let auth;
 
 // Get DOM elements
 const authForm = document.getElementById('auth-form');
@@ -28,17 +28,55 @@ const successMessage = document.getElementById('success-message');
 let isLoginMode = true; 
 const DASHBOARD_URL = 'dashboard.html'; // The page to redirect to
 
+
 /**
- * Checks if a user is already logged in and redirects them.
- * This listener runs whenever the user's sign-in state changes.
+ * FIX: This function initializes Firebase and sets up listeners ONLY after 
+ * the 'firebase' object is guaranteed to exist.
  */
-auth.onAuthStateChanged(user => {
-    if (user) {
-        // User is signed in. Redirect to the dashboard.
-        window.location.replace(DASHBOARD_URL);
+function initializeAuthAndListeners() {
+    
+    // Safety check (should always pass if SDKs are loaded)
+    if (typeof firebase === 'undefined' || !firebase.initializeApp) {
+        // If not ready, wait a bit and try again (recursive timeout)
+        console.warn("Firebase SDK not yet loaded in auth.js. Retrying initialization in 100ms...");
+        setTimeout(initializeAuthAndListeners, 100);
+        return;
     }
-    // If no user, stay on the login page.
-});
+
+    try {
+        // Initialize Firebase (This is the line that was causing the original error)
+        app = firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        console.log("Firebase Auth initialized successfully.");
+        
+        // Setup the Auth state change listener (which redirects on success)
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // User is signed in. Redirect to the dashboard.
+                window.location.replace(DASHBOARD_URL);
+            }
+            // If no user, stay on the login page.
+        });
+        
+    } catch(error) {
+         console.error("Critical Error: Firebase Auth initialization failed.", error);
+         errorMessage.textContent = 'Critical Error: Firebase failed to initialize. Check console.';
+         return; // Stop further execution if initialization fails
+    }
+
+    
+    // Attach all event listeners now that 'auth' is defined
+    toggleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isLoginMode = !isLoginMode;
+        updateUI();
+    });
+
+    authForm.addEventListener('submit', handleFormSubmission);
+    
+    // Initial UI setup (which was at the end of the old file)
+    updateUI();
+}
 
 
 /**
@@ -61,20 +99,11 @@ function updateUI() {
     }
 }
 
-/**
- * Toggles between Login and Sign Up modes.
- */
-toggleLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    isLoginMode = !isLoginMode;
-    updateUI();
-});
-
 
 /**
  * Handles the submission of the form (Login or Sign Up).
  */
-authForm.addEventListener('submit', async (e) => {
+async function handleFormSubmission(e) {
     e.preventDefault();
     errorMessage.textContent = '';
     successMessage.style.display = 'none';
@@ -102,9 +131,7 @@ authForm.addEventListener('submit', async (e) => {
         try {
             await auth.createUserWithEmailAndPassword(email, password);
             
-            // Initialize user role (set default to 'student' in localStorage)
-            // This role will be accessed by dashboard.html
-            localStorage.setItem('userRole', 'student');
+            // Note: Dashboard now handles role creation in Firestore (loadUserRole)
             
             successMessage.innerHTML = `Account created! Redirecting to dashboard...`;
             successMessage.style.display = 'block';
@@ -117,7 +144,7 @@ authForm.addEventListener('submit', async (e) => {
             errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
         }
     }
-});
+}
 
 
 /**
@@ -143,5 +170,5 @@ function formatFirebaseError(code) {
     }
 }
 
-// Initial UI setup
-updateUI();
+// Start the initialization check after the DOM is ready
+document.addEventListener('DOMContentLoaded', initializeAuthAndListeners);
