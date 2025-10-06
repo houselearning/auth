@@ -8,8 +8,8 @@
     <script src="https://houselearning.github.io/cookiebanner.js"></script> 
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.9.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.9.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     
     <style>
         /* KHAN ACADEMY STYLE VARIABLES & RESET */
@@ -57,7 +57,7 @@
             color: var(--ka-blue-bright);
         }
 
-        /* Action Button Style */
+        /* Join Class Button Style (Applies to Teacher's 'Create Assignment' as well) */
         .action-button {
             background-color: var(--ka-blue-bright);
             color: white;
@@ -161,7 +161,7 @@
         /* FEATURE CARD STYLE */
         .feature-card {
             display: flex;
-            flex-direction: column; 
+            flex-direction: column; /* Allows content stacking */
             align-items: flex-start;
             padding: 20px;
             border-radius: 4px;
@@ -284,8 +284,8 @@
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
             
-            <button class="action-button" id="nav-action-button">
-                Action Placeholder
+            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
+                Join Class
             </button>
         </div>
     </nav>
@@ -334,109 +334,9 @@
         
         let currentUserId = null;
 
-        // ======================================================================
-        // 2. GLOBAL HANDLERS FOR BUTTON CLICKS
-        // ======================================================================
-        
-        // Placeholder for navigation-related features
-        const handleAction = (message) => alert(`Action: ${message} (Feature coming soon!)`);
-
-        /**
-         * Student: Handles the "Join Class" action, simulating class code input and joining.
-         */
-        async function handleJoinClass() {
-            if (!currentUserId) return alert("You must be logged in to join a class.");
-            
-            // Simulates asking for a class code
-            const classCode = prompt("Enter the Class Code (e.g., ABCD123):");
-            
-            if (!classCode || classCode.length !== 7) {
-                if (classCode) alert("Invalid class code format. Code must be 7 characters.");
-                return;
-            }
-
-            try {
-                // 1. Find the class based on the code
-                const classesRef = db.collection('classes').where('code', '==', classCode.toUpperCase()).limit(1);
-                const snapshot = await classesRef.get();
-
-                if (snapshot.empty) {
-                    alert(`Error: Class with code '${classCode.toUpperCase()}' not found.`);
-                    return;
-                }
-
-                const classDoc = snapshot.docs[0];
-                const classData = classDoc.data();
-                
-                // 2. SIMULATION of the action of joining the class
-                // A real app would update the class roster and the student's profile.
-                
-                alert(`Success! You have joined the class: ${classData.name} taught by Teacher ${classData.teacherId.slice(0, 4)}...`);
-                
-                // Although this doesn't visually update the class list (as it's a student view), 
-                // it signals the action was completed.
-                
-            } catch (error) {
-                console.error("Join Class Error:", error);
-                alert("An error occurred while trying to join the class. Please try again. Check your Firestore rules for 'classes'.");
-            }
-        }
-
-        /**
-         * Teacher: Handles the "Create Assignment" action.
-         */
-        async function handleCreateAssignment() {
-            if (!currentUserId) return;
-
-            // Simulates asking for assignment details
-            const title = prompt("Enter Assignment Title (e.g., 'Chapter 3 Quiz'):");
-            
-            if (!title) return;
-
-            const assignmentType = prompt("Enter Assignment Type ('quiz', 'video', or 'homework'):");
-            const dueDateStr = prompt("Enter Due Date (YYYY-MM-DD):");
-
-            // Simple date validation
-            const dueDate = dueDateStr ? new Date(dueDateStr) : null;
-            if (dueDateStr && (isNaN(dueDate.getTime()) || dueDate < new Date())) {
-                return alert("Invalid or past due date. Assignment not created.");
-            }
-
-            try {
-                // Check if the teacher has any classes (optional, but good UX)
-                const classesSnapshot = await db.collection('classes').where('teacherId', '==', currentUserId).get();
-                if (classesSnapshot.empty) {
-                    return alert("You must create a class before creating an assignment. Use the 'My Classes & Groups' section below.");
-                }
-                
-                // Creates a new document in the 'assignments' collection.
-                const newAssignment = {
-                    title: title,
-                    type: assignmentType || 'homework',
-                    teacherId: currentUserId,
-                    // Assigning to the teacher's UID for testing purposes so they see it 
-                    // when they switch to student role.
-                    studentId: currentUserId, 
-                    dueDate: dueDate ? firebase.firestore.Timestamp.fromDate(dueDate) : null,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'assigned'
-                };
-
-                await db.collection('assignments').add(newAssignment);
-
-                alert(`Assignment '${title}' created successfully!`);
-                
-                // Refresh the assignment list
-                loadAssignments(currentUserId); 
-
-            } catch (error) {
-                console.error("Create Assignment Error:", error);
-                alert("An error occurred while creating the assignment. Please check your Firestore rules for 'assignments'.");
-            }
-        }
 
         // ======================================================================
-        // 3. DASHBOARD RENDERING LOGIC
+        // 2. DASHBOARD RENDERING LOGIC
         // ======================================================================
 
         /**
@@ -450,10 +350,10 @@
             // 1. Update the main navigation button
             if (role === 'teacher') {
                  navActionButton.textContent = 'Create Assignment';
-                 navActionButton.onclick = handleCreateAssignment; // Functional
+                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
             } else {
                 navActionButton.textContent = 'Join Class';
-                navActionButton.onclick = handleJoinClass; // Functional
+                navActionButton.onclick = () => alert('Join Class functionality is not yet implemented.');
             }
 
             // 2. Render the dashboard body
@@ -482,35 +382,35 @@
 
                     <h2 class="section-title">📊 Progress & Mastery</h2>
                     <div class="feature-grid">
-                        <div class="feature-card highlight-progress" onclick="handleAction('Go to Full Progress Report Page')">
+                        <div class="feature-card highlight-progress">
                             <span class="icon">✅</span> View Full Progress Report / Grades
                         </div>
-                        <div class="feature-card" onclick="handleAction('Go to Badges and Achievements Page')">
+                        <div class="feature-card">
                             <span class="icon">🏆</span> My Badges & Energy Points
                         </div>
-                        <div class="feature-card" onclick="handleAction('Go to Course Catalog')">
+                        <div class="feature-card">
                             <span class="icon">🧭</span> Explore All Subjects & Courses
                         </div>
-                        <div class="feature-card" onclick="handleAction('Go to Course Enrollment Management')">
+                        <div class="feature-card">
                             <span class="icon">📌</span> Review Course Enrollment
                         </div>
                     </div>
 
                     <h2 class="section-title">🛠️ Tools & Account</h2>
                     <div class="feature-grid">
-                        <div class="feature-card" onclick="handleAction('Go to Profile & Settings Page')">
+                        <div class="feature-card">
                             <span class="icon">👤</span> Profile & Settings
                         </div>
-                        <div class="feature-card" onclick="handleAction('Open Help Center')">
+                        <div class="feature-card">
                             <span class="icon">❓</span> Help Center & Support
                         </div>
-                        <div class="feature-card" onclick="handleAction('Open Password Change Form')">
+                        <div class="feature-card">
                             <span class="icon">🔒</span> Change Password
                         </div>
-                        <div class="feature-card" onclick="handleAction('Open Notification Preferences')">
+                        <div class="feature-card">
                             <span class="icon">📣</span> Email & Notification Preferences
                         </div>
-                        <div class="feature-card" onclick="handleAction('Open Refer A Friend Form')">
+                        <div class="feature-card">
                             <span class="icon">🎁</span> Refer a Friend
                         </div>
                     </div>
@@ -541,27 +441,17 @@
 
                     <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
                     <div class="feature-grid">
-                        <div class="feature-card" onclick="handleAction('Go to All Students Roster')">
+                        <div class="feature-card">
                             <div class="card-header"><span class="icon">📋</span> View All Students</div>
                             <div class="card-meta">Access full roster and student accounts.</div>
                         </div>
-                        <div class="feature-card" onclick="handleAction('Go to Pending Student Requests Page')">
+                        <div class="feature-card">
                             <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
                             <div class="card-meta">0 students pending approval.</div>
                         </div>
-                        <div class="feature-card" onclick="handleAction('Go to Global Class Settings')">
+                        <div class="feature-card">
                             <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
                             <div class="card-meta">Change class codes, grading scales, and permissions.</div>
-                        </div>
-                    </div>
-                    
-                    <h2 class="section-title">🛠️ Tools & Account</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card" onclick="handleAction('Go to Teacher Profile & Settings Page')">
-                            <span class="icon">👤</span> Profile & Settings
-                        </div>
-                        <div class="feature-card" onclick="handleAction('Open Teacher Help Center')">
-                            <span class="icon">❓</span> Help Center & Support
                         </div>
                     </div>
                 `;
@@ -582,11 +472,12 @@
 
 
         // ======================================================================
-        // 4. FIREBASE DATA & ROLE MANAGEMENT
+        // 3. FIREBASE DATA & ROLE MANAGEMENT
         // ======================================================================
 
         /**
          * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
+         * @param {string} userId - The Firebase UID.
          */
         async function loadUserRole(userId) {
             const docRef = db.collection('user_profiles').doc(userId);
@@ -597,13 +488,14 @@
                 if (doc.exists) {
                     role = doc.data().role || 'student';
                 } else {
+                    // Initialize profile for new user
                     await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                 }
                 
                 renderDashboard(role);
 
             } catch (error) {
-                console.error("Error loading user role (Permission denied likely):", error);
+                console.error("Error loading user role:", error);
                 // Fallback to student view if Firestore read fails
                 renderDashboard('student');
                 loadAssignments(userId);
@@ -612,6 +504,7 @@
         
         /**
          * Saves the new role to Firestore and updates the UI.
+         * @param {string} newRole - 'student' or 'teacher'
          */
         async function saveNewRole(newRole) {
             if (!currentUserId) return;
@@ -624,7 +517,7 @@
                 renderDashboard(newRole);
             } catch (error) {
                 console.error("Error saving new role:", error);
-                alert('Could not save role change to database. Please check your Firestore rules.');
+                alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
             }
         }
 
@@ -643,7 +536,6 @@
             noAssignmentsMsg.style.display = 'none';
             assignmentGrid.innerHTML = ''; 
 
-            // Fetches assignments where the studentId matches the current user's UID
             const assignmentsRef = db.collection('assignments')
                                      .where('studentId', '==', userId)
                                      .orderBy('dueDate', 'asc'); 
@@ -664,7 +556,7 @@
                                         `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
                         
                         const cardHtml = `
-                            <div class="feature-card" onclick="handleAction('Open Assignment: ${title}')">
+                            <div class="feature-card">
                                 <div class="card-header"><span class="icon">${icon}</span> ${title}</div> 
                                 ${dueDate}
                             </div>
@@ -697,7 +589,7 @@
             classGrid.innerHTML = ''; 
             noClassesMsg.style.display = 'none';
 
-            // Fetches classes where the teacherId matches the current user's UID
+            // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
             const classesRef = db.collection('classes')
                                  .where('teacherId', '==', userId)
                                  .orderBy('name', 'asc'); 
@@ -716,7 +608,7 @@
                         const classCode = cls.code || 'N/A';
                         
                         const cardHtml = `
-                            <div class="feature-card" onclick="handleAction('Go to Class Detail: ${cls.name}')">
+                            <div class="feature-card">
                                 <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div> 
                                 <div class="card-meta">
                                     Students: ${studentCount} | Code: <strong>${classCode}</strong>
@@ -727,7 +619,7 @@
                     });
                     classGrid.style.display = 'grid'; 
                 } else {
-                    classGrid.style.display = 'grid'; 
+                    classGrid.style.display = 'grid'; // Keep the grid visible to show empty message
                     noClassesMsg.style.display = 'block'; 
                 }
             }, (error) => {
@@ -738,7 +630,7 @@
 
 
         // ======================================================================
-        // 5. EVENT LISTENERS & AUTH SETUP
+        // 4. EVENT LISTENERS
         // ======================================================================
         
         /**
@@ -748,7 +640,6 @@
             const logoutBtn = document.getElementById('logout-btn');
             const teacherRoleBtn = document.getElementById('teacher-role-btn');
             
-            // Logout
             if (logoutBtn) {
                 logoutBtn.onclick = async () => {
                     try {
@@ -759,7 +650,6 @@
                 };
             }
             
-            // Role Switch
             if (teacherRoleBtn) {
                 teacherRoleBtn.onclick = () => {
                     const targetRole = currentRole === 'student' ? 'teacher' : 'student';
