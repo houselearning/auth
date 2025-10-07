@@ -339,7 +339,7 @@
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
             
-            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
+            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality will open here!');">
                 Join Class
             </button>
         </div>
@@ -392,16 +392,20 @@
 
 
     <script>
-		// 🚨 IMPORTANT: This URL has been updated with the working deployment link you provided earlier.
-        // It must match the one that passed the direct browser test.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzisFWevXloCtuNvMed2b27uUQBLvQta3tAwnzrFGSU32gqIhVBZApyaA0vaF2h-q2Bmw/exec'; 
+		// 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
+        // (The one with the JSONP fix for doGet, and no setHeader call).
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1-fC3b699qgtovne2LJQiJ-8a-OOrRMkzcvTn4OYFyDvSkdHDIbVLRzP6CjIGkm5d2w/exec'; 
 
 // Function to generate a simple, 6-character, random join code
 function generateJoinCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// Function that runs when the 'Create Class' button is clicked
+// ======================================================================
+// 1. DATA INTERACTION FUNCTIONS (CORS FIXES APPLIED)
+// ======================================================================
+
+// Function that runs when the 'Create Class' button is clicked (POST request)
 async function createClass() {
     
   // --- 1. Gather Data ---
@@ -412,7 +416,6 @@ async function createClass() {
     return;
   }
   
-  // NOTE: You'll want to dynamically set this to the logged-in user's name
   const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
   const joinCode = generateJoinCode();
 
@@ -423,7 +426,7 @@ async function createClass() {
     code: joinCode
   };
 
-  // --- 2. Send Data to Apps Script ---
+  // --- 2. Send Data to Apps Script using FETCH (POST) ---
   try {
     const createButton = document.getElementById('createClassBtn');
     if (createButton) createButton.disabled = true;
@@ -436,7 +439,7 @@ async function createClass() {
     
     if (createButton) createButton.disabled = false;
 
-    // 🚨 CORS FIX: Read response as text, then manually parse as JSON
+    // 🔑 CORS FIX for POST: Read response as text, then manually parse as JSON
     const responseText = await response.text();
     const result = JSON.parse(responseText);
 
@@ -455,6 +458,78 @@ async function createClass() {
   }
 }
         
+// 🌟 TEACHER FEATURE: Fetch classes using JSONP (GET request)
+function loadClasses() {
+    const loadingMsg = document.getElementById('loading-classes');
+    if (loadingMsg) loadingMsg.style.display = 'block';
+
+    const callbackName = 'handleClassesResponse';
+    const url = `${SCRIPT_URL}?action=loadClasses&callback=${callbackName}`;
+    
+    // Create a new script tag (JSONP method)
+    const script = document.createElement('script');
+    script.src = url;
+    
+    // Append the script tag to the document head to execute the JSONP function
+    document.head.appendChild(script);
+
+    // Clean up the script tag after execution
+    script.onload = () => {
+        document.head.removeChild(script);
+        if (loadingMsg) loadingMsg.style.display = 'none';
+    };
+    script.onerror = () => {
+        if (loadingMsg) loadingMsg.style.display = 'none';
+        alert('Could not connect to the class data source using JSONP method.');
+    };
+}
+
+// 🔑 GLOBAL CALLBACK FUNCTION: Must be global to receive the JSONP data
+window.handleClassesResponse = function(result) {
+    if (result.status === 'success') {
+        // Filter classes to show only those created by the current user
+        const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
+        const teacherClasses = result.classes.filter(cls => cls.teacher === currentUserName);
+        renderClassList(teacherClasses);
+    } else {
+        alert("Error loading classes: " + result.message);
+    }
+};
+
+// 🌟 STUDENT FEATURE: Check join code against Google Sheet using JSONP (GET request)
+function joinClass(joinCode) {
+    if (!joinCode || joinCode.length !== 6) {
+        alert("Invalid 6-character join code format.");
+        return;
+    }
+
+    const callbackName = 'handleJoinCodeResponse';
+    const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode}&callback=${callbackName}`;
+
+    // Execute via script tag (JSONP method)
+    const script = document.createElement('script');
+    script.src = url;
+    document.head.appendChild(script);
+
+    script.onload = () => document.head.removeChild(script);
+    script.onerror = () => alert('A network error occurred while checking the join code.');
+}
+
+// 🔑 GLOBAL CALLBACK FUNCTION: For joinClass
+window.handleJoinCodeResponse = function(result) {
+    if (result.status === 'found') {
+        alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+    } else if (result.status === 'not_found') {
+        alert(`Sorry, the join code "${result.code}" was not found.`);
+    } else {
+        alert("Error joining class: " + result.message);
+    }
+};
+
+// ======================================================================
+// 2. DASHBOARD RENDERING LOGIC (NO CHANGES)
+// ======================================================================
+
 // Function to render the list of classes in the Teacher Dashboard
 function renderClassList(classes) {
     const classGrid = document.querySelector('.class-grid');
@@ -467,7 +542,6 @@ function renderClassList(classes) {
     
     if (classes.length > 0) {
         classes.forEach(cls => {
-            // Note: studentCount isn't coming from the sheet yet, use 0 as default
             const studentCount = 0; 
             const classCode = cls.code || 'N/A';
             
@@ -493,498 +567,405 @@ function renderClassList(classes) {
         card.onclick = () => alert(`Viewing Class: ${card.dataset.classId}`);
     });
 }
-
-// 🌟 TEACHER FEATURE: Fetch classes from Google Sheet
-async function loadClasses() {
-    const loadBtn = document.getElementById('loadClassesBtn');
-    const loadingMsg = document.getElementById('loading-classes');
-    
-    if (loadingMsg) loadingMsg.style.display = 'block';
-    if (loadBtn) loadBtn.disabled = true;
-
-    // NOTE: teacher is NOT filtered by the script, so we send no parameter
-    const url = `${SCRIPT_URL}?action=loadClasses`;
-
-    try {
-        const response = await fetch(url);
         
-        // 🚨 CORS FIX: Read response as text, then manually parse as JSON
-        const responseText = await response.text();
-        const result = JSON.parse(responseText);
+/**
+ * Renders the appropriate dashboard view (Student or Teacher)
+ * @param {string} role - 'student' or 'teacher'
+ */
+function renderDashboard(role) {
+    let content = '';
+    let header = '';
+    
+    // 1. Update the main navigation button
+    if (role === 'teacher') {
+         navActionButton.textContent = 'Create Assignment';
+         navActionButton.onclick = () => alert('Assignment creation form would open here!');
+    } else {
+        navActionButton.textContent = 'Join Class';
+        navActionButton.onclick = () => {
+            const joinCode = prompt("Enter the 6-character class join code:");
+            if (joinCode) {
+                joinClass(joinCode.toUpperCase());
+            }
+        };
+    }
 
-        if (loadingMsg) loadingMsg.style.display = 'none';
-        if (loadBtn) loadBtn.disabled = false;
+    // 2. Render the dashboard body
+    if (role === 'student') {
+         header = `
+            <div class="header-controls">
+                <h1>Your Learning Dashboard</h1>
+                <button id="logout-btn" class="logout-button">Sign Out</button>
+            </div>
+            <div class="role-switch">
+                <span>Current View:</span>
+                <span id="current-role" class="active-role">Student</span>
+                <button id="teacher-role-btn">Switch to Coach View</button>
+            </div>
+        `;
+        // Student View Content
+        content = `
+            <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+            <div id="loading-assignments" class="loading-message">
+                Loading your assignments...
+            </div>
+            <div class="feature-grid assignment-grid" style="display: none;"></div>
+            <div id="no-assignments-message" class="empty-state-message" style="display: none;">
+                🎉 Woohoo! No assignments here. Go explore!
+            </div>
 
-        if (result.status === 'success') {
-            // Filter classes to show only those created by the current user
-            const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
-            const teacherClasses = result.classes.filter(cls => cls.teacher === currentUserName);
-            renderClassList(teacherClasses);
+            <h2 class="section-title">📊 Progress & Mastery</h2>
+            <div class="feature-grid">
+                <div class="feature-card highlight-progress">
+                    <span class="icon">✅</span> View Full Progress Report / Grades
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🏆</span> My Badges & Energy Points
+                </div>
+                <div class="feature-card">
+                    <span class="icon">🧭</span> Explore All Subjects & Courses
+                </div>
+                <div class="feature-card">
+                    <span class="icon">📌</span> Review Course Enrollment
+                </div>
+            </div>
+
+            <h2 class="section-title">🛠️ Tools & Account</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">👤</span> Profile & Settings</div>
+                    <div class="card-meta">Manage your personal information.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">❓</span> Help Center & Support</div>
+                    <div class="card-meta">Get help with the platform.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">🔒</span> Change Password</div>
+                    <div class="card-meta">Secure your account.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">📣</span> Email & Notification Preferences</div>
+                    <div class="card-meta">Control platform communications.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">🎁</span> Refer a Friend</div>
+                    <div class="card-meta">Invite friends to join the platform.</div>
+                </div>
+            </div>
+        `;
+    } else if (role === 'teacher') {
+        header = `
+            <div class="header-controls">
+                <h1>Coach Dashboard</h1>
+                <button id="logout-btn" class="logout-button">Sign Out</button>
+            </div>
+            <div class="role-switch">
+                <span>Current View:</span>
+                <span id="current-role" class="active-role">Teacher</span>
+                <button id="teacher-role-btn">Switch to Student View</button>
+            </div>
+        `;
+        // Teacher View Content
+        content = `
+            <h2 class="section-title">📚 My Classes & Groups</h2>
+            <div id="loading-classes" class="loading-message">
+                Loading your classes...
+            </div>
+            <button id="createClassBtn" class="action-button">➕ Create New Class</button>
+            <button id="loadClassesBtn" class="action-button" style="background-color: #2980b9; margin-left: 10px;">View My Classes</button>
+
+            <div class="feature-grid class-grid">
+                </div>
+            <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                ✨ No classes found. Create one to get started!
+            </div>
+
+            <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">📋</span> View All Students</div>
+                    <div class="card-meta">Access full roster and student accounts.</div>
+                </div>
+                <div class="feature-card">
+                    <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+                    <div class="card-meta">0 students pending approval.</div>
+                </div>
+                <div class="feature-card" id="manage-settings-card">
+                    <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+                    <div class="card-meta">Change class codes, grading scales, and permissions.</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    dashboardContent.innerHTML = header + content;
+    
+    // Re-attach listeners and load dynamic data
+    if (currentUserId) {
+        attachDashboardListeners(role);
+        if (role === 'teacher') {
+            loadClasses();
+            const manageSettingsCard = document.getElementById('manage-settings-card');
+            if (manageSettingsCard) {
+                manageSettingsCard.onclick = () => {
+                    const firstClassCard = document.querySelector('.class-grid .feature-card');
+                    const defaultClassId = firstClassCard ? firstClassCard.dataset.classId : 'NO_CLASS_FOUND';
+                    
+                    if (defaultClassId !== 'NO_CLASS_FOUND') {
+                         openClassSettingsModal(defaultClassId);
+                    } else {
+                        alert("Please create a class first to manage its settings!");
+                    }
+                };
+            }
         } else {
-            alert("Error loading classes: " + result.message);
+            // loadAssignments(currentUserId);
         }
-    } catch (error) {
-        console.error('Fetch error:', error);
-        if (loadingMsg) loadingMsg.style.display = 'none';
-        if (loadBtn) loadBtn.disabled = false;
-        alert('Could not connect to the class data source.');
     }
 }
 
-// 🌟 STUDENT FEATURE: Check join code against Google Sheet
-async function joinClass(joinCode) {
-    if (!joinCode || joinCode.length !== 6) {
-        alert("Invalid 6-character join code format.");
+
+// ======================================================================
+// 3. FIREBASE INITIALIZATION & DATA MANAGEMENT (NO CHANGES)
+// ======================================================================
+
+// ⚠️ IMPORTANT: The config must match the one used in your auth.js
+const firebaseConfig = {
+    apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+    authDomain: "contract-center-llc-10.firebaseapp.com",
+    projectId: "contract-center-llc-10",
+    storageBucket: "contract-center-llc-10.firebasestorage.app",
+    messagingSenderId: "323221512767",
+    appId: "1:323221512767:web:6421260f875997dbf64e8a",
+};
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+// Note: Keeping Firestore access for User Profiles and Settings despite the $0 budget constraint, 
+// as the primary data (classes) is moved to Google Sheets.
+const db = firebase.firestore(); 
+
+// DOM Elements
+const dashboardContent = document.getElementById('dashboard-content');
+const roleSwitchModal = document.getElementById('role-switch-modal');
+const confirmSwitchBtn = document.getElementById('confirm-switch');
+const cancelSwitchBtn = document.getElementById('cancel-switch');
+const navActionButton = document.getElementById('nav-action-button');
+
+// NEW DOM Elements for Class Settings Modal
+const classSettingsModal = document.getElementById('class-settings-modal');
+const settingsClassName = document.getElementById('settings-class-name');
+const classNameInput = document.getElementById('class-name-input');
+const classCodeInput = document.getElementById('class-code-input');
+const masteryToggle = document.getElementById('mastery-challenge-toggle');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+
+let currentUserId = null;
+
+/**
+ * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
+ * @param {string} userId - The Firebase UID.
+ */
+async function loadUserRole(userId) {
+    const docRef = db.collection('user_profiles').doc(userId);
+    try {
+        const doc = await docRef.get();
+        let role = 'student';	
+
+        if (doc.exists) {
+            role = doc.data().role || 'student';
+        } else {
+            // Initialize profile for new user
+            await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+        
+        renderDashboard(role);
+
+    } catch (error) {
+        console.error("Error loading user role:", error);
+        renderDashboard('student');
+    }
+}
+
+/**
+ * Saves the new role to Firestore and updates the UI.
+ * @param {string} newRole - 'student' or 'teacher'
+ */
+async function saveNewRole(newRole) {
+    if (!currentUserId) return;
+    try {
+        await db.collection('user_profiles').doc(currentUserId).update({
+            role: newRole,
+            lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        roleSwitchModal.style.display = 'none';
+        renderDashboard(newRole);
+    } catch (error) {
+        console.error("Error saving new role:", error);
+        alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
+    }
+}
+        
+/**
+ * Fetches and displays the teacher's classes. (Just calls loadClasses now)
+ */
+function loadTeacherData(userId) {
+    loadClasses();
+}
+
+/**
+ * Opens the modal and populates the form with a class's current settings.
+ * NOTE: This currently relies on Firestore.
+ * @param {string} classId - The ID of the class to manage.
+ */
+async function openClassSettingsModal(classId) {
+    if (!classId || classId === 'NO_CLASS_FOUND') return;
+    
+    saveSettingsBtn.dataset.classId = classId;
+    
+    try {
+        const classDoc = await db.collection('classes').doc(classId).get();
+        if (!classDoc.exists) {
+            alert('Class not found!');
+            return;
+        }
+        
+        const data = classDoc.data();
+        
+        settingsClassName.textContent = data.name || 'Untitled Class';
+        classNameInput.value = data.name || '';
+        classCodeInput.value = data.code || '';
+        masteryToggle.checked = data.enableMasteryChallenges === true;
+        
+        classSettingsModal.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error fetching class settings:', error);
+        alert('An error occurred loading class settings.');
+    }
+}
+
+/**
+ * Saves the class settings back to Firestore.
+ * NOTE: This currently relies on Firestore.
+ */
+async function saveClassSettings() {
+    const classId = saveSettingsBtn.dataset.classId;
+    if (!classId) return;
+
+    const newName = classNameInput.value.trim();
+    const newCode = classCodeInput.value.trim();
+    const enableMastery = masteryToggle.checked;
+
+    if (newName.length < 3) {
+        alert('Class name must be at least 3 characters long.');
         return;
     }
-
-    const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode}`;
+    if (newCode.length !== 6) {
+        alert('Class code must be exactly 6 characters long.');
+        return;
+    }
+    
+    saveSettingsBtn.disabled = true;
+    saveSettingsBtn.textContent = 'Saving...';
 
     try {
-        const response = await fetch(url);
-        
-        // 🚨 CORS FIX: Read response as text, then manually parse as JSON
-        const responseText = await response.text();
-        const result = JSON.parse(responseText);
+        await db.collection('classes').doc(classId).update({
+            name: newName,
+            code: newCode.toUpperCase(),
+            enableMasteryChallenges: enableMastery,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        if (result.status === 'found') {
-            alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
-            
-        } else if (result.status === 'not_found') {
-            alert(`Sorry, the join code "${joinCode}" was not found.`);
-        } else {
-             alert("Error joining class: " + result.message);
-        }
+        alert(`Settings for "${newName}" saved successfully!`);
+        classSettingsModal.style.display = 'none';
+
     } catch (error) {
-        console.error('Fetch error:', error);
-        alert('Could not connect to the class data source.');
+        console.error('Error saving class settings:', error);
+        alert('Could not save settings. Ensure you have the necessary permissions.');
+    } finally {
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = 'Save Settings';
+    }
+}
+
+// ======================================================================
+// 4. EVENT LISTENERS
+// ======================================================================
+
+/**
+ * Attaches listeners to dynamically created elements.
+ */
+function attachDashboardListeners(currentRole) {
+    const logoutBtn = document.getElementById('logout-btn');
+    const teacherRoleBtn = document.getElementById('teacher-role-btn');
+    
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        };
+    }
+    
+    if (teacherRoleBtn) {
+        teacherRoleBtn.onclick = () => {
+            const targetRole = currentRole === 'student' ? 'teacher' : 'student';
+            
+            if (currentRole === 'student' && targetRole === 'teacher') {
+                roleSwitchModal.style.display = 'block';
+                confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
+                cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
+            } else {
+                saveNewRole(targetRole);
+            }
+        };
+    }
+
+    // --- TEACHER ROLE LISTENERS ---
+    if (currentRole === 'teacher') {
+        const createClassBtn = document.getElementById('createClassBtn');
+        const loadClassesBtn = document.getElementById('loadClassesBtn');
+
+        if (createClassBtn) {
+            createClassBtn.addEventListener('click', createClass);
+        }
+        
+        if (loadClassesBtn) {
+            loadClassesBtn.addEventListener('click', loadClasses);
+        }
+    }
+
+
+    // Listeners for the Class Settings Modal
+    if (saveSettingsBtn) {
+        saveSettingsBtn.onclick = saveClassSettings;
+    }
+    if (cancelSettingsBtn) {
+        cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
+    }
+    
+    // Close modal if user clicks outside of it
+    window.onclick = function(event) {
+        if (event.target == classSettingsModal) {
+            classSettingsModal.style.display = "none";
+        }
     }
 }
 
 
-        // ======================================================================
-        // 1. FIREBASE INITIALIZATION & SETUP
-        // ======================================================================
-        
-        // ⚠️ IMPORTANT: The config must match the one used in your auth.js
-        const firebaseConfig = {
-            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-            authDomain: "contract-center-llc-10.firebaseapp.com",
-            projectId: "contract-center-llc-10",
-            storageBucket: "contract-center-llc-10.firebasestorage.app",
-            messagingSenderId: "323221512767",
-            appId: "1:323221512767:web:6421260f875997dbf64e8a",
-        };
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore(); 
-        
-        // DOM Elements
-        const dashboardContent = document.getElementById('dashboard-content');
-        const roleSwitchModal = document.getElementById('role-switch-modal');
-        const confirmSwitchBtn = document.getElementById('confirm-switch');
-        const cancelSwitchBtn = document.getElementById('cancel-switch');
-        const navActionButton = document.getElementById('nav-action-button');
-        
-        // NEW DOM Elements for Class Settings Modal
-        const classSettingsModal = document.getElementById('class-settings-modal');
-        const settingsClassName = document.getElementById('settings-class-name');
-        const classNameInput = document.getElementById('class-name-input');
-        const classCodeInput = document.getElementById('class-code-input');
-        const masteryToggle = document.getElementById('mastery-challenge-toggle');
-        const saveSettingsBtn = document.getElementById('save-settings-btn');
-        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-
-        let currentUserId = null;
-
-
-        // ======================================================================
-        // 2. DASHBOARD RENDERING LOGIC
-        // ======================================================================
-
-        /**
-         * Renders the appropriate dashboard view (Student or Teacher)
-         * @param {string} role - 'student' or 'teacher'
-         */
-        function renderDashboard(role) {
-            let content = '';
-            let header = '';
-            
-            // 1. Update the main navigation button
-            if (role === 'teacher') {
-                 navActionButton.textContent = 'Create Assignment';
-                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
-            } else {
-                navActionButton.textContent = 'Join Class';
-                navActionButton.onclick = () => {
-                    const joinCode = prompt("Enter the 6-character class join code:");
-                    if (joinCode) {
-                        joinClass(joinCode.toUpperCase());
-                    }
-                };
-            }
-
-            // 2. Render the dashboard body
-            if (role === 'student') {
-                 header = `
-					<div class="header-controls">
-						<h1>Your Learning Dashboard</h1>
-						<button id="logout-btn" class="logout-button">Sign Out</button>
-					</div>
-					<div class="role-switch">
-						<span>Current View:</span>
-						<span id="current-role" class="active-role">Student</span>
-						<button id="teacher-role-btn">Switch to Coach View</button>
-					</div>
-				`;
-				// Student View Content
-				content = `
-					<h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
-					<div id="loading-assignments" class="loading-message">
-						Loading your assignments...
-					</div>
-					<div class="feature-grid assignment-grid" style="display: none;"></div>
-					<div id="no-assignments-message" class="empty-state-message" style="display: none;">
-						🎉 Woohoo! No assignments here. Go explore!
-					</div>
-
-					<h2 class="section-title">📊 Progress & Mastery</h2>
-					<div class="feature-grid">
-						<div class="feature-card highlight-progress">
-							<span class="icon">✅</span> View Full Progress Report / Grades
-						</div>
-						<div class="feature-card">
-							<span class="icon">🏆</span> My Badges & Energy Points
-						</div>
-						<div class="feature-card">
-							<span class="icon">🧭</span> Explore All Subjects & Courses
-						</div>
-						<div class="feature-card">
-							<span class="icon">📌</span> Review Course Enrollment
-						</div>
-					</div>
-
-					<h2 class="section-title">🛠️ Tools & Account</h2>
-					<div class="feature-grid">
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">👤</span> Profile & Settings</div>
-							<div class="card-meta">Manage your personal information.</div>
-						</div>
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">❓</span> Help Center & Support</div>
-							<div class="card-meta">Get help with the platform.</div>
-						</div>
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">🔒</span> Change Password</div>
-							<div class="card-meta">Secure your account.</div>
-						</div>
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">📣</span> Email & Notification Preferences</div>
-							<div class="card-meta">Control platform communications.</div>
-						</div>
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">🎁</span> Refer a Friend</div>
-							<div class="card-meta">Invite friends to join the platform.</div>
-						</div>
-					</div>
-				`;
-            } else if (role === 'teacher') {
-                header = `
-					<div class="header-controls">
-						<h1>Coach Dashboard</h1>
-						<button id="logout-btn" class="logout-button">Sign Out</button>
-					</div>
-					<div class="role-switch">
-						<span>Current View:</span>
-						<span id="current-role" class="active-role">Teacher</span>
-						<button id="teacher-role-btn">Switch to Student View</button>
-					</div>
-				`;
-				// Teacher View Content
-				content = `
-					<h2 class="section-title">📚 My Classes & Groups</h2>
-					<div id="loading-classes" class="loading-message">
-						Loading your classes...
-					</div>
-					<button id="createClassBtn" class="action-button">➕ Create New Class</button>
-					<button id="loadClassesBtn" class="action-button" style="background-color: #2980b9; margin-left: 10px;">View My Classes</button>
-
-					<div class="feature-grid class-grid">
-						</div>
-					<div id="no-classes-message" class="empty-state-message" style="display: none;">
-						✨ No classes found. Create one to get started!
-					</div>
-
-					<h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
-					<div class="feature-grid">
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">📋</span> View All Students</div>
-							<div class="card-meta">Access full roster and student accounts.</div>
-						</div>
-						<div class="feature-card">
-							<div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
-							<div class="card-meta">0 students pending approval.</div>
-						</div>
-						<div class="feature-card" id="manage-settings-card">
-							<div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
-							<div class="card-meta">Change class codes, grading scales, and permissions.</div>
-						</div>
-					</div>
-				`;
-            }
-            
-            dashboardContent.innerHTML = header + content;
-            
-            // Re-attach listeners and load dynamic data
-            if (currentUserId) {
-                attachDashboardListeners(role);
-                if (role === 'teacher') {
-                    // Start by trying to load classes if we are a teacher
-                    loadClasses();
-                    // Attach listener to the new card
-                    const manageSettingsCard = document.getElementById('manage-settings-card');
-                    if (manageSettingsCard) {
-                        manageSettingsCard.onclick = () => {
-                            // Since we have no selection logic, we'll try to get the ID of the first loaded class
-                            const firstClassCard = document.querySelector('.class-grid .feature-card');
-                            const defaultClassId = firstClassCard ? firstClassCard.dataset.classId : 'NO_CLASS_FOUND';
-                            
-                            if (defaultClassId !== 'NO_CLASS_FOUND') {
-                                 openClassSettingsModal(defaultClassId);
-                            } else {
-                                alert("Please create a class first to manage its settings!");
-                            }
-                        };
-                    }
-                } else {
-                    // loadAssignments(currentUserId);
-                }
-            }
-        }
-
-
-        // ======================================================================
-        // 3. FIREBASE DATA & ROLE MANAGEMENT
-        // ======================================================================
-
-        /**
-         * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
-         * @param {string} userId - The Firebase UID.
-         */
-        async function loadUserRole(userId) {
-            const docRef = db.collection('user_profiles').doc(userId);
-			try {
-				const doc = await docRef.get();
-				let role = 'student';	
-
-				if (doc.exists) {
-					role = doc.data().role || 'student';
-				} else {
-					// Initialize profile for new user
-					await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-				}
-				
-				renderDashboard(role);
-
-			} catch (error) {
-				console.error("Error loading user role:", error);
-				renderDashboard('student');
-			}
-        }
-        
-        /**
-         * Saves the new role to Firestore and updates the UI.
-         * @param {string} newRole - 'student' or 'teacher'
-         */
-        async function saveNewRole(newRole) {
-            if (!currentUserId) return;
-			try {
-				await db.collection('user_profiles').doc(currentUserId).update({
-					role: newRole,
-					lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
-				});
-				roleSwitchModal.style.display = 'none';
-				renderDashboard(newRole);
-			} catch (error) {
-				console.error("Error saving new role:", error);
-				alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
-			}
-        }
-
-        /**
-         * Fetches and displays assignments for the student.
-         */
-        function loadAssignments(userId) {
-            // Placeholder: Not using Firestore for this yet.
-        }
-        
-        /**
-         * Fetches and displays the teacher's classes.
-         */
-        function loadTeacherData(userId) {
-            // Placeholder: We now use the Google Sheet function 'loadClasses()' instead of Firestore.
-            loadClasses();
-        }
-        
-        // ======================================================================
-        // 4. CLASS SETTINGS FUNCTIONS
-        // ======================================================================
-
-        /**
-         * Opens the modal and populates the form with a class's current settings.
-         * @param {string} classId - The ID of the class to manage.
-         */
-        async function openClassSettingsModal(classId) {
-            if (!classId || classId === 'NO_CLASS_FOUND') return;
-            
-            // NOTE: This currently uses Firestore since the form is complex. 
-            // If you need to stay strictly $0 budget, this function needs to be rewritten 
-            // to fetch data from the Apps Script as well. For now, it's Firebase for settings.
-            
-            saveSettingsBtn.dataset.classId = classId;
-            
-            try {
-                const classDoc = await db.collection('classes').doc(classId).get();
-                if (!classDoc.exists) {
-                    alert('Class not found!');
-                    return;
-                }
-                
-                const data = classDoc.data();
-                
-                settingsClassName.textContent = data.name || 'Untitled Class';
-                classNameInput.value = data.name || '';
-                classCodeInput.value = data.code || '';
-                masteryToggle.checked = data.enableMasteryChallenges === true;
-                
-                classSettingsModal.style.display = 'block';
-                
-            } catch (error) {
-                console.error('Error fetching class settings:', error);
-                alert('An error occurred loading class settings.');
-            }
-        }
-
-        /**
-         * Saves the class settings back to Firestore.
-         */
-        async function saveClassSettings() {
-            // NOTE: This currently uses Firestore.
-            const classId = saveSettingsBtn.dataset.classId;
-            if (!classId) return;
-
-            const newName = classNameInput.value.trim();
-            const newCode = classCodeInput.value.trim();
-            const enableMastery = masteryToggle.checked;
-
-            if (newName.length < 3) {
-                alert('Class name must be at least 3 characters long.');
-                return;
-            }
-            if (newCode.length !== 6) {
-                alert('Class code must be exactly 6 characters long.');
-                return;
-            }
-            
-            saveSettingsBtn.disabled = true;
-            saveSettingsBtn.textContent = 'Saving...';
-
-            try {
-                await db.collection('classes').doc(classId).update({
-                    name: newName,
-                    code: newCode.toUpperCase(),
-                    enableMasteryChallenges: enableMastery,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert(`Settings for "${newName}" saved successfully!`);
-                classSettingsModal.style.display = 'none';
-
-            } catch (error) {
-                console.error('Error saving class settings:', error);
-                alert('Could not save settings. Ensure you have the necessary permissions.');
-            } finally {
-                saveSettingsBtn.disabled = false;
-                saveSettingsBtn.textContent = 'Save Settings';
-            }
-        }
-
-        // ======================================================================
-        // 5. EVENT LISTENERS
-        // ======================================================================
-        
-        /**
-         * Attaches listeners to dynamically created elements.
-         */
-        function attachDashboardListeners(currentRole) {
-            const logoutBtn = document.getElementById('logout-btn');
-            const teacherRoleBtn = document.getElementById('teacher-role-btn');
-            
-            if (logoutBtn) {
-                logoutBtn.onclick = async () => {
-                    try {
-                        await auth.signOut();
-                    } catch (error) {
-                        console.error("Logout Error:", error);
-                    }
-                };
-            }
-            
-            if (teacherRoleBtn) {
-                teacherRoleBtn.onclick = () => {
-                    const targetRole = currentRole === 'student' ? 'teacher' : 'student';
-                    
-                    if (currentRole === 'student' && targetRole === 'teacher') {
-                        roleSwitchModal.style.display = 'block';
-                        confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
-                        cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
-                    } else {
-                        saveNewRole(targetRole);
-                    }
-                };
-            }
-
-            // --- TEACHER ROLE LISTENERS ---
-            if (currentRole === 'teacher') {
-                const createClassBtn = document.getElementById('createClassBtn');
-                const loadClassesBtn = document.getElementById('loadClassesBtn');
-
-                if (createClassBtn) {
-                    createClassBtn.addEventListener('click', createClass);
-                }
-                
-                if (loadClassesBtn) {
-                    loadClassesBtn.addEventListener('click', loadClasses);
-                }
-            }
-
-
-            // Listeners for the Class Settings Modal
-            if (saveSettingsBtn) {
-                saveSettingsBtn.onclick = saveClassSettings;
-            }
-            if (cancelSettingsBtn) {
-                cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
-            }
-            
-            // Close modal if user clicks outside of it
-            window.onclick = function(event) {
-                if (event.target == classSettingsModal) {
-                    classSettingsModal.style.display = "none";
-                }
-            }
-        }
-
-
-        // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                window.location.replace('index.html');
-            } else {
-                currentUserId = user.uid;
-                loadUserRole(user.uid); 
-            }
-        });
+// --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        window.location.replace('index.html');
+    } else {
+        currentUserId = user.uid;
+        loadUserRole(user.uid); 
+    }
+});
     </script>
 </body>
 </html>
