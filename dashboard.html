@@ -572,7 +572,36 @@ async function loadUserRole(userId) {
         renderDashboard('student');
     }
 }
-
+/**
+ * Updates the user's role (teacher/student) in the Firebase Firestore database.
+ * @param {string} newRole The role to switch to ('teacher' or 'student').
+ */
+async function saveNewRole(newRole) {
+    // currentUserId is set by the auth.onAuthStateChanged listener
+    if (!currentUserId) {
+        console.error("Attempted to save role without a logged-in user ID.");
+        return;
+    }
+    
+    try {
+        // Use Firestore (db) to update the document in the 'user_profiles' collection
+        await db.collection('user_profiles').doc(currentUserId).update({
+            role: newRole,
+            lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Hide the modal after successful update
+        roleSwitchModal.style.display = 'none';
+        
+        // Rerender the dashboard with the new role view
+        renderDashboard(newRole);
+        
+    } catch (error) {
+        // Handle Firestore errors
+        console.error("Error saving new role (Firestore required for roles):", error);
+        alert('Could not save role change to database. Please check your Firestore rules.');
+    }
+}
 		
 function renderClassList(classes) {
     const classGrid = document.querySelector('.class-grid');
