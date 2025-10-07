@@ -392,6 +392,78 @@
 
 
     <script>
+		// 🚨 IMPORTANT: Replace this with the URL you copied after deploying your Apps Script.
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiyAtW_nwZ6iCaVPko8-Gg5YeQv644P5AC_3N2CdMlMBjn4ejtcKMeby-9CTWvifAl0Q/exec'; 
+
+// Function to generate a simple, 6-character, random join code
+function generateJoinCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// Function that runs when the 'Create Class' button is clicked
+async function createClass() {
+    
+  // --- 1. Gather Data ---
+  const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
+  
+  // Exit if the user cancels or enters nothing
+  if (!className || className.trim() === "") {
+    alert("Class creation cancelled.");
+    return;
+  }
+  
+  // For now, hardcode the teacher's name. You'd replace this
+  // with a variable containing the logged-in teacher's name.
+  const teacherName = "Mr. John Doe"; 
+  const joinCode = generateJoinCode();
+
+  const dataToSend = {
+    action: 'createClass',
+    name: className.trim(),
+    teacher: teacherName,
+    code: joinCode
+  };
+
+  // --- 2. Send Data to Apps Script ---
+  try {
+    // Send the data as a POST request to the Web App URL
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(dataToSend),
+      // Tell the script it's receiving JSON data
+      headers: {'Content-Type': 'application/json'}
+    });
+    
+    // Check if the script returned a success message
+    if (response.ok) {
+        // You should check the actual content for a 'success' status
+        // For simplicity, we'll assume a 200/OK response is a success here.
+        alert(`🎉 Success! Class "${className.trim()}" created and shared! 
+               \nTell your students to use Join Code: ${joinCode}`);
+        
+        // **Next Step:** You'd add code here to refresh your dashboard 
+        // list by calling a separate function to read the data from the Sheet.
+        
+    } else {
+        alert("🚨 Error: Failed to create class. Check the script deployment and URL.");
+    }
+    
+  } catch (error) {
+    console.error('Network or Fetch Error:', error);
+    alert('A connection error occurred. Check your network.');
+  }
+}
+
+// --- 3. Attach the Function to the Button ---
+document.addEventListener('DOMContentLoaded', () => {
+  const createButton = document.getElementById('createClassBtn');
+  
+  if (createButton) {
+      createButton.addEventListener('click', createClass);
+  } else {
+      console.error("Button with ID 'createClassBtn' not found.");
+  }
+});
         // ======================================================================
         // 1. FIREBASE INITIALIZATION & SETUP
         // ======================================================================
@@ -527,6 +599,7 @@
 					<div id="loading-classes" class="loading-message">
 						Loading your classes...
 					</div>
+					<button id="createClassBtn">➕ Create New Class</button>
 					<div class="feature-grid class-grid">
 						</div>
 					<div id="no-classes-message" class="empty-state-message" style="display: none;">
