@@ -19,6 +19,7 @@
             --ka-gray-light: #f7f7f7;
             --ka-text-color: #2e333b;
             --ka-accent-green: #008064; /* For progress/success */
+            --ka-red-error: #dc3545;
         }
         
         body {
@@ -233,7 +234,7 @@
             color: #888;
         }
         
-        /* MODAL STYLES (Confirmation Dialog) */
+        /* MODAL STYLES (Confirmation Dialog & Settings) */
         .modal {
             position: fixed;
             z-index: 1000;
@@ -252,9 +253,23 @@
             border: 1px solid #888;
             border-radius: 8px;
             width: 80%; 
-            max-width: 400px;
-            text-align: center;
+            max-width: 500px; /* Increased max-width for settings form */
+            text-align: left; /* Changed to left for form */
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h2 {
+            text-align: center;
+            color: var(--ka-blue-dark);
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-actions {
+            text-align: center; /* Center buttons */
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
         }
         .modal-actions button {
             padding: 10px 20px;
@@ -264,13 +279,53 @@
             cursor: pointer;
             font-weight: 600;
         }
-        #confirm-switch {
-            background-color: #dc3545; /* Red for warning */
+        #confirm-switch, #save-settings-btn {
+            background-color: var(--ka-accent-green); /* Use Green for Saving */
             color: white;
         }
-        #cancel-switch {
+        #cancel-switch, #cancel-settings-btn {
             background-color: #f0f0f0;
             color: var(--ka-text-color);
+        }
+        #confirm-switch {
+            background-color: var(--ka-red-error); /* Red for role warning */
+        }
+
+        /* Form-specific styles for the settings modal */
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            color: var(--ka-blue-dark);
+        }
+        .form-group input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.15s;
+        }
+        .form-group input[type="text"]:focus {
+            border-color: var(--ka-blue-bright);
+            outline: none;
+            box-shadow: 0 0 0 1px var(--ka-blue-bright);
+        }
+        .form-group .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        .form-group .checkbox-container input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
         }
     </style>
 </head>
@@ -305,6 +360,35 @@
         </div>
       </div>
     </div>
+    
+    <div id="class-settings-modal" class="modal">
+      <div class="modal-content">
+        <h2>⚙️ Class Settings: <span id="settings-class-name">Loading...</span></h2>
+        
+        <div class="form-group">
+            <label for="class-name-input">Class Name</label>
+            <input type="text" id="class-name-input" maxlength="50" placeholder="e.g., Algebra I - Period 3">
+        </div>
+        
+        <div class="form-group">
+            <label for="class-code-input">Class Code</label>
+            <input type="text" id="class-code-input" maxlength="6" placeholder="e.g., ABC123">
+        </div>
+        
+        <div class="form-group">
+            <label>Mastery & Grading</label>
+            <div class="checkbox-container">
+                <input type="checkbox" id="mastery-challenge-toggle">
+                <label for="mastery-challenge-toggle">Enable Mastery Challenges (Allow students to test out of units)</label>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button id="cancel-settings-btn">Cancel</button>
+            <button id="save-settings-btn" data-class-id="">Save Settings</button>
+        </div>
+      </div>
+    </div>
 
 
     <script>
@@ -332,6 +416,15 @@
         const cancelSwitchBtn = document.getElementById('cancel-switch');
         const navActionButton = document.getElementById('nav-action-button');
         
+        // NEW DOM Elements for Class Settings Modal
+        const classSettingsModal = document.getElementById('class-settings-modal');
+        const settingsClassName = document.getElementById('settings-class-name');
+        const classNameInput = document.getElementById('class-name-input');
+        const classCodeInput = document.getElementById('class-code-input');
+        const masteryToggle = document.getElementById('mastery-challenge-toggle');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+
         let currentUserId = null;
 
 
@@ -358,103 +451,104 @@
 
             // 2. Render the dashboard body
             if (role === 'student') {
-                header = `
-                    <div class="header-controls">
-                        <h1>Your Learning Dashboard</h1>
-                        <button id="logout-btn" class="logout-button">Sign Out</button>
-                    </div>
-                    <div class="role-switch">
-                        <span>Current View:</span>
-                        <span id="current-role" class="active-role">Student</span>
-                        <button id="teacher-role-btn">Switch to Coach View</button>
-                    </div>
-                `;
-                // Student View Content
-                content = `
-                    <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
-                    <div id="loading-assignments" class="loading-message">
-                        Loading your assignments...
-                    </div>
-                    <div class="feature-grid assignment-grid" style="display: none;"></div>
-                    <div id="no-assignments-message" class="empty-state-message" style="display: none;">
-                        🎉 Woohoo! No assignments here. Go explore!
-                    </div>
+                // ... (Student HTML content remains the same)
+                 header = `
+					<div class="header-controls">
+						<h1>Your Learning Dashboard</h1>
+						<button id="logout-btn" class="logout-button">Sign Out</button>
+					</div>
+					<div class="role-switch">
+						<span>Current View:</span>
+						<span id="current-role" class="active-role">Student</span>
+						<button id="teacher-role-btn">Switch to Coach View</button>
+					</div>
+				`;
+				// Student View Content
+				content = `
+					<h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+					<div id="loading-assignments" class="loading-message">
+						Loading your assignments...
+					</div>
+					<div class="feature-grid assignment-grid" style="display: none;"></div>
+					<div id="no-assignments-message" class="empty-state-message" style="display: none;">
+						🎉 Woohoo! No assignments here. Go explore!
+					</div>
 
-                    <h2 class="section-title">📊 Progress & Mastery</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card highlight-progress">
-                            <span class="icon">✅</span> View Full Progress Report / Grades
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">🏆</span> My Badges & Energy Points
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">🧭</span> Explore All Subjects & Courses
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">📌</span> Review Course Enrollment
-                        </div>
-                    </div>
+					<h2 class="section-title">📊 Progress & Mastery</h2>
+					<div class="feature-grid">
+						<div class="feature-card highlight-progress">
+							<span class="icon">✅</span> View Full Progress Report / Grades
+						</div>
+						<div class="feature-card">
+							<span class="icon">🏆</span> My Badges & Energy Points
+						</div>
+						<div class="feature-card">
+							<span class="icon">🧭</span> Explore All Subjects & Courses
+						</div>
+						<div class="feature-card">
+							<span class="icon">📌</span> Review Course Enrollment
+						</div>
+					</div>
 
-                    <h2 class="section-title">🛠️ Tools & Account</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <span class="icon">👤</span> Profile & Settings
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">❓</span> Help Center & Support
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">🔒</span> Change Password
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">📣</span> Email & Notification Preferences
-                        </div>
-                        <div class="feature-card">
-                            <span class="icon">🎁</span> Refer a Friend
-                        </div>
-                    </div>
-                `;
+					<h2 class="section-title">🛠️ Tools & Account</h2>
+					<div class="feature-grid">
+						<div class="feature-card">
+							<span class="icon">👤</span> Profile & Settings
+						</div>
+						<div class="feature-card">
+							<span class="icon">❓</span> Help Center & Support
+						</div>
+						<div class="feature-card">
+							<span class="icon">🔒</span> Change Password
+						</div>
+						<div class="feature-card">
+							<span class="icon">📣</span> Email & Notification Preferences
+						</div>
+						<div class="feature-card">
+							<span class="icon">🎁</span> Refer a Friend
+						</div>
+					</div>
+				`;
             } else if (role === 'teacher') {
                 header = `
-                    <div class="header-controls">
-                        <h1>Coach Dashboard</h1>
-                        <button id="logout-btn" class="logout-button">Sign Out</button>
-                    </div>
-                    <div class="role-switch">
-                        <span>Current View:</span>
-                        <span id="current-role" class="active-role">Teacher</span>
-                        <button id="teacher-role-btn">Switch to Student View</button>
-                    </div>
-                `;
-                // Teacher View Content
-                content = `
-                    <h2 class="section-title">📚 My Classes & Groups</h2>
-                    <div id="loading-classes" class="loading-message">
-                        Loading your classes...
-                    </div>
-                    <div class="feature-grid class-grid">
-                        </div>
-                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
-                        ✨ No classes found. Create one to get started!
-                    </div>
+					<div class="header-controls">
+						<h1>Coach Dashboard</h1>
+						<button id="logout-btn" class="logout-button">Sign Out</button>
+					</div>
+					<div class="role-switch">
+						<span>Current View:</span>
+						<span id="current-role" class="active-role">Teacher</span>
+						<button id="teacher-role-btn">Switch to Student View</button>
+					</div>
+				`;
+				// Teacher View Content
+				content = `
+					<h2 class="section-title">📚 My Classes & Groups</h2>
+					<div id="loading-classes" class="loading-message">
+						Loading your classes...
+					</div>
+					<div class="feature-grid class-grid">
+						</div>
+					<div id="no-classes-message" class="empty-state-message" style="display: none;">
+						✨ No classes found. Create one to get started!
+					</div>
 
-                    <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="card-header"><span class="icon">📋</span> View All Students</div>
-                            <div class="card-meta">Access full roster and student accounts.</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
-                            <div class="card-meta">0 students pending approval.</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
-                            <div class="card-meta">Change class codes, grading scales, and permissions.</div>
-                        </div>
-                    </div>
-                `;
+					<h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+					<div class="feature-grid">
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">📋</span> View All Students</div>
+							<div class="card-meta">Access full roster and student accounts.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+							<div class="card-meta">0 students pending approval.</div>
+						</div>
+						<div class="feature-card" id="manage-settings-card">
+							<div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+							<div class="card-meta">Change class codes, grading scales, and permissions.</div>
+						</div>
+					</div>
+				`;
             }
             
             dashboardContent.innerHTML = header + content;
@@ -464,6 +558,19 @@
                 attachDashboardListeners(role);
                 if (role === 'teacher') {
                     loadTeacherData(currentUserId);
+                    // NEW: Attach listener to the new card immediately
+                    document.getElementById('manage-settings-card').onclick = () => {
+                        // ⚠️ NOTE: Since there's no class selector, we use the ID of the first loaded class or a placeholder.
+                        // We'll use a placeholder 'defaultClassId' for this demo.
+                        const classCards = document.querySelectorAll('.class-grid .feature-card');
+                        const defaultClassId = classCards.length > 0 ? classCards[0].dataset.classId : 'NO_CLASS_FOUND';
+                        
+                        if (defaultClassId !== 'NO_CLASS_FOUND') {
+                             openClassSettingsModal(defaultClassId);
+                        } else {
+                            alert("Please create a class first to manage its settings!");
+                        }
+                    };
                 } else {
                     loadAssignments(currentUserId);
                 }
@@ -480,26 +587,27 @@
          * @param {string} userId - The Firebase UID.
          */
         async function loadUserRole(userId) {
+            // ... (loadUserRole function remains the same)
             const docRef = db.collection('user_profiles').doc(userId);
-            try {
-                const doc = await docRef.get();
-                let role = 'student'; 
+			try {
+				const doc = await docRef.get();
+				let role = 'student';	
 
-                if (doc.exists) {
-                    role = doc.data().role || 'student';
-                } else {
-                    // Initialize profile for new user
-                    await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                }
-                
-                renderDashboard(role);
+				if (doc.exists) {
+					role = doc.data().role || 'student';
+				} else {
+					// Initialize profile for new user
+					await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+				}
+				
+				renderDashboard(role);
 
-            } catch (error) {
-                console.error("Error loading user role:", error);
-                // Fallback to student view if Firestore read fails
-                renderDashboard('student');
-                loadAssignments(userId);
-            }
+			} catch (error) {
+				console.error("Error loading user role:", error);
+				// Fallback to student view if Firestore read fails
+				renderDashboard('student');
+				loadAssignments(userId);
+			}
         }
         
         /**
@@ -507,72 +615,74 @@
          * @param {string} newRole - 'student' or 'teacher'
          */
         async function saveNewRole(newRole) {
+            // ... (saveNewRole function remains the same)
             if (!currentUserId) return;
-            try {
-                await db.collection('user_profiles').doc(currentUserId).update({
-                    role: newRole,
-                    lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                roleSwitchModal.style.display = 'none';
-                renderDashboard(newRole);
-            } catch (error) {
-                console.error("Error saving new role:", error);
-                alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
-            }
+			try {
+				await db.collection('user_profiles').doc(currentUserId).update({
+					role: newRole,
+					lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+				});
+				roleSwitchModal.style.display = 'none';
+				renderDashboard(newRole);
+			} catch (error) {
+				console.error("Error saving new role:", error);
+				alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
+			}
         }
 
         /**
          * Fetches and displays assignments for the student.
          */
         function loadAssignments(userId) {
+            // ... (loadAssignments function remains the same)
             const assignmentGrid = document.querySelector('.assignment-grid');
-            const noAssignmentsMsg = document.getElementById('no-assignments-message');
-            const loadingMsg = document.getElementById('loading-assignments');
-            
-            if (!assignmentGrid || !loadingMsg) return;
+			const noAssignmentsMsg = document.getElementById('no-assignments-message');
+			const loadingMsg = document.getElementById('loading-assignments');
+			
+			if (!assignmentGrid || !loadingMsg) return;
 
-            loadingMsg.style.display = 'block';
-            assignmentGrid.style.display = 'none';
-            noAssignmentsMsg.style.display = 'none';
-            assignmentGrid.innerHTML = ''; 
+			loadingMsg.style.display = 'block';
+			assignmentGrid.style.display = 'none';
+			noAssignmentsMsg.style.display = 'none';
+			assignmentGrid.innerHTML = '';	
 
-            const assignmentsRef = db.collection('assignments')
-                                     .where('studentId', '==', userId)
-                                     .orderBy('dueDate', 'asc'); 
+			const assignmentsRef = db.collection('assignments')
+										.where('studentId', '==', userId)
+										.orderBy('dueDate', 'asc');	
 
-            assignmentsRef.onSnapshot((snapshot) => {
-                assignmentGrid.innerHTML = ''; 
-                const assignments = [];
+			assignmentsRef.onSnapshot((snapshot) => {
+				assignmentGrid.innerHTML = '';	
+				const assignments = [];
 
-                snapshot.forEach(doc => assignments.push({ id: doc.id, ...doc.data() }));
-                
-                loadingMsg.style.display = 'none'; 
+				snapshot.forEach(doc => assignments.push({ id: doc.id, ...doc.data() }));
+				
+				loadingMsg.style.display = 'none';	
 
-                if (assignments.length > 0) {
-                    assignments.forEach(assignment => {
-                        const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝'; 
-                        const title = assignment.title || 'Untitled Assignment';
-                        const dueDate = assignment.dueDate && assignment.dueDate.seconds ? 
-                                        `<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
-                        
-                        const cardHtml = `
-                            <div class="feature-card">
-                                <div class="card-header"><span class="icon">${icon}</span> ${title}</div> 
-                                ${dueDate}
-                            </div>
-                        `;
-                        assignmentGrid.innerHTML += cardHtml;
-                    });
-                    assignmentGrid.style.display = 'grid'; 
-                    noAssignmentsMsg.style.display = 'none'; 
-                } else {
-                    assignmentGrid.style.display = 'none'; 
-                    noAssignmentsMsg.style.display = 'block'; 
-                }
-            }, (error) => {
-                console.error("Error loading assignments: ", error);
-                loadingMsg.textContent = "Error loading data. Please refresh.";
-            });
+				if (assignments.length > 0) {
+					assignments.forEach(assignment => {
+						const icon = assignment.type === 'quiz' ? '🎯' : assignment.type === 'video' ? '📽️' : '📝';	
+						const title = assignment.title || 'Untitled Assignment';
+						const dueDate = assignment.dueDate && assignment.dueDate.seconds ?	
+											`<div class="card-meta">Due: ${new Date(assignment.dueDate.seconds * 1000).toLocaleDateString()}</div>` : '';
+						
+						const cardHtml = `
+							<div class="feature-card">
+								<div class="card-header"><span class="icon">${icon}</span> ${title}</div>	
+								${dueDate}
+							</div>
+						`;
+						assignmentGrid.innerHTML += cardHtml;
+					});
+					assignmentGrid.style.display = 'grid';	
+					noAssignmentsMsg.style.display = 'none';	
+				} else {
+					assignmentGrid.style.display = 'none';	
+					noAssignmentsMsg.style.display = 'block';	
+				}
+			}, (error) => {
+				console.error("Error loading assignments: ", error);
+				loadingMsg.textContent = "Error loading data. Please refresh.";
+			});
         }
         
         /**
@@ -580,57 +690,147 @@
          */
         function loadTeacherData(userId) {
             const classGrid = document.querySelector('.class-grid');
-            const noClassesMsg = document.getElementById('no-classes-message');
-            const loadingMsg = document.getElementById('loading-classes');
+			const noClassesMsg = document.getElementById('no-classes-message');
+			const loadingMsg = document.getElementById('loading-classes');
+			
+			if (!classGrid || !loadingMsg) return;
+
+			loadingMsg.style.display = 'block';
+			classGrid.innerHTML = '';	
+			noClassesMsg.style.display = 'none';
+
+			// ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
+			const classesRef = db.collection('classes')
+								 .where('teacherId', '==', userId)
+								 .orderBy('name', 'asc');	
+
+			// Use onSnapshot for real-time updates
+			classesRef.onSnapshot((snapshot) => {
+				classGrid.innerHTML = '';	
+				const classes = [];
+
+				snapshot.forEach(doc => classes.push({ id: doc.id, ...doc.data() }));
+				
+				loadingMsg.style.display = 'none';	
+
+				if (classes.length > 0) {
+					classes.forEach(cls => {
+						const studentCount = cls.studentCount !== undefined ? cls.studentCount : '...';
+						const classCode = cls.code || 'N/A';
+						
+						// Add a data-class-id attribute for reference
+						const cardHtml = `
+							<div class="feature-card" data-class-id="${cls.id}"> 
+								<div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
+								<div class="card-meta">
+									Students: ${studentCount} | Code: <strong>${classCode}</strong>
+								</div>
+							</div>
+						`;
+						classGrid.innerHTML += cardHtml;
+					});
+					classGrid.style.display = 'grid';	
+					noClassesMsg.style.display = 'none';	
+				} else {
+					classGrid.style.display = 'grid'; 
+					noClassesMsg.style.display = 'block';	
+				}
+
+                 // Attach listener to each dynamically created class card
+                 document.querySelectorAll('.class-grid .feature-card').forEach(card => {
+                    card.onclick = () => openClassSettingsModal(card.dataset.classId);
+                 });
+
+
+			}, (error) => {
+				console.error("Error loading classes: ", error);
+				loadingMsg.textContent = "Error loading classes. Please check your Firestore rules.";
+			});
+        }
+        
+        // ======================================================================
+        // 4. CLASS SETTINGS FUNCTIONS (NEW)
+        // ======================================================================
+
+        /**
+         * Opens the modal and populates the form with a class's current settings.
+         * @param {string} classId - The ID of the class to manage.
+         */
+        async function openClassSettingsModal(classId) {
+            if (!classId || classId === 'NO_CLASS_FOUND') return;
             
-            if (!classGrid || !loadingMsg) return;
-
-            loadingMsg.style.display = 'block';
-            classGrid.innerHTML = ''; 
-            noClassesMsg.style.display = 'none';
-
-            // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
-            const classesRef = db.collection('classes')
-                                 .where('teacherId', '==', userId)
-                                 .orderBy('name', 'asc'); 
-
-            classesRef.onSnapshot((snapshot) => {
-                classGrid.innerHTML = ''; 
-                const classes = [];
-
-                snapshot.forEach(doc => classes.push({ id: doc.id, ...doc.data() }));
-                
-                loadingMsg.style.display = 'none'; 
-
-                if (classes.length > 0) {
-                    classes.forEach(cls => {
-                        const studentCount = cls.studentCount !== undefined ? cls.studentCount : '...';
-                        const classCode = cls.code || 'N/A';
-                        
-                        const cardHtml = `
-                            <div class="feature-card">
-                                <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div> 
-                                <div class="card-meta">
-                                    Students: ${studentCount} | Code: <strong>${classCode}</strong>
-                                </div>
-                            </div>
-                        `;
-                        classGrid.innerHTML += cardHtml;
-                    });
-                    classGrid.style.display = 'grid'; 
-                } else {
-                    classGrid.style.display = 'grid'; // Keep the grid visible to show empty message
-                    noClassesMsg.style.display = 'block'; 
+            // Set the class ID on the save button for later use
+            saveSettingsBtn.dataset.classId = classId;
+            
+            try {
+                const classDoc = await db.collection('classes').doc(classId).get();
+                if (!classDoc.exists) {
+                    alert('Class not found!');
+                    return;
                 }
-            }, (error) => {
-                console.error("Error loading classes: ", error);
-                loadingMsg.textContent = "Error loading classes. Please check your Firestore rules.";
-            });
+                
+                const data = classDoc.data();
+                
+                // Populate the modal fields
+                settingsClassName.textContent = data.name || 'Untitled Class';
+                classNameInput.value = data.name || '';
+                classCodeInput.value = data.code || '';
+                masteryToggle.checked = data.enableMasteryChallenges === true;
+                
+                classSettingsModal.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error fetching class settings:', error);
+                alert('An error occurred loading class settings.');
+            }
         }
 
+        /**
+         * Saves the class settings back to Firestore.
+         */
+        async function saveClassSettings() {
+            const classId = saveSettingsBtn.dataset.classId;
+            if (!classId) return;
+
+            const newName = classNameInput.value.trim();
+            const newCode = classCodeInput.value.trim();
+            const enableMastery = masteryToggle.checked;
+
+            if (newName.length < 3) {
+                alert('Class name must be at least 3 characters long.');
+                return;
+            }
+            if (newCode.length !== 6) {
+                alert('Class code must be exactly 6 characters long.');
+                return;
+            }
+            
+            saveSettingsBtn.disabled = true;
+            saveSettingsBtn.textContent = 'Saving...';
+
+            try {
+                // Update the class document in Firestore
+                await db.collection('classes').doc(classId).update({
+                    name: newName,
+                    code: newCode.toUpperCase(), // Store code in uppercase for consistency
+                    enableMasteryChallenges: enableMastery,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Settings for "${newName}" saved successfully!`);
+                classSettingsModal.style.display = 'none';
+
+            } catch (error) {
+                console.error('Error saving class settings:', error);
+                alert('Could not save settings. Ensure you have the necessary permissions.');
+            } finally {
+                saveSettingsBtn.disabled = false;
+                saveSettingsBtn.textContent = 'Save Settings';
+            }
+        }
 
         // ======================================================================
-        // 4. EVENT LISTENERS
+        // 5. EVENT LISTENERS
         // ======================================================================
         
         /**
@@ -664,6 +864,21 @@
                         saveNewRole(targetRole);
                     }
                 };
+            }
+
+            // NEW: Listeners for the Class Settings Modal
+            if (saveSettingsBtn) {
+                saveSettingsBtn.onclick = saveClassSettings;
+            }
+            if (cancelSettingsBtn) {
+                cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
+            }
+            
+            // Close modal if user clicks outside of it
+            window.onclick = function(event) {
+                if (event.target == classSettingsModal) {
+                    classSettingsModal.style.display = "none";
+                }
             }
         }
 
