@@ -253,8 +253,8 @@
             border: 1px solid #888;
             border-radius: 8px;
             width: 80%; 
-            max-width: 500px; /* Increased max-width for settings form */
-            text-align: left; /* Changed to left for form */
+            max-width: 500px; 
+            text-align: left; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         .modal-content h2 {
@@ -266,7 +266,7 @@
             margin-bottom: 20px;
         }
         .modal-actions {
-            text-align: center; /* Center buttons */
+            text-align: center; 
             margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid #eee;
@@ -280,7 +280,7 @@
             font-weight: 600;
         }
         #confirm-switch, #save-settings-btn {
-            background-color: var(--ka-accent-green); /* Use Green for Saving */
+            background-color: var(--ka-accent-green); 
             color: white;
         }
         #cancel-switch, #cancel-settings-btn {
@@ -288,7 +288,7 @@
             color: var(--ka-text-color);
         }
         #confirm-switch {
-            background-color: var(--ka-red-error); /* Red for role warning */
+            background-color: var(--ka-red-error); 
         }
 
         /* Form-specific styles for the settings modal */
@@ -327,6 +327,21 @@
             width: 16px;
             height: 16px;
         }
+        
+        #createClassBtn {
+            background-color: var(--ka-accent-green);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: background-color 0.1s;
+        }
+        #createClassBtn:hover {
+            background-color: #006b51; 
+        }
     </style>
 </head>
 <body>
@@ -339,7 +354,7 @@
                 <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
             </div>
             
-            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality will open here!');">
+            <button class="action-button" id="nav-action-button">
                 Join Class
             </button>
         </div>
@@ -395,7 +410,7 @@
 
     <script>
 		// 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1-fC3b699qgtovne2LJQiJ-8a-OOrRMkzcvTn4OYFyDvSkdHDIbVLRzP6CjIGkm5d2w/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfhTusE-EAVVR-wvzMeAn3dT8AT1WuqhRr3UyNrMkvcRcSilABip-bhmWdknKOZKAm/exec'; 
 
 // Function to generate a simple, 6-character, random join code
 function generateJoinCode() {
@@ -403,35 +418,34 @@ function generateJoinCode() {
 }
 
 // ======================================================================
-// 1. DATA INTERACTION FUNCTIONS (CORS FIXES APPLIED)
+// 1. DATA INTERACTION FUNCTIONS (FINAL CORS FIXES)
 // ======================================================================
 
-// 🚨 FINAL FIX: Function to handle the result of the hidden POST form submission
+// 🚨 POST FIX: Function to handle the result of the hidden POST form submission
 window.handlePostResponse = function() {
     const iframe = document.getElementById('hidden_iframe');
     const createButton = document.getElementById('createClassBtn');
-
-    if (iframe.src === 'about:blank') return; // Ignore initial load
-    if (createButton) createButton.disabled = false;
-
-    // Use a try/catch to gracefully handle the fact that we can't read the iframe content (due to CORS!)
-    try {
-        // We can't read the content, so we just assume success if no connection error occurred.
-        // The script successfully executed if we reach this point.
-        alert("🎉 Success! Class created and shared!");
-        loadTeacherData(auth.currentUser.uid); // Refresh the list
-        
-    } catch (e) {
-        // If an exception occurs (e.g., a real network failure)
-        alert('A connection error occurred during class creation. Please check the Apps Script execution log for errors.');
+    
+    // 1. FIX: Prevents the "success" alert on initial page load
+    if (iframe.src === 'about:blank' || !iframe.src || iframe.contentDocument.location.href === 'about:blank') {
+         if (createButton) createButton.disabled = false;
+         // We must manually load 'about:blank' after a submission to prevent accidental re-firing
+         // but on initial load, we just exit.
+         return; 
     }
     
-    // Clean up to prevent duplicate submissions
+    // The iframe has loaded the Apps Script response, indicating the POST succeeded (CORS is bypassed)
+    if (createButton) createButton.disabled = false;
+    
+    alert("🎉 Success! Class created and shared!");
+    loadClasses(); // Refresh the list by calling the JSONP function
+    
+    // Reset the iframe's source to prevent re-triggering this handler
     iframe.src = 'about:blank';
 }
 
 
-// 🚨 FINAL FIX: Function that runs when the 'Create Class' button is clicked (POST request)
+// 🚨 POST FIX: Class creation using the Iframe/Form POST method
 function createClass() {
     
   // --- 1. Gather Data ---
@@ -442,50 +456,59 @@ function createClass() {
     return;
   }
   
+  // Use the logged-in user's email prefix as the teacher name
   const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
   const joinCode = generateJoinCode();
 
   const createButton = document.getElementById('createClassBtn');
   if (createButton) createButton.disabled = true;
+  createButton.textContent = 'Creating...';
 
   // --- 2. Create and Submit Hidden Form ---
   const form = document.createElement('form');
   form.action = SCRIPT_URL;
   form.method = 'POST';
-  form.target = 'hidden_iframe'; // Target the hidden iframe
+  form.target = 'hidden_iframe'; // CRITICAL: Targets the iframe
   form.style.display = 'none';
 
-  // The Apps Script expects a JSON object, so we send the data as a single payload field
-  const dataToSend = {
-    action: 'createClass',
-    name: className.trim(),
-    teacher: teacherName,
-    code: joinCode
-  };
+  // Create input fields for the doPost function to read
+  
+  const actionInput = document.createElement('input');
+  actionInput.type = 'hidden'; actionInput.name = 'action'; actionInput.value = 'createClass';
+  form.appendChild(actionInput);
+  
+  // Send the required parameters to the Apps Script doPost(e) function
+  const nameInput = document.createElement('input');
+  nameInput.type = 'hidden'; nameInput.name = 'name'; nameInput.value = className.trim();
+  form.appendChild(nameInput);
 
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'postData'; // The name of the field is irrelevant, but must exist
-  // We stringify the entire payload and put it in the value
-  input.value = JSON.stringify(dataToSend); 
+  const teacherInput = document.createElement('input');
+  teacherInput.type = 'hidden'; teacherInput.name = 'teacher'; teacherInput.value = teacherName;
+  form.appendChild(teacherInput);
+  
+  const codeInput = document.createElement('input');
+  codeInput.type = 'hidden'; codeInput.name = 'code'; codeInput.value = joinCode;
+  form.appendChild(codeInput);
 
-  form.appendChild(input);
   document.body.appendChild(form);
 
   // Submit the form
   form.submit();
   
-  // Clean up the form element
+  // Clean up the form element (it has already been submitted)
   document.body.removeChild(form);
 }
         
-// 🌟 TEACHER FEATURE: Fetch classes using JSONP (GET request)
+// 🌟 GET FIX: Fetch classes using JSONP (GET request to Apps Script)
 function loadClasses() {
     const loadingMsg = document.getElementById('loading-classes');
     if (loadingMsg) loadingMsg.style.display = 'block';
 
+    const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
     const callbackName = 'handleClassesResponse';
-    const url = `${SCRIPT_URL}?action=loadClasses&callback=${callbackName}`;
+    
+    // The Apps Script doGet must filter by this teacher parameter
+    const url = `${SCRIPT_URL}?action=loadClasses&teacher=${currentUserName}&callback=${callbackName}`;
     
     // Create a new script tag (JSONP method)
     const script = document.createElement('script');
@@ -498,16 +521,17 @@ function loadClasses() {
     };
     script.onerror = () => {
         if (loadingMsg) loadingMsg.style.display = 'none';
-        alert('Could not connect to the class data source using JSONP method.');
+        alert('Could not connect to the class data source. Check your Apps Script execution log.');
     };
 }
 
 // 🔑 GLOBAL CALLBACK FUNCTION: Must be global to receive the JSONP data
 window.handleClassesResponse = function(result) {
+    const loadingMsg = document.getElementById('loading-classes');
+    if (loadingMsg) loadingMsg.style.display = 'none';
+    
     if (result.status === 'success') {
-        const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
-        const teacherClasses = result.classes.filter(cls => cls.teacher === currentUserName);
-        renderClassList(teacherClasses);
+        renderClassList(result.classes);
     } else {
         alert("Error loading classes: " + result.message);
     }
@@ -544,26 +568,26 @@ window.handleJoinCodeResponse = function(result) {
 };
 
 // ======================================================================
-// 2. DASHBOARD RENDERING LOGIC (Previous content - no changes)
+// 2. DASHBOARD RENDERING LOGIC
 // ======================================================================
 
-// Function to render the list of classes in the Teacher Dashboard
 function renderClassList(classes) {
     const classGrid = document.querySelector('.class-grid');
     const noClassesMsg = document.getElementById('no-classes-message');
-    const loadingMsg = document.getElementById('loading-classes');
     
-    if (!classGrid || !loadingMsg) return;
+    if (!classGrid) return;
 
     classGrid.innerHTML = '';
     
     if (classes.length > 0) {
         classes.forEach(cls => {
-            const studentCount = 0; 
+            // NOTE: Student count and class ID are placeholders as data now comes from Sheet
+            const studentCount = 'N/A'; 
             const classCode = cls.code || 'N/A';
+            const classId = cls.code; // Use the code as a temporary ID
             
             const cardHtml = `
-                <div class="feature-card" data-class-id="${cls.code}"> 
+                <div class="feature-card" data-class-id="${classId}"> 
                     <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
                     <div class="card-meta">
                         Students: ${studentCount} | Code: <strong>${classCode}</strong>
@@ -616,7 +640,7 @@ function renderDashboard(role) {
         content = `
             <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
             <div id="loading-assignments" class="loading-message">
-                Loading your assignments...
+                Loading your assignments... (Using Demo Data)
             </div>
             <div class="feature-grid assignment-grid" style="display: none;"></div>
             <div id="no-assignments-message" class="empty-state-message" style="display: none;">
@@ -680,9 +704,7 @@ function renderDashboard(role) {
             <div id="loading-classes" class="loading-message">
                 Loading your classes...
             </div>
-            <button id="createClassBtn" class="action-button">➕ Create New Class</button>
-            <button id="loadClassesBtn" class="action-button" style="background-color: #2980b9; margin-left: 10px;">View My Classes</button>
-
+            <button id="createClassBtn">➕ Create New Class</button>
             <div class="feature-grid class-grid">
                 </div>
             <div id="no-classes-message" class="empty-state-message" style="display: none;">
@@ -712,18 +734,12 @@ function renderDashboard(role) {
     if (currentUserId) {
         attachDashboardListeners(role);
         if (role === 'teacher') {
-            loadClasses();
+            loadTeacherData(currentUserId);
             const manageSettingsCard = document.getElementById('manage-settings-card');
             if (manageSettingsCard) {
+                // NOTE: Class settings logic requires Firestore, so this is now an alert placeholder
                 manageSettingsCard.onclick = () => {
-                    const firstClassCard = document.querySelector('.class-grid .feature-card');
-                    const defaultClassId = firstClassCard ? firstClassCard.dataset.classId : 'NO_CLASS_FOUND';
-                    
-                    if (defaultClassId !== 'NO_CLASS_FOUND') {
-                         openClassSettingsModal(defaultClassId);
-                    } else {
-                        alert("Please create a class first to manage its settings!");
-                    }
+                    alert("Class Settings Management is temporarily disabled while we transition away from Cloud Firestore. Class data is now in your Google Sheet.");
                 };
             }
         }
@@ -732,7 +748,7 @@ function renderDashboard(role) {
 
 
 // ======================================================================
-// 3. FIREBASE INITIALIZATION & DATA MANAGEMENT (Previous content - no changes)
+// 3. FIREBASE INITIALIZATION & DATA MANAGEMENT (Role logic kept for Auth)
 // ======================================================================
 
 const firebaseConfig = {
@@ -745,7 +761,7 @@ const firebaseConfig = {
 };
 const app = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore(); 
+const db = firebase.firestore(); // Kept for User Profile/Role management
 
 const dashboardContent = document.getElementById('dashboard-content');
 const roleSwitchModal = document.getElementById('role-switch-modal');
@@ -763,6 +779,7 @@ const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
 
 let currentUserId = null;
 
+// NOTE: This uses Firestore for user role, as it is separate from class data
 async function loadUserRole(userId) {
     const docRef = db.collection('user_profiles').doc(userId);
     try {
@@ -778,7 +795,7 @@ async function loadUserRole(userId) {
         renderDashboard(role);
 
     } catch (error) {
-        console.error("Error loading user role:", error);
+        console.error("Error loading user role (Firestore required for roles):", error);
         renderDashboard('student');
     }
 }
@@ -793,84 +810,36 @@ async function saveNewRole(newRole) {
         roleSwitchModal.style.display = 'none';
         renderDashboard(newRole);
     } catch (error) {
-        console.error("Error saving new role:", error);
-        alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
+        console.error("Error saving new role (Firestore required for roles):", error);
+        alert('Could not save role change to database.');
     }
 }
         
+// FIX: Replaces the old Firestore based loadTeacherData function
 function loadTeacherData(userId) {
+    // Calls the JSONP function to load data from Apps Script/Sheet
     loadClasses();
 }
 
+// Placeholder functions for the disabled features that rely on Firestore/complex setup
+function loadAssignments(userId) {
+    // Show a placeholder message since this is now disabled.
+    const loadingMsg = document.getElementById('loading-assignments');
+    if (loadingMsg) {
+        loadingMsg.textContent = "Assignments feature temporarily disabled. Focus on fixing class creation!";
+        loadingMsg.style.display = 'block';
+    }
+}
 async function openClassSettingsModal(classId) {
-    if (!classId || classId === 'NO_CLASS_FOUND') return;
-    
-    saveSettingsBtn.dataset.classId = classId;
-    
-    try {
-        const classDoc = await db.collection('classes').doc(classId).get();
-        if (!classDoc.exists) {
-            alert('Class not found!');
-            return;
-        }
-        
-        const data = classDoc.data();
-        
-        settingsClassName.textContent = data.name || 'Untitled Class';
-        classNameInput.value = data.name || '';
-        classCodeInput.value = data.code || '';
-        masteryToggle.checked = data.enableMasteryChallenges === true;
-        
-        classSettingsModal.style.display = 'block';
-        
-    } catch (error) {
-        console.error('Error fetching class settings:', error);
-        alert('An error occurred loading class settings.');
-    }
+    alert("Class Settings Management is disabled. Use the Google Sheet directly.");
 }
-
 async function saveClassSettings() {
-    const classId = saveSettingsBtn.dataset.classId;
-    if (!classId) return;
-
-    const newName = classNameInput.value.trim();
-    const newCode = classCodeInput.value.trim();
-    const enableMastery = masteryToggle.checked;
-
-    if (newName.length < 3) {
-        alert('Class name must be at least 3 characters long.');
-        return;
-    }
-    if (newCode.length !== 6) {
-        alert('Class code must be exactly 6 characters long.');
-        return;
-    }
-    
-    saveSettingsBtn.disabled = true;
-    saveSettingsBtn.textContent = 'Saving...';
-
-    try {
-        await db.collection('classes').doc(classId).update({
-            name: newName,
-            code: newCode.toUpperCase(),
-            enableMasteryChallenges: enableMastery,
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        alert(`Settings for "${newName}" saved successfully!`);
-        classSettingsModal.style.display = 'none';
-
-    } catch (error) {
-        console.error('Error saving class settings:', error);
-        alert('Could not save settings. Ensure you have the necessary permissions.');
-    } finally {
-        saveSettingsBtn.disabled = false;
-        saveSettingsBtn.textContent = 'Save Settings';
-    }
+    alert("Class Settings Save is disabled. Use the Google Sheet directly.");
 }
+
 
 // ======================================================================
-// 4. EVENT LISTENERS (Previous content - no changes)
+// 4. EVENT LISTENERS
 // ======================================================================
         
 function attachDashboardListeners(currentRole) {
@@ -903,17 +872,14 @@ function attachDashboardListeners(currentRole) {
 
     if (currentRole === 'teacher') {
         const createClassBtn = document.getElementById('createClassBtn');
-        const loadClassesBtn = document.getElementById('loadClassesBtn');
 
         if (createClassBtn) {
+            // FIX: Attach the rewritten createClass function
             createClassBtn.addEventListener('click', createClass);
         }
-        
-        if (loadClassesBtn) {
-            loadClassesBtn.addEventListener('click', loadClasses);
-        }
     }
-
+    
+    // Placeholder listeners for the disabled modal functions
     if (saveSettingsBtn) {
         saveSettingsBtn.onclick = saveClassSettings;
     }
