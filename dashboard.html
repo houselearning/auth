@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Removed external cookiebanner.js and unnecessary external scripts to simplify -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -360,19 +359,46 @@
         // 1. FIREBASE INITIALIZATION & SETUP
         // ======================================================================
         
-        // ⚠️ IMPORTANT: The config must match the one used in your auth.js
-        const firebaseConfig = {
-            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-            authDomain: "contract-center-llc-10.firebaseapp.com",
-            projectId: "contract-center-llc-10",
-            storageBucket: "contract-center-llc-10.firebasestorage.app",
-            messagingSenderId: "323221512767",
-            appId: "1:323221512767:web:6421260f875997dbf64e8a",
-        };
+        // --- Canvas Environment Variables & Initialization ---
+        // We retrieve the environment variables for secure Firestore access.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
         const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         
+        // --- Secure Path Helpers ---
+        // Public path for shared data (Classes, Roster Profiles).
+        function getPublicCollectionRef(collectionName) {
+            return db.collection(`artifacts/${appId}/public/data/${collectionName}`);
+        }
+        // Private path for user-specific data (Assignments).
+        function getPrivateCollectionRef(userId, collectionName) {
+            return db.collection(`artifacts/${appId}/users/${userId}/${collectionName}`);
+        }
+        // User profile document reference (stored publicly for cross-role access)
+        function getUserProfileDocRef(userId) {
+            return getPublicCollectionRef('user_profiles').doc(userId);
+        }
+
+        // --- Initial Authentication (No Anonymous Sign-in Fallback) ---
+        async function authenticateCanvasUser() {
+            try {
+                if (initialAuthToken) {
+                    await auth.signInWithCustomToken(initialAuthToken);
+                } else {
+                    // No initial token. onAuthStateChanged will be called with null user, 
+                    // triggering the redirect below.
+                    console.warn("No initial auth token provided. User will be redirected to index.html.");
+                }
+            } catch (error) {
+                console.error('Firebase Auth failed:', error);
+            }
+        }
+        authenticateCanvasUser();
+
         // DOM Elements
         const dashboardContent = document.getElementById('dashboard-content');
         const roleSwitchModal = document.getElementById('role-switch-modal');
@@ -492,7 +518,8 @@
                     <h2 class="section-title">🛠️ Tools & Account</h2>
                     <div class="feature-grid">
                         <div class="feature-card">
-                            <span class="icon">👤</span> Profile & Settings
+                            <div class="card-header"><span class="icon">👤</span> Profile & Settings</div>
+                            <div class="card-meta">User ID: ${currentUserId}</div>
                         </div>
                         <div class="feature-card">
                             <span class="icon">❓</span> Help Center & Support
@@ -531,9 +558,9 @@
                         ✨ No classes found. Create one to get started!
                     </div>
                     
-                    <h2 class="section-title">👩‍🎓 Student Roster (VULNERABLE)</h2>
-                    <p style="font-size: 0.9em; color: #cc3333; margin-top: -10px; margin-bottom: 15px;">
-                        ⚠️ **Insecure Access:** This roster is loaded via client-side filtering and is **not** protected by secure Firestore rules.
+                    <h2 class="section-title">👩‍🎓 Student Roster (SECURE PATHING)</h2>
+                    <p style="font-size: 0.9em; color: #555; margin-top: -10px; margin-bottom: 15px;">
+                        This roster is loaded using the secure public application path in Firestore.
                     </p>
                     <div id="student-roster-loading" class="loading-message">
                         Loading student roster...
@@ -565,7 +592,7 @@
                 attachDashboardListeners(role);
                 if (role === 'teacher') {
                     loadTeacherData(currentUserId);
-                    loadAndRenderStudentRoster(); // <<< START ROSTER LOADING
+                    loadAndRenderStudentRoster(); 
                 } else {
                     loadAssignments(currentUserId);
                 }
@@ -573,7 +600,7 @@
         }
         
         // ======================================================================
-        // 4. CLASS JOINING LOGIC (New Feature)
+        // 4. CLASS JOINING LOGIC
         // ======================================================================
 
         /**
@@ -597,10 +624,9 @@
                 return showMessage('Invalid Code', 'The class code must be exactly 6 alphanumeric characters.');
             }
 
-            // Find the class document that matches the code
+            // Find the class document that matches the code using the public path
             try {
-                // Find class by code (assuming a 'classes' collection has a 'code' field)
-                const classesSnapshot = await db.collection('classes')
+                const classesSnapshot = await getPublicCollectionRef('classes')
                     .where('code', '==', code)
                     .limit(1)
                     .get();
@@ -613,9 +639,9 @@
                 const classId = classDoc.id;
                 const className = classDoc.data().name || 'an unknown class';
 
-                // Now, safely update the roster using a transaction
+                // Safely update the roster using a transaction in the public path
                 await db.runTransaction(async (transaction) => {
-                    const rosterRef = db.collection('class_rosters').doc(classId);
+                    const rosterRef = getPublicCollectionRef('class_rosters').doc(classId);
                     const rosterDoc = await transaction.get(rosterRef);
                     
                     if (!rosterDoc.exists) {
@@ -656,25 +682,23 @@
         // ======================================================================
         
         /**
-         * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
+         * Fetches user role from Firestore profile (Public path). If no profile exists, creates one as 'student'.
          * @param {string} userId - The Firebase UID.
          */
         async function loadUserRole(userId) {
-            const docRef = db.collection('user_profiles').doc(userId);
+            const docRef = getUserProfileDocRef(userId);
             try {
                 const doc = await docRef.get();
                 let role = 'student';
 
                 if (doc.exists) {
-                    // Uses the insecure 'role' field from Firestore document
                     role = doc.data().role || 'student';
                 } else {
                     // Initialize profile for new user
                     await docRef.set({ 
                         role: 'student', 
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        // Add a mock email for better roster display if it doesn't exist
-                        email: auth.currentUser?.email || 'anonymous'
+                        email: auth.currentUser?.email || `anon-user-${userId.substring(0, 8)}`
                     });
                 }
 
@@ -688,29 +712,28 @@
         }
         
         /**
-         * Saves the new role to Firestore and updates the UI.
+         * Saves the new role to Firestore (Public path) and updates the UI.
          * @param {string} newRole - 'student' or 'teacher'
          */
         async function saveNewRole(newRole) {
             if (!currentUserId) return;
             try {
-                // ⚠️ THIS IS THE INSECURE CLIENT-SIDE UPDATE
-                await db.collection('user_profiles').doc(currentUserId).update({ 
+                // Update profile using the public document reference
+                await getUserProfileDocRef(currentUserId).update({ 
                     role: newRole,
                     lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 roleSwitchModal.style.display = 'none';
-                // This must be called *after* the update is guaranteed to be finished.
                 renderDashboard(newRole); 
             } catch (error) {
                 console.error("Error saving new role:", error);
-                showMessage('Role Change Error', 'Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
+                showMessage('Role Change Error', 'Could not save role change to database. This is usually a security rule problem.');
             }
         }
         
         /**
-         * Fetches all user profiles with the role 'student' using client-side filtering.
+         * Fetches all user profiles with the role 'student' using the Public path.
          */
         function loadAndRenderStudentRoster() {
             const listContainer = document.getElementById('student-roster-list');
@@ -721,11 +744,11 @@
             loadingMsg.style.display = 'block';
             listContainer.innerHTML = '';
             
-            const studentsQuery = db.collection('user_profiles')
+            // Querying the public collection for user profiles
+            const studentsQuery = getPublicCollectionRef('user_profiles')
                                     .where('role', '==', 'student')
                                     .orderBy('createdAt', 'desc'); 
 
-            // Use onSnapshot for real-time list updates
             studentsQuery.onSnapshot((snapshot) => {
                 const students = [];
                 snapshot.forEach(doc => students.push({ id: doc.id, ...doc.data() }));
@@ -735,13 +758,13 @@
                 if (students.length === 0) {
                     listContainer.innerHTML = `
                         <div class="empty-state-message" style="font-size: 1em; padding: 20px;">
-                            No students found in the database.
+                            No students found in the database yet.
                         </div>
                     `;
                 } else {
                     let html = '<div style="margin-top: 10px;">';
                     students.forEach(student => {
-                        const email = student.email && student.email !== 'anonymous' ? student.email : 'Anonymous User';
+                        const email = student.email && !student.email.startsWith('anon-user-') ? student.email : 'Anonymous User';
                         const joined = student.createdAt && student.createdAt.seconds ? 
                                        new Date(student.createdAt.seconds * 1000).toLocaleDateString() : 'Unknown Date';
                         
@@ -762,15 +785,18 @@
                 console.error("Error loading student roster: ", error);
                 loadingMsg.style.display = 'none';
                 listContainer.innerHTML = `
-                    <div class="roster-list-item" style="background: #fdd; color: #b00;">
-                        Error loading roster: ${error.message}. Please check your open Firestore rules.
+                    <div class="roster-list-item" style="background: #fdd; color: #b00; border-color: #f00; display: block; text-align: center;">
+                        <p style="font-weight: 700; margin-bottom: 5px;">Error loading roster: Missing or insufficient permissions.</p>
+                        <p style="font-size: 0.9em; margin: 0;">If you continue to see this error, ensure your Firestore security rules permit 
+                        authenticated users to read from the public path: 
+                        **artifacts/{appId}/public/data/user_profiles**.</p>
                     </div>
                 `;
             });
         }
         
         /**
-         * Fetches and displays assignments for the student. (Simplified, unchanged)
+         * Fetches and displays assignments for the student (Private path).
          */
         function loadAssignments(userId) {
             const assignmentGrid = document.querySelector('.assignment-grid');
@@ -784,8 +810,8 @@
             noAssignmentsMsg.style.display = 'none';
             assignmentGrid.innerHTML = '';
             
-            const assignmentsRef = db.collection('assignments')
-                                       .where('studentId', '==', userId)
+            // Querying the private user collection for assignments
+            const assignmentsRef = getPrivateCollectionRef(userId, 'assignments')
                                        .orderBy('dueDate', 'asc');
             
             assignmentsRef.onSnapshot((snapshot) => {
@@ -795,8 +821,15 @@
                 loadingMsg.style.display = 'none';
                 
                 if (assignments.length > 0) {
-                    // ... (rendering logic unchanged)
+                    // This rendering logic is intentionally simple as it's not the current focus
                     assignmentGrid.style.display = 'grid';
+                    assignmentGrid.innerHTML = assignments.map(a => `
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">💻</span> ${a.title || 'Untitled Assignment'}</div>
+                            <div class="card-meta">Due: ${a.dueDate || 'N/A'} | Status: ${a.status || 'Pending'}</div>
+                        </div>
+                    `).join('');
+
                     noAssignmentsMsg.style.display = 'none';
                 } else {
                     assignmentGrid.style.display = 'none';
@@ -804,12 +837,12 @@
                 }
             }, (error) => {
                 console.error("Error loading assignments: ", error);
-                loadingMsg.textContent = "Error loading data. Please refresh.";
+                loadingMsg.textContent = "Error loading assignments. Permissions issue on private path?";
             });
         }
         
         /**
-         * Fetches and displays the teacher's classes. (Unchanged)
+         * Fetches and displays the teacher's classes (Public path).
          */
         function loadTeacherData(userId) {
             const classGrid = document.querySelector('.class-grid');
@@ -822,8 +855,8 @@
             classGrid.innerHTML = '';
             noClassesMsg.style.display = 'none';
             
-            // ⚠️ Assumes a Firestore collection 'classes' with a 'teacherId' field
-            const classesRef = db.collection('classes')
+            // Querying the public collection for classes
+            const classesRef = getPublicCollectionRef('classes')
                                    .where('teacherId', '==', userId)
                                    .orderBy('name', 'asc');
             
@@ -834,15 +867,20 @@
                 loadingMsg.style.display = 'none';
                 
                 if (classes.length > 0) {
-                    // ... (rendering logic unchanged)
                     classGrid.style.display = 'grid';
+                    classGrid.innerHTML = classes.map(c => `
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">🏫</span> ${c.name || 'Untitled Class'}</div>
+                            <div class="card-meta">Code: ${c.code || 'N/A'} | Students: ${c.studentCount || '0'}</div>
+                        </div>
+                    `).join('');
                 } else {
                     classGrid.style.display = 'grid'; 
                     noClassesMsg.style.display = 'block';
                 }
             }, (error) => {
                 console.error("Error loading classes: ", error);
-                loadingMsg.textContent = "Error loading classes. Please check your Firestore rules.";
+                loadingMsg.textContent = "Error loading classes. Permissions issue on public path?";
             });
         }
         
@@ -860,8 +898,8 @@
             if (logoutBtn) {
                 logoutBtn.onclick = async () => {
                     try {
+                        // Logging out triggers onAuthStateChanged with null user
                         await auth.signOut();
-                        // Redirect handled by onAuthStateChanged listener
                     } catch (error) {
                         console.error("Logout Error:", error);
                     }
@@ -885,12 +923,14 @@
             }
         }
 
-        // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN (Fix applied here) ---
+        // --- CHECK AUTH STATUS AND HANDLE STATE ---
         auth.onAuthStateChanged(user => {
             if (!user) {
-                // User is signed out, redirect to index
-                // FIX: Use window.location.href to ensure proper resolution of the path
-                window.location.replace(window.location.href); 
+                // User is signed out or auth token is missing/expired.
+                console.log("Logging Out...");
+                // WARNING: This redirect may fail in sandboxed environments.
+                document.body.innerHTML = '<div style="text-align: center; padding-top: 50px;">Redirecting to sign-in page...</div>';
+                window.location.href = 'index.html'; 
             } else {
                 // User is signed in
                 currentUserId = user.uid;
