@@ -21,7 +21,8 @@
             --ka-gray-light: #f7f7f7;
             --ka-text-color: #2e333b;
             --ka-accent-green: #008064; /* For progress/success */
-            --ka-red-error: #dc3545;
+            --ka-red-error: #dc3545; /* Used for Delete button */
+            --ka-red-dark: #b62d3c;
         }
         
         body {
@@ -253,7 +254,9 @@
             padding: 15px 30px;
             border-top: 1px solid #eee;
             background-color: white;
-            text-align: right;
+            display: flex; /* Use flexbox for button alignment */
+            justify-content: space-between; /* Space out the delete button from the others */
+            align-items: center;
             border-radius: 0 0 12px 12px;
         }
         
@@ -272,14 +275,14 @@
             cursor: pointer;
         }
         
-        .primary-button, .secondary-button {
+        .primary-button, .secondary-button, .danger-button {
             padding: 10px 20px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
             transition: background-color 0.2s;
-            margin-left: 10px;
+            margin-left: 10px; /* Separator for secondary/primary */
         }
 
         .primary-button {
@@ -294,9 +297,20 @@
         .secondary-button {
             background-color: #ddd;
             color: var(--ka-text-color);
+            margin-left: 0; /* Align to the right group */
+        }
+        
+        .danger-button {
+            background-color: var(--ka-red-error);
+            color: white;
+            margin-left: 0; /* Align to the left group */
         }
 
-        /* --- Toggle Switch Styles --- */
+        .danger-button:hover {
+            background-color: var(--ka-red-dark);
+        }
+        
+        /* --- Toggle Switch Styles (used in settings and management list) --- */
         .setting-group {
             padding: 15px;
             background: #fff;
@@ -418,6 +432,12 @@
             box-shadow: 0 0 0 3px rgba(20, 164, 204, 0.5); /* Blue glow on focus/copy */
         }
         
+        /* Flex group for buttons in the footer */
+        .button-group-right {
+            display: flex;
+            gap: 10px;
+        }
+
         @media (max-width: 768px) {
             .app-header {
                 padding: 15px 10px;
@@ -439,6 +459,21 @@
                 width: 95%;
                 margin-top: 20px;
                 padding: 0;
+            }
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .button-group-right {
+                flex-direction: column;
+                width: 100%;
+            }
+            .button-group-right button {
+                margin: 0;
+                width: 100%;
+            }
+            .danger-button {
+                width: 100%;
             }
         }
     </style>
@@ -471,8 +506,8 @@
                 <p>Are you sure you want to switch to the **Coach/Teacher** view?</p>
                 <p>This allows you to create classes and manage assignments.</p>
             </div>
-            <div class="modal-footer">
-                <button id="cancel-switch" class="secondary-button">Cancel</button>
+            <div class="modal-footer" style="justify-content: center;">
+                <button id="cancel-switch" class="secondary-button" style="margin-left: 0;">Cancel</button>
                 <button id="confirm-switch" class="primary-button">Confirm Switch</button>
             </div>
         </div>
@@ -487,7 +522,9 @@
             </div>
             <div class="modal-body">
                 
-                <input type="hidden" id="class-code-input" value="">
+                <!-- Hidden input to store class data -->
+                <input type="hidden" id="class-code-input" value=""> 
+
                 <div class="setting-group">
                     <h3>General Settings</h3>
                     <div class="form-group">
@@ -533,14 +570,20 @@
                 </div>
                 
             </div>
+            <!-- UPDATED FOOTER with Delete Button -->
             <div class="modal-footer">
-                <button id="cancel-settings-btn" class="secondary-button">Cancel</button>
-                <button id="save-settings-btn" class="primary-button">Save Changes</button>
+                <button id="delete-class-btn" class="danger-button" data-class-name="" data-class-code="">
+                    🗑️ Delete Class
+                </button>
+                <div class="button-group-right">
+                    <button id="cancel-settings-btn" class="secondary-button">Cancel</button>
+                    <button id="save-settings-btn" class="primary-button">Save Changes</button>
+                </div>
             </div>
         </div>
     </div>
     
-    <!-- 3. GENERIC DIALOG MODAL (For "Already in Class" message) -->
+    <!-- 3. GENERIC INFO DIALOG MODAL (For "Already in Class" message/Join Code) -->
     <div id="info-dialog-modal" class="modal">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
@@ -550,8 +593,49 @@
             <div class="modal-body">
                 <p id="info-dialog-body"></p>
             </div>
-            <div class="modal-footer">
-                <button class="primary-button" onclick="document.getElementById('info-dialog-modal').style.display='none';">Close</button>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="primary-button" onclick="document.getElementById('info-dialog-modal').style.display='none';" style="margin-left: 0;">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 4. DANGER CONFIRMATION DIALOG MODAL (For Deletion) -->
+    <div id="confirm-dialog-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background-color: var(--ka-red-error); color: white;">
+                <span id="confirm-dialog-title">Delete Class</span>
+                <span class="close-button" onclick="document.getElementById('confirm-dialog-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-dialog-body" style="font-weight: 500;"></p>
+                <p style="font-size: 0.9rem; color: var(--ka-red-dark); font-weight: 600;">
+                    This action is permanent and cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end; align-items: center;">
+                <button id="confirm-delete-cancel" class="secondary-button" style="margin-right: 10px;">Cancel</button>
+                <button id="confirm-delete-action" class="danger-button" style="margin-left: 0;">Yes, Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 5. Class Management Modal (Lists all classes for settings) -->
+    <div id="class-management-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                Select Class to Manage Settings
+                <span class="close-button" onclick="document.getElementById('class-management-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Select a class below to view or change its permissions and name.</p>
+                <div id="class-management-list">
+                    <!-- Class list will be dynamically inserted here -->
+                    <div class="loading-message">Loading classes...</div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button class="primary-button" onclick="document.getElementById('class-management-modal').style.display='none';" style="margin-left: 0;">Done</button>
             </div>
         </div>
     </div>
@@ -561,7 +645,7 @@
 
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxhuThEF5XuZbr6sZxwhOYEZH8EaEBypUv1vtkjfd9sUBOheFTTmLpa6xYgI-kNEC-l0Q/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCEuc9JMp_w4aU51SOWmIW-wcv1cygIY0-uS95uaP8oHRD3zLuZ1Is98g8TZWu6Tgkj5MJg/exec'; 
 
         // Function to generate a simple, 6-character, random join code
         function generateJoinCode() {
@@ -571,6 +655,7 @@
         // ======================================================================
         // 1. FIREBASE INITIALIZATION & DOM REFERENCES
         // ======================================================================
+        // Using sample config as per instructions
         const firebaseConfig = {
             apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
             authDomain: "contract-center-llc-10.firebaseapp.com",
@@ -592,7 +677,8 @@
         const classSettingsModal = document.getElementById('class-settings-modal');
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-        
+        const deleteClassBtn = document.getElementById('delete-class-btn'); // NEW
+
         let currentUserId = null;
         let globalClassList = []; // Stores the class list fetched by JSONP
         
@@ -600,6 +686,15 @@
         // ======================================================================
         // 2. CORE FUNCTION DEFINITIONS (ORDER IS CRITICAL: MUST BE DEFINED FIRST)
         // ======================================================================
+
+        /**
+         * Placeholder for the full class dashboard view.
+         * @param {object} classData The data of the class card that was clicked.
+         */
+        function openClassDashboardPlaceholder(classData) {
+            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc.`);
+            console.log("Class Data:", classData);
+        }
 
         /**
          * Loads student assignments from Firestore (DEMO FEATURE).
@@ -675,7 +770,6 @@
 
         /**
          * Updates the user's role (teacher/student) in the Firebase Firestore database.
-         * FIX: Uses .set({ merge: true }) for robustness.
          * @param {string} newRole The role to switch to ('teacher' or 'student').
          */
         async function saveNewRole(newRole) {
@@ -714,6 +808,9 @@
             const loadingMsg = document.getElementById('loading-classes');
             if (loadingMsg) loadingMsg.style.display = 'none';
             
+            const loadingManagementMsg = document.querySelector('#class-management-list .loading-message');
+            if (loadingManagementMsg) loadingManagementMsg.style.display = 'none';
+
             if (result.status === 'success') {
                 globalClassList = result.classes; // Store the list globally
                 renderClassList(result.classes);
@@ -735,10 +832,11 @@
         };
 
         // 🚨 GLOBAL CALLBACK FUNCTION: For form submission via hidden iframe (POST/CORS Bypass)
-        window.handlePostResponse = function() {
+        window.handlePostResponse = function(result) {
             const iframe = document.getElementById('hidden_iframe');
             const createButton = document.getElementById('createClassBtn');
             const saveSettingsButton = document.getElementById('save-settings-btn'); 
+            const deleteButton = document.getElementById('delete-class-btn');
 
             // Prevent success alert on initial page load of the iframe
             if (iframe.src.includes('about:blank')) {
@@ -747,6 +845,7 @@
                     createButton.textContent = '➕ Create New Class';
                 }
                 if (saveSettingsButton) saveSettingsButton.disabled = false; 
+                if (deleteButton) deleteButton.disabled = false;
                 return; 
             } 
 
@@ -755,8 +854,19 @@
                 createButton.textContent = '➕ Create New Class';
             }
             if (saveSettingsButton) saveSettingsButton.disabled = false; 
+            if (deleteButton) deleteButton.disabled = false;
             
-            alert("🎉 Success! Action completed!"); 
+            if (result && result.status === 'success') {
+                alert("🎉 Success! Action completed: " + result.message); 
+                // Hide any open modals after success
+                classSettingsModal.style.display = 'none'; 
+                document.getElementById('confirm-dialog-modal').style.display = 'none'; 
+            } else if (result && result.status === 'error') {
+                 alert("❌ Error: " + result.message);
+            } else {
+                 alert("Success! Action completed (but response was unexpected)."); 
+            }
+            
             loadClasses(); // Refresh the list
             
             // Reset the iframe source
@@ -770,6 +880,12 @@
         function loadClasses() {
             const loadingMsg = document.getElementById('loading-classes');
             if (loadingMsg) loadingMsg.style.display = 'block';
+            
+            const classManagementList = document.getElementById('class-management-list');
+            if (classManagementList) {
+                // Show loading state in the management modal list too
+                classManagementList.innerHTML = '<div class="loading-message">Loading classes...</div>';
+            }
 
             const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
             const callbackName = 'handleClassesResponse';
@@ -833,11 +949,35 @@
             document.body.removeChild(form);
         }
         
-        function joinClass() {
-            const joinCode = prompt("Enter the 6-character class join code:");
+        /**
+         * Submits a request to delete a class using a hidden form.
+         * This function is called after the user confirms deletion.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function submitDeleteClass(classCode) {
+            classSettingsModal.style.display = 'none';
+            document.getElementById('confirm-dialog-modal').style.display = 'none';
+            deleteClassBtn.disabled = true;
+
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            form.appendChild(createHiddenInput('action', 'deleteClass'));
+            form.appendChild(createHiddenInput('code', classCode));
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function joinClass(inviteCode = null) {
+            const joinCode = inviteCode || prompt("Enter the 6-character class join code:");
             
             if (!joinCode || joinCode.length !== 6) {
-                alert("Invalid 6-character join code format.");
+                if (!inviteCode) alert("Invalid 6-character join code format.");
                 return;
             }
 
@@ -862,6 +1002,37 @@
             document.getElementById('info-dialog-modal').style.display = 'block';
         }
         
+        /**
+         * Opens the confirmation dialog for class deletion.
+         * @param {string} className The name of the class to delete.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function showDeleteConfirmation(className, classCode) {
+            // Set the title and body
+            document.getElementById('confirm-dialog-title').textContent = "Delete Class: " + className;
+            document.getElementById('confirm-dialog-body').innerHTML = `
+                Are you absolutely sure you want to delete **${className}** (Code: ${classCode})? 
+                <br><br>
+                All class data, including class comments, posts, and file uploads, will be lost permanently.
+            `;
+            
+            // Update the action button listener
+            const confirmActionBtn = document.getElementById('confirm-delete-action');
+            confirmActionBtn.onclick = () => submitDeleteClass(classCode);
+            
+            // Update the cancel button listener
+            document.getElementById('confirm-delete-cancel').onclick = () => {
+                document.getElementById('confirm-dialog-modal').style.display = 'none';
+                classSettingsModal.style.display = 'block'; // Return to settings after cancel
+            };
+
+            classSettingsModal.style.display = 'none'; // Hide settings
+            document.getElementById('confirm-dialog-modal').style.display = 'block'; // Show confirmation
+        }
+
+        /**
+         * Renders the list of classes for the main dashboard (Teacher View).
+         */
         function renderClassList(classes) {
             const classGrid = document.querySelector('.class-grid');
             const noClassesMsg = document.getElementById('no-classes-message');
@@ -892,21 +1063,61 @@
                 noClassesMsg.style.display = 'block';	
             }
 
-            // Attach listener to each dynamically created class card
+            // Attach listener to each dynamically created class card (NEW BEHAVIOR)
             document.querySelectorAll('.class-grid .feature-card').forEach(card => {
                 card.onclick = () => {
                      const classCode = card.dataset.classCode;
                      const classData = globalClassList.find(c => c.code === classCode); // Find the full data object
                      
                      if (classData) {
-                         openClassSettingsModal(classCode, classData); 
-                     } else {
-                         alert("Error: Class data not found for settings.");
+                         // NEW: Open the Class Dashboard Placeholder
+                         openClassDashboardPlaceholder(classData); 
                      }
                 };
             });
+            
+            // Also update the Management Modal list if it's currently open/being used
+            updateClassManagementList(classes);
         }
         
+        /**
+         * Populates the Class Management Modal list with classes and attaches listeners to open settings.
+         */
+        function updateClassManagementList(classes) {
+            const classListContainer = document.getElementById('class-management-list');
+            if (!classListContainer) return;
+
+            if (classes.length === 0) {
+                classListContainer.innerHTML = '<div class="empty-state-message">No classes found to manage. Please create one first.</div>';
+            } else {
+                classListContainer.innerHTML = classes.map(cls => {
+                    // JSON.stringify must be used carefully for inline onclick, replacing " with &quot;
+                    // We must pass the data as a string and parse it in the target function.
+                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); 
+
+                    return `
+                        <div class="toggle-group" style="padding: 10px 15px; margin-bottom: 10px; border: 1px solid #ddd; background: white;">
+                            <span style="font-weight: 600;">${cls.name} <small>(${cls.code})</small></span>
+                            <button class="primary-button" style="padding: 5px 10px; font-size: 0.9rem;" 
+                                    onclick="openClassSettingsModal('${cls.code}', JSON.parse('${classDataString}')); 
+                                             document.getElementById('class-management-modal').style.display='none';">
+                                Settings ⚙️
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        /**
+         * Opens the modal that lists all classes for managing settings.
+         */
+        function openClassManagementModal() {
+            // The list is updated via updateClassManagementList() when loadClasses runs/completes
+            document.getElementById('class-management-modal').style.display = 'block';
+        }
+
+
         /**
          * Opens the class settings modal, populating it with current data.
          * @param {string} classCode The unique join code.
@@ -931,8 +1142,10 @@
             const inviteLink = `${WEBSITE_URL}?invcode=${classCode}`;
             document.getElementById('invite-link-display').value = inviteLink;
             
-            // Store the class code (as the identifier) on the Save button
+            // Store the class code and name on the Save and Delete buttons
             document.getElementById('save-settings-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.className = classData.name;
             
             classSettingsModal.style.display = 'block';
         }
@@ -951,9 +1164,7 @@
                 return;
             }
             
-            classSettingsModal.style.display = 'none';
-            const saveButton = document.getElementById('save-settings-btn');
-            saveButton.disabled = true; // Disable to prevent double-click
+            saveSettingsBtn.disabled = true; // Disable button before submission
 
             // Create and Submit Hidden Form
             const form = document.createElement('form');
@@ -966,8 +1177,8 @@
             form.appendChild(createHiddenInput('action', 'updateClass'));
             form.appendChild(createHiddenInput('code', classCode));
             form.appendChild(createHiddenInput('name', newClassName));
-            form.appendChild(createHiddenInput('allowPosting', allowPosting.toString())); 
-            form.appendChild(createHiddenInput('allowCommenting', allowCommenting.toString())); 
+            form.appendChild(createHiddenInput('allowPosting', allowPosting.toString().toUpperCase())); 
+            form.appendChild(createHiddenInput('allowCommenting', allowCommenting.toString().toUpperCase())); 
 
             document.body.appendChild(form);
             form.submit();
@@ -1041,7 +1252,7 @@
                     </div>
                 `;
                 content = `
-                    <h2 class="section-title">📚 My Classes & Groups</h2>
+                    <h2 class="section-title">📚 My Classes & Groups (Click to view Class Dashboard)</h2>
                     <div id="loading-classes" class="loading-message">
                         Loading your classes...
                     </div>
@@ -1064,7 +1275,7 @@
                         </div>
                         <div class="feature-card" id="manage-settings-card">
                             <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
-                            <div class="card-meta">Change class codes, grading scales, and permissions.</div>
+                            <div class="card-meta">Select a class to change permissions and join codes.</div>
                         </div>
                     </div>
                 `;
@@ -1147,9 +1358,15 @@
 
             if (currentRole === 'teacher') {
                 const createClassBtn = document.getElementById('createClassBtn');
+                const manageSettingsCard = document.getElementById('manage-settings-card');
 
                 if (createClassBtn) {
                     createClassBtn.addEventListener('click', createClass);
+                }
+                
+                // Attach listener to the Manage Class Settings card
+                if (manageSettingsCard) {
+                    manageSettingsCard.onclick = openClassManagementModal;
                 }
             }
             
@@ -1160,10 +1377,18 @@
             if (cancelSettingsBtn) {
                 cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
             }
+            // NEW: Delete button listener
+            if (deleteClassBtn) {
+                deleteClassBtn.onclick = () => {
+                    const classCode = deleteClassBtn.dataset.classCode;
+                    const className = deleteClassBtn.dataset.className;
+                    showDeleteConfirmation(className, classCode);
+                };
+            }
             
             // Close modal if user clicks outside of it
             window.onclick = function(event) {
-                if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal) {
+                if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal')) {
                     event.target.style.display = "none";
                 }
             }
