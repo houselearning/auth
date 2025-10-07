@@ -25,404 +25,892 @@
         body {
             background-color: var(--ka-gray-light); 
             color: var(--ka-text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            line-height: 1.6;
         }
 
-        #dashboard-container {
-            max-width: 1200px;
+        /* NAVBAR - Minimal and clean */
+        .navbar {
+            background-color: white;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 0;
+        }
+        .navbar-content {
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* CARD STYLING */
-        section {
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-
-        /* HEADER STYLING */
-        header {
-            display: flex;
-            justify-content: space-between;
+            padding: 0 20px;
+            display: flex; 
+            justify-content: space-between; 
             align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--ka-blue-bright);
-            margin-bottom: 20px;
         }
-
-        h1 {
+        .nav-links {
+            display: flex;
+            gap: 25px; 
+        }
+        .navbar-content a {
             color: var(--ka-blue-dark);
-            margin: 0;
-            font-size: 1.8em;
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 0.95em;
+        }
+        .navbar-content a:hover {
+            color: var(--ka-blue-bright);
         }
 
-        h2 {
-            color: var(--ka-blue-dark);
-            margin-top: 0;
-            font-size: 1.5em;
-        }
-
-        /* BUTTON STYLING */
-        button {
-            padding: 10px 15px;
+        /* Join Class Button Style (Applies to Teacher's 'Create Assignment' as well) */
+        .action-button {
+            background-color: var(--ka-blue-bright);
+            color: white;
+            padding: 8px 15px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: background-color 0.1s;
+        }
+        .action-button:hover {
+            background-color: #0d8cb5; 
         }
 
-        #logout-btn, #teacher-role-btn {
-            background-color: var(--ka-blue-dark);
-            color: white;
-            margin-left: 10px;
+        /* MAIN DASHBOARD CONTAINER */
+        .dashboard-container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 4px; 
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); 
         }
-        #logout-btn:hover, #teacher-role-btn:hover {
-            background-color: var(--ka-blue-bright);
-        }
-
-        .ka-accent-btn {
-            background-color: var(--ka-accent-green);
-            color: white;
-        }
-        .ka-accent-btn:hover {
-            background-color: #005f4c;
-        }
-
-        /* DASHBOARD SPECIFIC STYLES */
-        #classesList {
-            list-style: none;
-            padding: 0;
-            margin-top: 15px;
-        }
-        #classesList li {
-            background-color: var(--ka-gray-light);
-            border-left: 5px solid var(--ka-blue-bright);
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            border-radius: 4px;
+        
+        /* HEADER AND CONTROLS */
+        .header-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--ka-gray-light);
+        }
+        
+        h1 {
+            font-size: 2em;
+            color: var(--ka-blue-dark);
+            margin: 0;
+        }
+        
+        .logout-button {
+            background-color: #f0f0f0; 
+            color: var(--ka-blue-dark);
+            padding: 8px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.1s;
+        }
+        .logout-button:hover {
+            background-color: #e5e5e5;
+        }
+        
+        .role-switch {
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 25px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .role-switch button, .active-role {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            color: var(--ka-text-color);
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .active-role {
+            background: var(--ka-blue-bright);
+            color: white;
+            border-color: var(--ka-blue-bright);
+            font-weight: 700;
+        }
+        .role-switch button:hover:not(.active-role) {
+            background: #eee;
         }
 
-        /* MODAL STYLES (for role switch and settings) */
+        /* FEATURE SECTIONS */
+        .section-title {
+            font-size: 1.5em;
+            color: var(--ka-blue-dark);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* FEATURE CARD STYLE */
+        .feature-card {
+            display: flex;
+            flex-direction: column; /* Allows content stacking */
+            align-items: flex-start;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-weight: 500;
+            color: var(--ka-text-color);
+        }
+        .feature-card:hover {
+            border-color: var(--ka-blue-bright);
+            box-shadow: 0 2px 8px rgba(20, 164, 204, 0.15);
+            cursor: pointer;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--ka-blue-dark);
+        }
+        .card-meta {
+            font-size: 0.85em;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        /* Icon styling */
+        .feature-card span.icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            line-height: 1;
+        }
+
+        /* Highlight card (Progress/Mastery) */
+        .highlight-progress {
+            background: var(--ka-accent-green);
+            color: white;
+            border-color: var(--ka-accent-green);
+            font-weight: 700;
+        }
+        .highlight-progress span.icon {
+            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.7)); 
+        }
+        .highlight-progress:hover {
+            background: #006b51;
+            border-color: #006b51;
+            box-shadow: 0 4px 10px rgba(0, 128, 100, 0.3);
+        }
+
+        /* EMPTY STATE MESSAGE - Neutral and encouraging */
+        .empty-state-message {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--ka-gray-light);
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            color: var(--ka-text-color);
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        /* Style for a loading state */
+        .loading-message {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 1.1em;
+            color: #888;
+        }
+        
+        /* MODAL STYLES (Confirmation Dialog & Settings) */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1; /* Sit on top */
+            position: fixed;
+            z-index: 1000;
             left: 0;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            display: none; /* Hidden by default */
         }
-
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto; /* 15% from the top and centered */
+            margin: 15% auto; 
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
-            max-width: 400px;
             border-radius: 8px;
+            width: 80%; 
+            max-width: 500px; /* Increased max-width for settings form */
+            text-align: left; /* Changed to left for form */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h2 {
             text-align: center;
+            color: var(--ka-blue-dark);
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal-actions {
+            text-align: center; /* Center buttons */
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .modal-actions button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        #confirm-switch, #save-settings-btn {
+            background-color: var(--ka-accent-green); /* Use Green for Saving */
+            color: white;
+        }
+        #cancel-switch, #cancel-settings-btn {
+            background-color: #f0f0f0;
+            color: var(--ka-text-color);
+        }
+        #confirm-switch {
+            background-color: var(--ka-red-error); /* Red for role warning */
+        }
+
+        /* Form-specific styles for the settings modal */
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+            color: var(--ka-blue-dark);
+        }
+        .form-group input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            transition: border-color 0.15s;
+        }
+        .form-group input[type="text"]:focus {
+            border-color: var(--ka-blue-bright);
+            outline: none;
+            box-shadow: 0 0 0 1px var(--ka-blue-bright);
+        }
+        .form-group .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        .form-group .checkbox-container input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
         }
     </style>
 </head>
 <body>
-    <div id="dashboard-container">
-        <div id="dashboard-content">
-            <p>Loading dashboard...</p>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="nav-links">
+                <a href="https://houselearning.github.io/home/#">Home</a>
+                <a href="https://houselearning.github.io/home/math-page.html">Courses</a>
+                <a href="https://houselearning.github.io/home/science-page.html#">Coaches</a>
+                <a href="https://houselearning.github.io/home/computer-science-page.html#">Progress</a>
+            </div>
+            
+            <button class="action-button" id="nav-action-button" onclick="alert('Join Class functionality is not yet implemented.');">
+                Join Class
+            </button>
         </div>
+    </nav>
+
+    <main class="dashboard-container" id="dashboard-content">
+        </main>
+
+    <div id="role-switch-modal" class="modal">
+      <div class="modal-content">
+        <h2>⚠️ Warning: Role Change</h2>
+        <p id="modal-message">
+            Are you sure you want to switch account types? **All your student progress will be lost.**
+        </p>
+        <div class="modal-actions">
+            <button id="cancel-switch">Cancel</button>
+            <button id="confirm-switch">Switch Role</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="class-settings-modal" class="modal">
+      <div class="modal-content">
+        <h2>⚙️ Class Settings: <span id="settings-class-name">Loading...</span></h2>
+        
+        <div class="form-group">
+            <label for="class-name-input">Class Name</label>
+            <input type="text" id="class-name-input" maxlength="50" placeholder="e.g., Algebra I - Period 3">
+        </div>
+        
+        <div class="form-group">
+            <label for="class-code-input">Class Code</label>
+            <input type="text" id="class-code-input" maxlength="6" placeholder="e.g., ABC123">
+        </div>
+        
+        <div class="form-group">
+            <label>Mastery & Grading</label>
+            <div class="checkbox-container">
+                <input type="checkbox" id="mastery-challenge-toggle">
+                <label for="mastery-challenge-toggle">Enable Mastery Challenges (Allow students to test out of units)</label>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button id="cancel-settings-btn">Cancel</button>
+            <button id="save-settings-btn" data-class-id="">Save Settings</button>
+        </div>
+      </div>
     </div>
 
-    <div id="roleSwitchModal" class="modal">
-        <div class="modal-content">
-            <h2>Confirm Role Switch</h2>
-            <p>Are you sure you want to switch to the Teacher role? This is usually for school administrators or parents.</p>
-            <button id="confirmSwitchBtn" class="ka-accent-btn">Yes, Switch</button>
-            <button id="cancelSwitchBtn" style="background-color: #ccc;">Cancel</button>
-        </div>
-    </div>
-
-    <div id="classSettingsModal" class="modal">
-        <div class="modal-content">
-            <h2>Class Settings</h2>
-            <form id="class-settings-form">
-                <label for="classNameInput">Class Name:</label>
-                <input type="text" id="classNameInput" name="className" required><br><br>
-                
-                <label for="classCodeInput">Join Code:</label>
-                <input type="text" id="classCodeInput" name="classCode" disabled><br><br>
-
-                <button type="button" id="saveSettingsBtn" class="ka-accent-btn">Save Changes</button>
-                <button type="button" id="cancelSettingsBtn" style="background-color: #ccc;">Close</button>
-            </form>
-        </div>
-    </div>
 
     <script>
-        // Initialize Firebase
-        const firebaseConfig = {
-  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-  authDomain: "contract-center-llc-10.firebaseapp.com",
-  projectId: "contract-center-llc-10",
-  storageBucket: "contract-center-llc-10.firebasestorage.app",
-  messagingSenderId: "323221512767",
-  appId: "1:323221512767:web:6421260f875997dbf64e8a",
-        };
-        firebase.initializeApp(firebaseConfig);
+		// 🚨 IMPORTANT: REPLACE THIS URL with the new URL you get after redeploying your Apps Script.
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3T-FP7a_WujwH0tU-kHYkYdEg2s7qyLxyNlXKU2RM97glafBfDDH-FdYmYM7GPVqBBQ/exec'; 
+
+// Function to generate a simple, 6-character, random join code
+function generateJoinCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// Function that runs when the 'Create Class' button is clicked
+async function createClass() {
+    
+  // --- 1. Gather Data ---
+  const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
+  
+  if (!className || className.trim() === "") {
+    alert("Class creation cancelled.");
+    return;
+  }
+  
+  // NOTE: You'll want to dynamically set this to the logged-in user's name
+  const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
+  const joinCode = generateJoinCode();
+
+  const dataToSend = {
+    action: 'createClass',
+    name: className.trim(),
+    teacher: teacherName,
+    code: joinCode
+  };
+
+  // --- 2. Send Data to Apps Script ---
+  try {
+    const createButton = document.getElementById('createClassBtn');
+    if (createButton) createButton.disabled = true;
+
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(dataToSend),
+      headers: {'Content-Type': 'application/json'}
+    });
+    
+    if (createButton) createButton.disabled = false;
+
+    // 🚨 CORS FIX: Read response as text, then manually parse as JSON
+    const responseText = await response.text();
+    const result = JSON.parse(responseText);
+
+    if (result.status === 'success') {
+        alert(`🎉 Success! Class "${className.trim()}" created and shared! 
+               \nTell your students to use Join Code: ${joinCode}`);
+        loadTeacherData(auth.currentUser.uid); // Refresh the list
         
-        // Firebase Auth and Firestore references
+    } else {
+        alert("🚨 Error: Failed to create class: " + result.message);
+    }
+    
+  } catch (error) {
+    console.error('Network or Fetch Error:', error);
+    alert('A connection error occurred. Check your network, browser console, and Apps Script execution log.');
+  }
+}
+        
+// Function to render the list of classes in the Teacher Dashboard
+function renderClassList(classes) {
+    const classGrid = document.querySelector('.class-grid');
+    const noClassesMsg = document.getElementById('no-classes-message');
+    const loadingMsg = document.getElementById('loading-classes');
+    
+    if (!classGrid || !loadingMsg) return;
+
+    classGrid.innerHTML = '';
+    
+    if (classes.length > 0) {
+        classes.forEach(cls => {
+            // Note: studentCount isn't coming from the sheet yet, use 0 as default
+            const studentCount = 0; 
+            const classCode = cls.code || 'N/A';
+            
+            const cardHtml = `
+                <div class="feature-card" data-class-id="${cls.code}"> 
+                    <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
+                    <div class="card-meta">
+                        Students: ${studentCount} | Code: <strong>${classCode}</strong>
+                    </div>
+                </div>
+            `;
+            classGrid.innerHTML += cardHtml;
+        });
+        classGrid.style.display = 'grid';	
+        noClassesMsg.style.display = 'none';	
+    } else {
+        classGrid.style.display = 'grid'; 
+        noClassesMsg.style.display = 'block';	
+    }
+
+    // Attach listener to each dynamically created class card
+    document.querySelectorAll('.class-grid .feature-card').forEach(card => {
+        card.onclick = () => alert(`Viewing Class: ${card.dataset.classId}`);
+    });
+}
+
+// 🌟 TEACHER FEATURE: Fetch classes from Google Sheet
+async function loadClasses() {
+    const loadBtn = document.getElementById('loadClassesBtn');
+    const loadingMsg = document.getElementById('loading-classes');
+    
+    if (loadingMsg) loadingMsg.style.display = 'block';
+    if (loadBtn) loadBtn.disabled = true;
+
+    // NOTE: teacher is NOT filtered by the script, so we send no parameter
+    const url = `${SCRIPT_URL}?action=loadClasses`;
+
+    try {
+        const response = await fetch(url);
+        
+        // 🚨 CORS FIX: Read response as text, then manually parse as JSON
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
+
+        if (loadingMsg) loadingMsg.style.display = 'none';
+        if (loadBtn) loadBtn.disabled = false;
+
+        if (result.status === 'success') {
+            const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
+            // Filter classes to show only those created by the current user
+            const teacherClasses = result.classes.filter(cls => cls.teacher === currentUserName);
+            renderClassList(teacherClasses);
+        } else {
+            alert("Error loading classes: " + result.message);
+        }
+    } catch (error) {
+        console.error('Fetch error:', error);
+        if (loadingMsg) loadingMsg.style.display = 'none';
+        if (loadBtn) loadBtn.disabled = false;
+        alert('Could not connect to the class data source.');
+    }
+}
+
+// 🌟 STUDENT FEATURE: Check join code against Google Sheet
+async function joinClass(joinCode) {
+    if (!joinCode || joinCode.length !== 6) {
+        alert("Invalid 6-character join code format.");
+        return;
+    }
+
+    const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode}`;
+
+    try {
+        const response = await fetch(url);
+        
+        // 🚨 CORS FIX: Read response as text, then manually parse as JSON
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
+
+        if (result.status === 'found') {
+            alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+            
+        } else if (result.status === 'not_found') {
+            alert(`Sorry, the join code "${joinCode}" was not found.`);
+        } else {
+             alert("Error joining class: " + result.message);
+        }
+    } catch (error) {
+        console.error('Fetch error:', error);
+        alert('Could not connect to the class data source.');
+    }
+}
+
+
+        // ======================================================================
+        // 1. FIREBASE INITIALIZATION & SETUP
+        // ======================================================================
+        
+        // ⚠️ IMPORTANT: The config must match the one used in your auth.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+            authDomain: "contract-center-llc-10.firebaseapp.com",
+            projectId: "contract-center-llc-10",
+            storageBucket: "contract-center-llc-10.firebasestorage.app",
+            messagingSenderId: "323221512767",
+            appId: "1:323221512767:web:6421260f875997dbf64e8a",
+        };
+        const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore(); 
+        
+        // DOM Elements
+        const dashboardContent = document.getElementById('dashboard-content');
+        const roleSwitchModal = document.getElementById('role-switch-modal');
+        const confirmSwitchBtn = document.getElementById('confirm-switch');
+        const cancelSwitchBtn = document.getElementById('cancel-switch');
+        const navActionButton = document.getElementById('nav-action-button');
+        
+        // NEW DOM Elements for Class Settings Modal
+        const classSettingsModal = document.getElementById('class-settings-modal');
+        const settingsClassName = document.getElementById('settings-class-name');
+        const classNameInput = document.getElementById('class-name-input');
+        const classCodeInput = document.getElementById('class-code-input');
+        const masteryToggle = document.getElementById('mastery-challenge-toggle');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
 
         let currentUserId = null;
-        let currentUserRole = null;
-        let currentUserName = "User"; // Default name, updated on dashboard render
 
 
-        // =========================================================================
-        // GOOGLE APPS SCRIPT / $0-BUDGET DATABASE FUNCTIONS
-        // =========================================================================
-
-        // 🚨 IMPORTANT: Replace this with the URL you copied after deploying your Apps Script.
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyx-p519JY-dMTqjElgl9pC5PupRPOjbxXX-phfADrtHpM58UBe4R9Nhe1IKj0UQxdVfA/exec'; 
-
-        // Function to generate a simple, 6-character, random join code
-        function generateJoinCode() {
-          return Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-
-        // Function that runs when the 'Create Class' button is clicked
-        async function createClass() {
-          const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
-          
-          if (!className || className.trim() === "") {
-            alert("Class creation cancelled.");
-            return;
-          }
-          
-          const teacherName = currentUserName; 
-          const joinCode = generateJoinCode();
-
-          const dataToSend = {
-            action: 'createClass',
-            name: className.trim(),
-            teacher: teacherName,
-            code: joinCode
-          };
-
-          try {
-            const createButton = document.getElementById('createClassBtn');
-            if (createButton) createButton.disabled = true;
-
-            const response = await fetch(SCRIPT_URL, {
-              method: 'POST',
-              body: JSON.stringify(dataToSend),
-              headers: {'Content-Type': 'application/json'}
-            });
-            
-            if (createButton) createButton.disabled = false;
-
-            if (response.ok) {
-                alert(`🎉 Success! Class "${className.trim()}" created and shared! 
-                       \nTell your students to use Join Code: ${joinCode}`);
-                // Refresh the list after creation
-                loadClasses();
-            } else {
-                alert("🚨 Error: Failed to create class. Check the script deployment and URL.");
-            }
-            
-          } catch (error) {
-            console.error('Network or Fetch Error:', error);
-            alert('A connection error occurred. Check your network, browser console, and Apps Script execution log.');
-          }
-        }
-        
-        // Function to render the list of classes in the Teacher Dashboard
-        function renderClassList(classes) {
-            const classesList = document.getElementById('classesList');
-            if (!classesList) return;
-
-            if (classes.length === 0) {
-                classesList.innerHTML = '<li>No classes found. Create one to get started!</li>';
-                return;
-            }
-
-            const classListItems = classes.map(cls => `
-                <li id="class-${cls.code}">
-                    <span>${cls.name} (Code: <strong>${cls.code}</strong>)</span>
-                    <div class="class-actions">
-                        <button class="ka-accent-btn view-class-btn" data-class-id="${cls.code}">View/Assign</button>
-                        <button class="edit-class-btn" data-class-id="${cls.code}" style="background-color: #f39c12; color: white;">Edit</button>
-                        <button class="delete-class-btn" data-class-id="${cls.code}" style="background-color: var(--ka-red-error); color: white;">Delete</button>
-                    </div>
-                </li>
-            `).join('');
-
-            classesList.innerHTML = classListItems;
-        }
-
-        // 🌟 TEACHER FEATURE: Fetch classes from Google Sheet
-        async function loadClasses() {
-            const loadBtn = document.getElementById('loadClassesBtn');
-            if (loadBtn) loadBtn.disabled = true;
-
-            const url = `${SCRIPT_URL}?action=loadClasses`;
-
-            try {
-                const response = await fetch(url);
-                const result = await response.json();
-                
-                if (loadBtn) loadBtn.disabled = false;
-
-                if (result.status === 'success') {
-                    // Filter classes to show only those created by the current user
-                    const teacherClasses = result.classes.filter(cls => cls.teacher === currentUserName);
-                    renderClassList(teacherClasses);
-                } else {
-                    alert("Error loading classes: " + result.message);
-                }
-            } catch (error) {
-                console.error('Fetch error:', error);
-                if (loadBtn) loadBtn.disabled = false;
-                alert('Could not connect to the class data source.');
-            }
-        }
-
-        // 🌟 STUDENT FEATURE: Check join code against Google Sheet
-        async function joinClass(joinCode) {
-            if (!joinCode || joinCode.length !== 6) {
-                alert("Invalid 6-character join code format.");
-                return;
-            }
-
-            const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode}`;
-
-            try {
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.status === 'found') {
-                    alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
-                    // TODO: Logic to save this class to the student's local profile would go here.
-                    
-                } else if (result.status === 'not_found') {
-                    alert(`Sorry, the join code "${joinCode}" was not found.`);
-                } else {
-                     alert("Error joining class: " + result.message);
-                }
-            } catch (error) {
-                console.error('Fetch error:', error);
-                alert('Could not connect to the class data source.');
-            }
-        }
-
-
-        // =========================================================================
-        // EXISTING/SUPPORT FUNCTIONS
-        // =========================================================================
+        // ======================================================================
+        // 2. DASHBOARD RENDERING LOGIC
+        // ======================================================================
 
         /**
-         * Placeholder for saving the role 
-         */
-        function saveNewRole(newRole) {
-            currentUserRole = newRole;
-            console.log(`User role changed to: ${newRole}`);
-            renderDashboard(newRole);
-            // Close modal if open
-            const modal = document.getElementById('roleSwitchModal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        /**
-         * Placeholder for loading the user role 
-         */
-        function loadUserRole(userId) {
-            // For initial demonstration, just set a default:
-            currentUserRole = 'teacher'; 
-            renderDashboard(currentUserRole);
-        }
-        
-        /**
-         * Placeholder for saving class settings
-         */
-        function saveClassSettings() {
-            alert("Class settings saved (placeholder).");
-            document.getElementById('classSettingsModal').style.display = 'none';
-        }
-
-
-        // =========================================================================
-        // RENDER AND LISTENERS (ALL FIXED)
-        // =========================================================================
-        
-        /**
-         * Renders the correct dashboard content based on the user's role.
+         * Renders the appropriate dashboard view (Student or Teacher)
+         * @param {string} role - 'student' or 'teacher'
          */
         function renderDashboard(role) {
-            const dashboardContent = document.getElementById('dashboard-content');
             let content = '';
-
+            let header = '';
+            
+            // 1. Update the main navigation button
             if (role === 'teacher') {
-                // Set the teacher's name for use in the createClass function
-                currentUserName = auth.currentUser.email.split('@')[0];
-
-                content = `
-                    <div id="teacher-dashboard">
-                        <header>
-                            <h1>Teacher Dashboard (${currentUserName})</h1>
-                            <button id="teacher-role-btn" data-role="student">Switch to Student View</button>
-                            <button id="logout-btn">Logout</button>
-                        </header>
-                        <section>
-                            <h2>Class Management</h2>
-                            <p>Create, manage, and assign activities to your classes.</p>
-                            <button id="createClassBtn" class="ka-accent-btn">➕ Create New Class</button>
-                            <button id="loadClassesBtn" style="margin-left: 10px; background-color: #2980b9; color: white;">View My Classes</button>
-
-                            <div id="class-list-container">
-                                <h3>Your Classes:</h3>
-                                <ul id="classesList">
-                                    <li>Click "View My Classes" to load them.</li>
-                                </ul>
-                            </div>
-                        </section>
-                        </div>
-                `;
-
-            } else if (role === 'student') {
-                content = `
-                    <div id="student-dashboard">
-                        <header>
-                            <h1>Student Dashboard</h1>
-                            <button id="teacher-role-btn" data-role="teacher">Switch to Teacher View</button>
-                            <button id="logout-btn">Logout</button>
-                        </header>
-                        <section>
-                            <h2>My Assignments</h2>
-                            <p>View assignments and join new classes.</p>
-                            <button id="joinClassBtn" class="ka-accent-btn">🔗 Join a New Class</button>
-                            </section>
-                    </div>
-                `;
+                 navActionButton.textContent = 'Create Assignment';
+                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+            } else {
+                navActionButton.textContent = 'Join Class';
+                navActionButton.onclick = () => {
+                    const joinCode = prompt("Enter the 6-character class join code:");
+                    if (joinCode) {
+                        joinClass(joinCode.toUpperCase());
+                    }
+                };
             }
 
-            // Insert the newly generated HTML content
-            dashboardContent.innerHTML = content;
+            // 2. Render the dashboard body
+            if (role === 'student') {
+                 header = `
+					<div class="header-controls">
+						<h1>Your Learning Dashboard</h1>
+						<button id="logout-btn" class="logout-button">Sign Out</button>
+					</div>
+					<div class="role-switch">
+						<span>Current View:</span>
+						<span id="current-role" class="active-role">Student</span>
+						<button id="teacher-role-btn">Switch to Coach View</button>
+					</div>
+				`;
+				// Student View Content
+				content = `
+					<h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+					<div id="loading-assignments" class="loading-message">
+						Loading your assignments...
+					</div>
+					<div class="feature-grid assignment-grid" style="display: none;"></div>
+					<div id="no-assignments-message" class="empty-state-message" style="display: none;">
+						🎉 Woohoo! No assignments here. Go explore!
+					</div>
+
+					<h2 class="section-title">📊 Progress & Mastery</h2>
+					<div class="feature-grid">
+						<div class="feature-card highlight-progress">
+							<span class="icon">✅</span> View Full Progress Report / Grades
+						</div>
+						<div class="feature-card">
+							<span class="icon">🏆</span> My Badges & Energy Points
+						</div>
+						<div class="feature-card">
+							<span class="icon">🧭</span> Explore All Subjects & Courses
+						</div>
+						<div class="feature-card">
+							<span class="icon">📌</span> Review Course Enrollment
+						</div>
+					</div>
+
+					<h2 class="section-title">🛠️ Tools & Account</h2>
+					<div class="feature-grid">
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">👤</span> Profile & Settings</div>
+							<div class="card-meta">Manage your personal information.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">❓</span> Help Center & Support</div>
+							<div class="card-meta">Get help with the platform.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">🔒</span> Change Password</div>
+							<div class="card-meta">Secure your account.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">📣</span> Email & Notification Preferences</div>
+							<div class="card-meta">Control platform communications.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">🎁</span> Refer a Friend</div>
+							<div class="card-meta">Invite friends to join the platform.</div>
+						</div>
+					</div>
+				`;
+            } else if (role === 'teacher') {
+                header = `
+					<div class="header-controls">
+						<h1>Coach Dashboard</h1>
+						<button id="logout-btn" class="logout-button">Sign Out</button>
+					</div>
+					<div class="role-switch">
+						<span>Current View:</span>
+						<span id="current-role" class="active-role">Teacher</span>
+						<button id="teacher-role-btn">Switch to Student View</button>
+					</div>
+				`;
+				// Teacher View Content
+				content = `
+					<h2 class="section-title">📚 My Classes & Groups</h2>
+					<div id="loading-classes" class="loading-message">
+						Loading your classes...
+					</div>
+					<button id="createClassBtn" class="action-button">➕ Create New Class</button>
+					<button id="loadClassesBtn" class="action-button" style="background-color: #2980b9; margin-left: 10px;">View My Classes</button>
+
+					<div class="feature-grid class-grid">
+						</div>
+					<div id="no-classes-message" class="empty-state-message" style="display: none;">
+						✨ No classes found. Create one to get started!
+					</div>
+
+					<h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+					<div class="feature-grid">
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">📋</span> View All Students</div>
+							<div class="card-meta">Access full roster and student accounts.</div>
+						</div>
+						<div class="feature-card">
+							<div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+							<div class="card-meta">0 students pending approval.</div>
+						</div>
+						<div class="feature-card" id="manage-settings-card">
+							<div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+							<div class="card-meta">Change class codes, grading scales, and permissions.</div>
+						</div>
+					</div>
+				`;
+            }
             
-            // Call the listener attachment function immediately
-            attachDashboardListeners(role);
+            dashboardContent.innerHTML = header + content;
+            
+            // Re-attach listeners and load dynamic data
+            if (currentUserId) {
+                attachDashboardListeners(role);
+                if (role === 'teacher') {
+                    // Start by trying to load classes if we are a teacher
+                    loadClasses();
+                    // Attach listener to the new card
+                    const manageSettingsCard = document.getElementById('manage-settings-card');
+                    if (manageSettingsCard) {
+                        manageSettingsCard.onclick = () => {
+                            // Since we have no selection logic, we'll try to get the ID of the first loaded class
+                            const firstClassCard = document.querySelector('.class-grid .feature-card');
+                            const defaultClassId = firstClassCard ? firstClassCard.dataset.classId : 'NO_CLASS_FOUND';
+                            
+                            if (defaultClassId !== 'NO_CLASS_FOUND') {
+                                 openClassSettingsModal(defaultClassId);
+                            } else {
+                                alert("Please create a class first to manage its settings!");
+                            }
+                        };
+                    }
+                } else {
+                    // loadAssignments(currentUserId);
+                }
+            }
         }
 
+
+        // ======================================================================
+        // 3. FIREBASE DATA & ROLE MANAGEMENT
+        // ======================================================================
+
+        /**
+         * Fetches user role from Firestore profile. If no profile exists, creates one as 'student'.
+         * @param {string} userId - The Firebase UID.
+         */
+        async function loadUserRole(userId) {
+            const docRef = db.collection('user_profiles').doc(userId);
+			try {
+				const doc = await docRef.get();
+				let role = 'student';	
+
+				if (doc.exists) {
+					role = doc.data().role || 'student';
+				} else {
+					// Initialize profile for new user
+					await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+				}
+				
+				renderDashboard(role);
+
+			} catch (error) {
+				console.error("Error loading user role:", error);
+				renderDashboard('student');
+			}
+        }
+        
+        /**
+         * Saves the new role to Firestore and updates the UI.
+         * @param {string} newRole - 'student' or 'teacher'
+         */
+        async function saveNewRole(newRole) {
+            if (!currentUserId) return;
+			try {
+				await db.collection('user_profiles').doc(currentUserId).update({
+					role: newRole,
+					lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+				});
+				roleSwitchModal.style.display = 'none';
+				renderDashboard(newRole);
+			} catch (error) {
+				console.error("Error saving new role:", error);
+				alert('Could not save role change to database. Please try again. Make sure your Firestore rules for user_profiles are correct.');
+			}
+        }
+
+        /**
+         * Fetches and displays assignments for the student.
+         */
+        function loadAssignments(userId) {
+            // Placeholder: Not using Firestore for this yet.
+        }
+        
+        /**
+         * Fetches and displays the teacher's classes.
+         */
+        function loadTeacherData(userId) {
+            // Placeholder: We now use the Google Sheet function 'loadClasses()' instead of Firestore.
+            loadClasses();
+        }
+        
+        // ======================================================================
+        // 4. CLASS SETTINGS FUNCTIONS
+        // ======================================================================
+
+        /**
+         * Opens the modal and populates the form with a class's current settings.
+         * @param {string} classId - The ID of the class to manage.
+         */
+        async function openClassSettingsModal(classId) {
+            if (!classId || classId === 'NO_CLASS_FOUND') return;
+            
+            // NOTE: This currently uses Firestore since the form is complex. 
+            // If you need to stay strictly $0 budget, this function needs to be rewritten 
+            // to fetch data from the Apps Script as well. For now, it's Firebase for settings.
+            
+            saveSettingsBtn.dataset.classId = classId;
+            
+            try {
+                const classDoc = await db.collection('classes').doc(classId).get();
+                if (!classDoc.exists) {
+                    alert('Class not found!');
+                    return;
+                }
+                
+                const data = classDoc.data();
+                
+                settingsClassName.textContent = data.name || 'Untitled Class';
+                classNameInput.value = data.name || '';
+                classCodeInput.value = data.code || '';
+                masteryToggle.checked = data.enableMasteryChallenges === true;
+                
+                classSettingsModal.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error fetching class settings:', error);
+                alert('An error occurred loading class settings.');
+            }
+        }
+
+        /**
+         * Saves the class settings back to Firestore.
+         */
+        async function saveClassSettings() {
+            // NOTE: This currently uses Firestore.
+            const classId = saveSettingsBtn.dataset.classId;
+            if (!classId) return;
+
+            const newName = classNameInput.value.trim();
+            const newCode = classCodeInput.value.trim();
+            const enableMastery = masteryToggle.checked;
+
+            if (newName.length < 3) {
+                alert('Class name must be at least 3 characters long.');
+                return;
+            }
+            if (newCode.length !== 6) {
+                alert('Class code must be exactly 6 characters long.');
+                return;
+            }
+            
+            saveSettingsBtn.disabled = true;
+            saveSettingsBtn.textContent = 'Saving...';
+
+            try {
+                await db.collection('classes').doc(classId).update({
+                    name: newName,
+                    code: newCode.toUpperCase(),
+                    enableMasteryChallenges: enableMastery,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Settings for "${newName}" saved successfully!`);
+                classSettingsModal.style.display = 'none';
+
+            } catch (error) {
+                console.error('Error saving class settings:', error);
+                alert('Could not save settings. Ensure you have the necessary permissions.');
+            } finally {
+                saveSettingsBtn.disabled = false;
+                saveSettingsBtn.textContent = 'Save Settings';
+            }
+        }
+
+        // ======================================================================
+        // 5. EVENT LISTENERS
+        // ======================================================================
         
         /**
          * Attaches listeners to dynamically created elements.
@@ -430,35 +918,25 @@
         function attachDashboardListeners(currentRole) {
             const logoutBtn = document.getElementById('logout-btn');
             const teacherRoleBtn = document.getElementById('teacher-role-btn');
-            const roleSwitchModal = document.getElementById('roleSwitchModal');
-            
-            // Re-get the modal buttons in case the modal was closed
-            const confirmSwitchBtn = document.getElementById('confirmSwitchBtn');
-            const cancelSwitchBtn = document.getElementById('cancelSwitchBtn');
-            const classSettingsModal = document.getElementById('classSettingsModal');
-            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-            const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
             
             if (logoutBtn) {
-                logoutBtn.onclick = () => auth.signOut();
+                logoutBtn.onclick = async () => {
+                    try {
+                        await auth.signOut();
+                    } catch (error) {
+                        console.error("Logout Error:", error);
+                    }
+                };
             }
-
-            // 🌟 FIXED ROLE SWITCH LOGIC
+            
             if (teacherRoleBtn) {
-                teacherRoleBtn.onclick = (e) => {
-                    const targetRole = e.target.getAttribute('data-role');
+                teacherRoleBtn.onclick = () => {
+                    const targetRole = currentRole === 'student' ? 'teacher' : 'student';
                     
-                    if (currentRole === 'teacher' && targetRole === 'student') {
-                        saveNewRole(targetRole);
-                    } else if (currentRole === 'student' && targetRole === 'teacher') {
+                    if (currentRole === 'student' && targetRole === 'teacher') {
                         roleSwitchModal.style.display = 'block';
-                        
-                        if (confirmSwitchBtn) {
-                            confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
-                        }
-                        if (cancelSwitchBtn) {
-                            cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
-                        }
+                        confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
+                        cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
                     } else {
                         saveNewRole(targetRole);
                     }
@@ -467,49 +945,15 @@
 
             // --- TEACHER ROLE LISTENERS ---
             if (currentRole === 'teacher') {
-                // 1. Create Class Button
                 const createClassBtn = document.getElementById('createClassBtn');
+                const loadClassesBtn = document.getElementById('loadClassesBtn');
+
                 if (createClassBtn) {
                     createClassBtn.addEventListener('click', createClass);
                 }
                 
-                // 2. Load Classes Button 
-                const loadClassesBtn = document.getElementById('loadClassesBtn');
                 if (loadClassesBtn) {
                     loadClassesBtn.addEventListener('click', loadClasses);
-                }
-
-                // 3. Event Delegation for dynamically created class action buttons
-                const classesList = document.getElementById('classesList');
-                if (classesList) {
-                    classesList.addEventListener('click', (e) => {
-                        const target = e.target;
-                        const classId = target.getAttribute('data-class-id');
-                        
-                        if (target.classList.contains('view-class-btn')) {
-                            alert(`Viewing/Assigning activities for Class ID: ${classId}`);
-                        } else if (target.classList.contains('edit-class-btn')) {
-                            alert(`Editing settings for Class ID: ${classId}`);
-                            // Logic to open classSettingsModal would go here
-                        } else if (target.classList.contains('delete-class-btn')) {
-                            if (confirm(`Are you sure you want to delete Class ID: ${classId}?`)) {
-                                alert(`Deleting Class ID: ${classId} (Requires delete function in Apps Script)`);
-                            }
-                        }
-                    });
-                }
-            }
-            
-            // --- STUDENT ROLE LISTENERS ---
-            if (currentRole === 'student') {
-                const joinClassBtn = document.getElementById('joinClassBtn');
-                if (joinClassBtn) {
-                    joinClassBtn.addEventListener('click', () => {
-                        const joinCode = prompt("Enter the 6-character class join code:");
-                        if (joinCode) {
-                            joinClass(joinCode.toUpperCase());
-                        }
-                    });
                 }
             }
 
@@ -534,10 +978,8 @@
         // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
         auth.onAuthStateChanged(user => {
             if (!user) {
-                // User is signed out, redirect to index
                 window.location.replace('index.html');
             } else {
-                // User is signed in
                 currentUserId = user.uid;
                 loadUserRole(user.uid); 
             }
