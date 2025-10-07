@@ -427,19 +427,18 @@ async function createClass() {
     const createButton = document.getElementById('createClassBtn');
     if (createButton) createButton.disabled = true;
 
-    const response = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(dataToSend),
-      headers: {'Content-Type': 'application/json'}
-    });
-    
-    if (createButton) createButton.disabled = false;
+const response = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(dataToSend),
+    headers: {'Content-Type': 'application/json'}
+});
 
-    // 🚨 CORS FIX: Read response as text, then manually parse as JSON
-    const responseText = await response.text();
-    const result = JSON.parse(responseText);
+// ✅ FIX: Read response as text, then manually parse as JSON
+const responseText = await response.text();
+const result = JSON.parse(responseText);
 
-    if (result.status === 'success') {
+// Check the status from the parsed result
+if (result.status === 'success') {
         alert(`🎉 Success! Class "${className.trim()}" created and shared! 
                \nTell your students to use Join Code: ${joinCode}`);
         loadTeacherData(auth.currentUser.uid); // Refresh the list
