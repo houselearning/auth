@@ -461,8 +461,38 @@ function attachDashboardListeners(currentRole) {
         logoutBtn.onclick = () => auth.signOut();
     }
     // ... (Role switch logic remains unchanged) ...
-    if (teacherRoleBtn) { /* ... */ }
+// FIX: Ensure role switch logic is clean for both directions.
+    if (teacherRoleBtn) {
+        teacherRoleBtn.onclick = (e) => {
+            const targetRole = e.target.getAttribute('data-role'); // Gets 'student' or 'teacher'
+            
+            // If the user is currently a teacher and is switching to student
+            if (currentRole === 'teacher' && targetRole === 'student') {
+                // No confirmation modal is needed for Teacher -> Student
+                saveNewRole(targetRole);
+            
+            // If the user is currently a student and is switching to teacher
+            } else if (currentRole === 'student' && targetRole === 'teacher') {
+                // Confirmation modal is needed for Student -> Teacher
+                roleSwitchModal.style.display = 'block';
+                
+                // Redefine button handlers to prevent multiple bindings
+                const confirmSwitchBtn = document.getElementById('confirmSwitchBtn');
+                const cancelSwitchBtn = document.getElementById('cancelSwitchBtn');
+                
+                if (confirmSwitchBtn) {
+                    confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
+                }
+                if (cancelSwitchBtn) {
+                    cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
+                }
 
+            } else {
+                // Catch-all for other simple switches (like if we had other roles)
+                saveNewRole(targetRole);
+            }
+        };
+    }
     // --- TEACHER ROLE LISTENERS ---
     if (currentRole === 'teacher') {
         // 1. Create Class Button
