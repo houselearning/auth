@@ -553,7 +553,27 @@ window.handleJoinCodeResponse = function(result) {
 // ======================================================================
 // 2. DASHBOARD RENDERING LOGIC
 // ======================================================================
+async function loadUserRole(userId) {
+    const docRef = db.collection('user_profiles').doc(userId);
+    try {
+        const doc = await docRef.get();
+        let role = 'student';
 
+        if (doc.exists) {
+            role = doc.data().role || 'student';
+        } else {
+            await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        }
+        
+        renderDashboard(role);
+
+    } catch (error) {
+        console.error("Error loading user role (Firestore required for roles):", error);
+        renderDashboard('student');
+    }
+}
+
+		
 function renderClassList(classes) {
     const classGrid = document.querySelector('.class-grid');
     const noClassesMsg = document.getElementById('no-classes-message');
