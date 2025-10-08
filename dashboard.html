@@ -818,6 +818,33 @@
         </div>
     </div>
 
+    <!-- Role Switch Modal (previously referenced but missing) -->
+    <div id="role-switch-modal" class="modal">
+        <div class="modal-content">
+            <h2>Switch Role</h2>
+            <p>Select how you want to view the dashboard:</p>
+            <div class="modal-footer">
+                <button type="button" class="cancel-button" onclick="document.getElementById('role-switch-modal').style.display='none'">Cancel</button>
+                <button type="button" class="save-button" onclick="switchRole('student')">View as Student</button>
+                <button type="button" class="save-button" onclick="switchRole('teacher')">View as Teacher</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Class Modal (previously referenced but missing) -->
+    <div id="join-class-modal" class="modal">
+        <div class="modal-content">
+            <h2>Join a Class</h2>
+            <p>Enter the class code to join.</p>
+            <label for="join-class-code">Class Code:</label>
+            <input type="text" id="join-class-code" name="joinClassCode" style="width:100%; padding:8px; margin-bottom:10px;" />
+            <div class="modal-footer">
+                <button type="button" class="cancel-button" onclick="document.getElementById('join-class-modal').style.display='none'">Cancel</button>
+                <button type="button" class="save-button" onclick="(function(){ const code=document.getElementById('join-class-code').value.trim(); if(!code){ showInfoDialog('Error','Please enter a valid class code.','error'); return; } document.getElementById('join-class-modal').style.display='none'; /* Placeholder: call Apps Script / API to join */ showInfoDialog('Joined','Requested to join class '+code,'success'); })()">Join Class</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
     // ======================================================================
