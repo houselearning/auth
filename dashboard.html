@@ -857,7 +857,7 @@
             if (deleteButton) deleteButton.disabled = false;
             
             if (result && result.status === 'success') {
-                alert("🎉 Success! Action completed: " + result.message); 
+                console.log("🎉 Success! Action completed: " + result.message); 
                 // Hide any open modals after success
                 classSettingsModal.style.display = 'none'; 
                 document.getElementById('confirm-dialog-modal').style.display = 'none'; 
