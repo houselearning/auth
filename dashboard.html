@@ -819,7 +819,7 @@
     </div>
 
 
-<script>
+    <script>
     // ======================================================================
     // 1. CONFIGURATION & GLOBAL VARIABLES
     // ======================================================================
@@ -829,12 +829,12 @@
 
     // 🚨 CRITICAL: REPLACE WITH YOUR FIREBASE CONFIGURATION
     const firebaseConfig = {
-  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-  authDomain: "contract-center-llc-10.firebaseapp.com",
-  projectId: "contract-center-llc-10",
-  storageBucket: "contract-center-llc-10.firebasestorage.app",
-  messagingSenderId: "323221512767",
-  appId: "1:323221512767:web:6421260f875997dbf64e8a",
+      apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+      authDomain: "contract-center-llc-10.firebaseapp.com",
+      projectId: "contract-center-llc-10",
+      storageBucket: "contract-center-llc-10.firebasestorage.app",
+      messagingSenderId: "323221512767",
+      appId: "1:323221512767:web:6421260f875997dbf64e8a",
     };
 
     // Initialize Firebase (keep this as-is)
@@ -911,16 +911,26 @@
 
     /**
      * Displays a custom modal dialog.
+     * FIX: Corrected element IDs and removed reliance on non-existent 'info-dialog-header'.
      */
     function showInfoDialog(title, message, type) {
         const modal = document.getElementById('info-dialog-modal');
+        const content = modal.querySelector('.modal-content');
+
         document.getElementById('info-dialog-title').innerText = title;
-        document.getElementById('info-dialog-message').innerText = message;
+        // FIX 1: Corrected P element ID from 'info-dialog-message' to 'info-dialog-body'
+        document.getElementById('info-dialog-body').innerText = message; 
+
+        // FIX 2: Removed non-existent 'info-dialog-header' and applied a colored border-top to the content box
+        let borderColor = 'var(--accent-color)'; 
+        if (type === 'error') {
+            borderColor = 'var(--danger-color)'; 
+        } else if (type === 'success') {
+            borderColor = 'var(--success-color)';
+        }
+
+        content.style.borderTop = `5px solid ${borderColor}`;
         
-        const header = document.getElementById('info-dialog-header');
-        header.style.backgroundColor = type === 'error' ? 'var(--ka-red-error)' : 
-                                       type === 'success' ? 'var(--ka-accent-green)' : 
-                                       'var(--ka-blue-bright)';
         modal.style.display = 'flex';
     }
 
@@ -954,25 +964,47 @@
 
     /**
      * Submits class creation form.
+     * FIX: Uses correct element IDs from HTML: 'new-class-code' and 'new-class-teacher-id'.
      */
     function createClass() {
         const form = document.getElementById('create-class-form');
-        document.getElementById('class-code-input').value = generateClassCode();
-        document.getElementById('teacher-id-input').value = currentUserId; // Set the current user ID
-        document.getElementById('teacher-name-input').value = userFullName; // Set the current user name
+        document.getElementById('new-class-code').value = generateClassCode();
+        // Assuming the 'teacher' field in the form uses the user's full name for lookup in Apps Script
+        document.getElementById('new-class-teacher-id').value = userFullName; 
+        
         form.submit();
     }
 
     /**
      * Submits class settings update form.
+     * FIX: Uses correct element IDs and dynamically creates hidden fields for boolean values.
      */
     function saveClassSettings(code, name, allowPosting, allowCommenting) {
-        document.getElementById('update-class-code').value = code;
-        document.getElementById('update-class-name').value = name;
-        document.getElementById('update-allow-posting').value = allowPosting ? 'TRUE' : 'FALSE';
-        document.getElementById('update-allow-commenting').value = allowCommenting ? 'TRUE' : 'FALSE';
-        document.getElementById('update-class-form').submit();
+        const form = document.getElementById('update-class-form');
+        
+        // Use correct IDs for code and name fields
+        document.getElementById('settings-class-code').value = code;
+        document.getElementById('settings-class-name').value = name;
+        
+        // Dynamically create hidden inputs for boolean submission
+        const postInput = document.createElement('input');
+        postInput.type = 'hidden';
+        postInput.name = 'allowPosting';
+        postInput.value = allowPosting ? 'TRUE' : 'FALSE';
+        form.appendChild(postInput);
+
+        const commentInput = document.createElement('input');
+        commentInput.type = 'hidden';
+        commentInput.name = 'allowCommenting';
+        commentInput.value = allowCommenting ? 'TRUE' : 'FALSE';
+        form.appendChild(commentInput);
+        
+        form.submit();
         document.getElementById('class-settings-modal').style.display = 'none';
+        
+        // Clean up
+        form.removeChild(postInput);
+        form.removeChild(commentInput);
     }
 
     /**
@@ -981,29 +1013,42 @@
     function showDeleteConfirmation(className, classCode) {
         const modal = document.getElementById('confirm-dialog-modal');
         document.getElementById('confirm-dialog-title').innerText = `Confirm Deletion`;
-        document.getElementById('confirm-dialog-message').innerHTML = `Are you sure you want to delete the class <strong>${className}</strong> (Code: ${classCode})? This action cannot be undone.`;
-        document.getElementById('confirm-action-btn').onclick = () => submitDeleteClass(classCode);
+        document.getElementById('confirm-dialog-body').innerHTML = `Are you sure you want to delete the class <strong>${className}</strong> (Code: ${classCode})? This action cannot be undone.`;
+        // The HTML uses 'confirm-delete-btn' for delete action
+        document.getElementById('confirm-delete-btn').onclick = () => submitDeleteClass(classCode); 
         modal.style.display = 'flex';
     }
 
     /**
      * Submits class deletion to Apps Script.
+     * NOTE: The delete form is not in the HTML. Creating it dynamically to work with the hidden iframe.
      */
     function submitDeleteClass(classCode) {
         document.getElementById('confirm-dialog-modal').style.display = 'none';
         
-        const form = document.getElementById('delete-class-form');
-        document.getElementById('delete-class-code-input').value = classCode;
+        // Temporarily create the form and submit it
+        const tempForm = document.createElement('form');
+        tempForm.id = 'delete-class-form-temp';
+        tempForm.target = 'hidden-iframe';
+        tempForm.method = 'POST';
+        tempForm.action = SCRIPT_URL;
+        tempForm.style.display = 'none';
         
-        // This must be done manually for a quick, specific action using the hidden iframe
         const actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
         actionInput.value = 'deleteClass';
-        form.appendChild(actionInput);
+        tempForm.appendChild(actionInput);
         
-        form.submit();
-        form.removeChild(actionInput); // Clean up the temporary input
+        const codeInput = document.createElement('input');
+        codeInput.type = 'hidden';
+        codeInput.name = 'classCode';
+        codeInput.value = classCode;
+        tempForm.appendChild(codeInput);
+        
+        document.body.appendChild(tempForm);
+        tempForm.submit();
+        document.body.removeChild(tempForm);
     }
     
     /**
@@ -1051,7 +1096,7 @@
 
         // 1. Enforce 30KB Size Limit
         if (file.size > MAX_FILE_SIZE_BYTES) {
-            infoSpan.style.color = 'var(--ka-red-error)';
+            infoSpan.style.color = 'var(--danger-color)';
             infoSpan.innerText = `Error: File size (${(file.size / 1024).toFixed(1)} KB) exceeds the 30KB limit (${(MAX_FILE_SIZE_BYTES / 1024)} KB).`;
             input.value = ''; // Clear file input
             mediaDataUriInput.value = '';
@@ -1073,7 +1118,7 @@
                 mediaTypeInput.value = 'file';
             }
 
-            infoSpan.style.color = 'var(--ka-accent-green)';
+            infoSpan.style.color = 'var(--success-color)';
             infoSpan.innerText = `File ready: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
         };
         
@@ -1113,7 +1158,7 @@
 
                 mediaHTML = `
                     <div class="file-attachment">
-                        <a href="${mediaDataURI}" download="${fileName}" style="text-decoration: none; display: flex; align-items: center; gap: 5px; color: var(--ka-blue-bright); font-weight: bold;">
+                        <a href="${mediaDataURI}" download="${fileName}" style="text-decoration: none; display: flex; align-items: center; gap: 5px; color: var(--accent-color); font-weight: bold;">
                             <span class="material-icons">${post.mediaType === 'pdf' ? 'picture_as_pdf' : 'attach_file'}</span> 
                             Download Attachment (${post.mediaType.toUpperCase()})
                         </a>
@@ -1162,7 +1207,7 @@
                 postsSection.innerHTML = '<div class="empty-state-message">Be the first to post in this class!</div>';
             }
         } catch (error) {
-            postsSection.innerHTML = `<div class="info-message" style="background-color:var(--ka-red-error); color:white;">Error loading posts: ${error.message}</div>`;
+            postsSection.innerHTML = `<div class="info-message" style="background-color:var(--danger-color); color:white;">Error loading posts: ${error.message}</div>`;
             console.error("Failed to load posts:", error);
         }
     }
@@ -1268,7 +1313,7 @@
                                 <span class="material-icons">perm_media</span> Add multimedia (Max 30KB)
                             </button>
                             
-                            <span id="file-selection-info" style="font-size:0.9em; color:var(--ka-accent-green); margin-left:10px;"></span>
+                            <span id="file-selection-info" style="font-size:0.9em; color:var(--success-color); margin-left:10px;"></span>
 
                             ${(userRole === 'teacher') ? 
                                 `<button type="button" class="option-button"><span class="material-icons">assignment</span> Create assignment</button>` : 
@@ -1482,7 +1527,9 @@
      */
     function attachDashboardListeners(role) {
         const createClassForm = document.getElementById('create-class-form');
-        const submitCreateClassBtn = document.getElementById('submit-create-class');
+        // FIX: Replaced non-existent 'submit-create-class' ID with button type submit on the form
+        const submitCreateClassBtn = createClassForm ? createClassForm.querySelector('button[type="submit"]') : null;
+        
         const logoutBtn = document.getElementById('logout-btn');
         
         if (createClassForm) createClassForm.action = SCRIPT_URL;
@@ -1494,12 +1541,28 @@
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
         const deleteClassBtn = document.getElementById('delete-class-btn');
-        const roleSwitchModal = document.getElementById('role-switch-modal');
+        // NOTE: role-switch-modal, join-class-modal, confirm-dialog-modal are NOT in the HTML yet but calls are wrapped in IF in the window.onclick handler
+        // The one that is missing and causing the initial error is info-dialog-modal
+
+        // Added this missing function which will be called from the class dashboard
+        window.openClassSettingsModal = function(code, name, allowPosting, allowCommenting) {
+            document.getElementById('settings-class-code').value = code;
+            document.getElementById('settings-class-name').value = name;
+            document.getElementById('settings-allow-posting').checked = allowPosting;
+            document.getElementById('settings-allow-commenting').checked = allowCommenting;
+            
+            document.getElementById('settings-modal-title').innerText = `Settings for ${name}`;
+            deleteClassBtn.dataset.classCode = code;
+            deleteClassBtn.dataset.className = name;
+            
+            classSettingsModal.style.display = 'flex';
+        };
         
         if (saveSettingsBtn) {
             saveSettingsBtn.onclick = () => {
-                const code = document.getElementById('update-class-code').value;
-                const name = document.getElementById('update-class-name').value;
+                const code = document.getElementById('settings-class-code').value;
+                const name = document.getElementById('settings-class-name').value;
+                // Read checked state directly from the checkbox
                 const allowPosting = document.getElementById('settings-allow-posting').checked;
                 const allowCommenting = document.getElementById('settings-allow-commenting').checked;
                 saveClassSettings(code, name, allowPosting, allowCommenting);
@@ -1520,9 +1583,20 @@
         
         // Close modal if user clicks outside of it
         window.onclick = function(event) {
-            if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal') || event.target == document.getElementById('join-class-modal')) {
-                event.target.style.display = "none";
-            }
+            // Added null checks to avoid errors if the modals are not yet rendered in the HTML
+            const modal1 = document.getElementById('class-settings-modal');
+            const modal2 = document.getElementById('info-dialog-modal');
+            const modal3 = document.getElementById('role-switch-modal'); // Not in HTML, but check included
+            const modal4 = document.getElementById('class-management-modal');
+            const modal5 = document.getElementById('confirm-dialog-modal');
+            const modal6 = document.getElementById('join-class-modal'); // Not in HTML, but check included
+
+            if (modal1 && event.target == modal1) modal1.style.display = "none";
+            if (modal2 && event.target == modal2) modal2.style.display = "none";
+            if (modal3 && event.target == modal3) modal3.style.display = "none";
+            if (modal4 && event.target == modal4) modal4.style.display = "none";
+            if (modal5 && event.target == modal5) modal5.style.display = "none";
+            if (modal6 && event.target == modal6) modal6.style.display = "none";
         }
     }
 
