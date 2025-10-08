@@ -686,11 +686,7 @@
         // ======================================================================
         // 2. CORE FUNCTION DEFINITIONS (ORDER IS CRITICAL: MUST BE DEFINED FIRST)
         // ======================================================================
-function getStudentEnrollmentCount() {
-    // Hardcoded placeholder count for now.
-    // Replace this with a JSONP call to your Apps Script once the backend is ready.
-    return 3; 
-}
+
         /**
          * Placeholder for the full class dashboard view.
          * @param {object} classData The data of the class card that was clicked.
@@ -1203,13 +1199,6 @@ function getStudentEnrollmentCount() {
 
             // --- Student View ---
             if (role === 'student') {
-                // === Dynamic Enrollment Count Logic ===
-                const count = getStudentEnrollmentCount(); 
-                const enrollmentText = count === 1 
-                    ? "You are enrolled in 1 course." 
-                    : `You are enrolled in ${count} courses.`;
-                // =====================================
-
                 header = `
                     <div class="header-controls">
                         <h1>Your Learning Dashboard</h1>
@@ -1233,7 +1222,7 @@ function getStudentEnrollmentCount() {
 
                     <h2 class="section-title">📊 Progress & Mastery</h2>
                     <div class="feature-grid">
-                        <div class="feature-card"> 
+                        <div class="feature-card highlight-progress">
                             <span class="icon">✅</span> View Full Progress Report / Grades
                         </div>
                         <div class="feature-card">
@@ -1242,20 +1231,12 @@ function getStudentEnrollmentCount() {
                         <div class="feature-card">
                             <span class="icon">🧭</span> Explore All Subjects & Courses
                         </div>
-                        <div class="feature-card" id="review-enrollment-card">
+                        <div class="feature-card">
                             <div class="card-header"><span class="icon">📌</span> Review Course Enrollment</div>
-                            <div class="card-meta">${enrollmentText}</div>
+                            <div class="card-meta">You are enrolled in 3 courses.</div>
                         </div>
                     </div>
-
-                    <h2 class="section-title">🧑‍🏫 Join a Class</h2>
-                    <div class="join-class-container">
-                        <input type="text" id="join-code-input" placeholder="Enter class code (e.g., ABC123D)" maxlength="7">
-                        <button id="join-class-btn">Join Class</button>
-                    </div>
-                    <div id="join-class-message" class="info-message" style="display: none;"></div>
                 `;
-                
             } 
             // --- Teacher View ---
             else if (role === 'teacher') {
