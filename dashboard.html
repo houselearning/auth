@@ -911,17 +911,23 @@
 
     /**
      * Displays a custom modal dialog.
-     * FIX: Corrected element IDs and removed reliance on non-existent 'info-dialog-header'.
+     * FIX 1: ADDED NULL CHECK HERE - Prevents 'Cannot read properties of null (reading 'style')' if the modal is missing.
      */
     function showInfoDialog(title, message, type) {
         const modal = document.getElementById('info-dialog-modal');
+        // CRITICAL: Stop execution if the main element is missing
+        if (!modal) {
+            console.error("CRITICAL ERROR: Modal 'info-dialog-modal' not found in HTML.");
+            return; 
+        }
+
         const content = modal.querySelector('.modal-content');
+        const titleElement = document.getElementById('info-dialog-title');
+        const bodyElement = document.getElementById('info-dialog-body');
 
-        document.getElementById('info-dialog-title').innerText = title;
-        // FIX 1: Corrected P element ID from 'info-dialog-message' to 'info-dialog-body'
-        document.getElementById('info-dialog-body').innerText = message; 
-
-        // FIX 2: Removed non-existent 'info-dialog-header' and applied a colored border-top to the content box
+        if (titleElement) titleElement.innerText = title;
+        if (bodyElement) bodyElement.innerText = message;
+        
         let borderColor = 'var(--accent-color)'; 
         if (type === 'error') {
             borderColor = 'var(--danger-color)'; 
@@ -929,7 +935,10 @@
             borderColor = 'var(--success-color)';
         }
 
-        content.style.borderTop = `5px solid ${borderColor}`;
+        // Apply style safely
+        if (content) {
+            content.style.borderTop = `5px solid ${borderColor}`;
+        }
         
         modal.style.display = 'flex';
     }
@@ -959,12 +968,42 @@
     }
 
     // ======================================================================
-    // 3. CLASS MANAGEMENT ACTIONS
+    // 3. CLASS MANAGEMENT ACTIONS & MODAL OPENERS
     // ======================================================================
 
     /**
+     * Opens the Class Settings modal.
+     * FIX 2: MOVED FUNCTION TO GLOBAL SCOPE - Must be global because it's called via inline 'onclick'.
+     */
+    window.openClassSettingsModal = function(code, name, allowPosting, allowCommenting) {
+        const modal = document.getElementById('class-settings-modal');
+        const deleteBtn = document.getElementById('delete-class-btn');
+        const titleElement = document.getElementById('settings-modal-title');
+        
+        // CRITICAL: Stop execution if the main element is missing
+        if (!modal) {
+            console.error("CRITICAL ERROR: Modal 'class-settings-modal' not found in HTML.");
+            return; 
+        }
+
+        // Safely set element values/properties
+        document.getElementById('settings-class-code').value = code;
+        document.getElementById('settings-class-name').value = name;
+        document.getElementById('settings-allow-posting').checked = allowPosting;
+        document.getElementById('settings-allow-commenting').checked = allowCommenting;
+        
+        if (titleElement) titleElement.innerText = `Settings for ${name}`;
+        if (deleteBtn) {
+            deleteBtn.dataset.classCode = code;
+            deleteBtn.dataset.className = name;
+        }
+        
+        modal.style.display = 'flex';
+    };
+
+
+    /**
      * Submits class creation form.
-     * FIX: Uses correct element IDs from HTML: 'new-class-code' and 'new-class-teacher-id'.
      */
     function createClass() {
         const form = document.getElementById('create-class-form');
@@ -977,7 +1016,6 @@
 
     /**
      * Submits class settings update form.
-     * FIX: Uses correct element IDs and dynamically creates hidden fields for boolean values.
      */
     function saveClassSettings(code, name, allowPosting, allowCommenting) {
         const form = document.getElementById('update-class-form');
@@ -1000,7 +1038,9 @@
         form.appendChild(commentInput);
         
         form.submit();
-        document.getElementById('class-settings-modal').style.display = 'none';
+        
+        const modal = document.getElementById('class-settings-modal');
+        if (modal) modal.style.display = 'none'; // Safely close modal after submit
         
         // Clean up
         form.removeChild(postInput);
@@ -1012,6 +1052,8 @@
      */
     function showDeleteConfirmation(className, classCode) {
         const modal = document.getElementById('confirm-dialog-modal');
+        if (!modal) return; // Null check
+        
         document.getElementById('confirm-dialog-title').innerText = `Confirm Deletion`;
         document.getElementById('confirm-dialog-body').innerHTML = `Are you sure you want to delete the class <strong>${className}</strong> (Code: ${classCode})? This action cannot be undone.`;
         // The HTML uses 'confirm-delete-btn' for delete action
@@ -1021,14 +1063,13 @@
 
     /**
      * Submits class deletion to Apps Script.
-     * NOTE: The delete form is not in the HTML. Creating it dynamically to work with the hidden iframe.
      */
     function submitDeleteClass(classCode) {
-        document.getElementById('confirm-dialog-modal').style.display = 'none';
+        const confirmModal = document.getElementById('confirm-dialog-modal');
+        if (confirmModal) confirmModal.style.display = 'none'; // Safely close confirm modal
         
         // Temporarily create the form and submit it
         const tempForm = document.createElement('form');
-        tempForm.id = 'delete-class-form-temp';
         tempForm.target = 'hidden-iframe';
         tempForm.method = 'POST';
         tempForm.action = SCRIPT_URL;
@@ -1086,9 +1127,9 @@
         const mediaTypeInput = document.getElementById('post-media-type');
 
         if (input.files.length === 0) {
-            infoSpan.innerText = '';
-            mediaDataUriInput.value = '';
-            mediaTypeInput.value = 'text';
+            if (infoSpan) infoSpan.innerText = '';
+            if (mediaDataUriInput) mediaDataUriInput.value = '';
+            if (mediaTypeInput) mediaTypeInput.value = 'text';
             return;
         }
 
@@ -1096,30 +1137,35 @@
 
         // 1. Enforce 30KB Size Limit
         if (file.size > MAX_FILE_SIZE_BYTES) {
-            infoSpan.style.color = 'var(--danger-color)';
-            infoSpan.innerText = `Error: File size (${(file.size / 1024).toFixed(1)} KB) exceeds the 30KB limit (${(MAX_FILE_SIZE_BYTES / 1024)} KB).`;
+            if (infoSpan) {
+                infoSpan.style.color = 'var(--danger-color)';
+                infoSpan.innerText = `Error: File size (${(file.size / 1024).toFixed(1)} KB) exceeds the 30KB limit.`;
+            }
             input.value = ''; // Clear file input
-            mediaDataUriInput.value = '';
-            mediaTypeInput.value = 'text';
+            if (mediaDataUriInput) mediaDataUriInput.value = '';
+            if (mediaTypeInput) mediaTypeInput.value = 'text';
             return;
         }
 
         // 2. Read and Encode the file
         const reader = new FileReader();
         reader.onload = function(e) {
-            mediaDataUriInput.value = e.target.result; // The data: URI (Base64 string)
+            if (mediaDataUriInput) mediaDataUriInput.value = e.target.result; // The data: URI (Base64 string)
             
             // Set media type based on MIME type for rendering logic
+            let mediaType = 'file';
             if (file.type.includes('image')) {
-                mediaTypeInput.value = 'image';
+                mediaType = 'image';
             } else if (file.type.includes('pdf')) {
-                mediaTypeInput.value = 'pdf';
-            } else {
-                mediaTypeInput.value = 'file';
+                mediaType = 'pdf';
             }
+            
+            if (mediaTypeInput) mediaTypeInput.value = mediaType;
 
-            infoSpan.style.color = 'var(--success-color)';
-            infoSpan.innerText = `File ready: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            if (infoSpan) {
+                infoSpan.style.color = 'var(--success-color)';
+                infoSpan.innerText = `File ready: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            }
         };
         
         reader.readAsDataURL(file); // Critical: Read the file as a Data URL (Base64)
@@ -1196,6 +1242,8 @@
      */
     async function loadClassPosts(classCode) {
         const postsSection = document.getElementById('previous-posts-section');
+        if (!postsSection) return;
+
         postsSection.innerHTML = '<div class="loading-message">Loading class posts...</div>';
 
         try {
@@ -1235,10 +1283,15 @@
                 if (result.status === 'success' && result.message === 'Post created successfully.') {
                     // Clear all post inputs after success
                     form.reset();
-                    document.getElementById('post-media-data-uri').value = '';
-                    document.getElementById('post-media-type').value = 'text';
-                    document.getElementById('post-file-upload').value = ''; // Clear file input element
-                    document.getElementById('file-selection-info').innerText = '';
+                    const mediaDataUriInput = document.getElementById('post-media-data-uri');
+                    const mediaTypeInput = document.getElementById('post-media-type');
+                    const fileUploadInput = document.getElementById('post-file-upload');
+                    const infoSpan = document.getElementById('file-selection-info');
+
+                    if (mediaDataUriInput) mediaDataUriInput.value = '';
+                    if (mediaTypeInput) mediaTypeInput.value = 'text';
+                    if (fileUploadInput) fileUploadInput.value = ''; // Clear file input element
+                    if (infoSpan) infoSpan.innerText = '';
                     
                     // Reload posts after a short delay
                     setTimeout(() => loadClassPosts(classCode), 1000); 
@@ -1256,6 +1309,8 @@
         
         const appHeader = document.getElementById('app-header');
         const dashboardContainer = document.getElementById('dashboard-container');
+
+        if (!appHeader || !dashboardContainer) return; // Basic null check
 
         // --- Header for Class Dashboard ---
         appHeader.innerHTML = `
@@ -1280,6 +1335,7 @@
                 <div class="class-banner" style="background-image: url('https://via.placeholder.com/1200x200/4CAF50/FFFFFF?text=Class+Banner+Image');">
                     <div class="class-banner-content">
                         ${(userRole === 'teacher') ? 
+                            // Note: openClassSettingsModal is now a global function
                             `<span class="class-banner-settings material-icons" onclick="openClassSettingsModal('${classCode}', '${className}', true, true)">settings</span>` 
                             : ''
                         }
@@ -1383,11 +1439,16 @@
             const result = await fetchJsonp('loadClasses', { teacher: userFullName }); // Use userFullName as the identifier
             
             if (result.status === 'success' && result.classes.length > 0) {
+                // Ensure the create card is always last
+                const createCard = document.getElementById('create-class-card');
+                
                 result.classes.forEach(classData => {
-                    classGrid.insertBefore(
-                        document.createRange().createContextualFragment(renderClassCard(classData, 'teacher')),
-                        document.getElementById('create-class-card')
-                    );
+                    const newCard = document.createRange().createContextualFragment(renderClassCard(classData, 'teacher'));
+                    if (createCard) {
+                        classGrid.insertBefore(newCard, createCard);
+                    } else {
+                        classGrid.appendChild(newCard);
+                    }
                 });
             }
         } catch (error) {
@@ -1406,6 +1467,8 @@
         const appHeader = document.getElementById('app-header');
 
         userRole = role; 
+        
+        if (!dashboardContainer || !appHeader) return; // Check main elements
 
         // --- Teacher View ---
         if (role === 'teacher') {
@@ -1491,7 +1554,8 @@
      * Placeholder: Switches the user's role in the UI (not stored in sheet yet).
      */
     function switchRole(role) {
-        document.getElementById('role-switch-modal').style.display = 'none';
+        const modal = document.getElementById('role-switch-modal');
+        if (modal) modal.style.display = 'none'; // Safely close modal
         renderDashboard(role);
     }
     
@@ -1500,8 +1564,6 @@
      */
     function loadUserRole(userId) {
         // --- HARDCODED ROLE LOGIC (REPLACE LATER) ---
-        // Assume all users are students unless manually set up as teachers
-        
         // Use a placeholder name based on the UID for posting until real name lookup is implemented
         userFullName = `User_${userId.substring(0, 5)}`; 
         
@@ -1527,9 +1589,7 @@
      */
     function attachDashboardListeners(role) {
         const createClassForm = document.getElementById('create-class-form');
-        // FIX: Replaced non-existent 'submit-create-class' ID with button type submit on the form
         const submitCreateClassBtn = createClassForm ? createClassForm.querySelector('button[type="submit"]') : null;
-        
         const logoutBtn = document.getElementById('logout-btn');
         
         if (createClassForm) createClassForm.action = SCRIPT_URL;
@@ -1541,62 +1601,50 @@
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
         const deleteClassBtn = document.getElementById('delete-class-btn');
-        // NOTE: role-switch-modal, join-class-modal, confirm-dialog-modal are NOT in the HTML yet but calls are wrapped in IF in the window.onclick handler
-        // The one that is missing and causing the initial error is info-dialog-modal
 
-        // Added this missing function which will be called from the class dashboard
-        window.openClassSettingsModal = function(code, name, allowPosting, allowCommenting) {
-            document.getElementById('settings-class-code').value = code;
-            document.getElementById('settings-class-name').value = name;
-            document.getElementById('settings-allow-posting').checked = allowPosting;
-            document.getElementById('settings-allow-commenting').checked = allowCommenting;
+        // Handlers for class-settings-modal (only if modal exists)
+        if (classSettingsModal) {
+            if (saveSettingsBtn) {
+                saveSettingsBtn.onclick = () => {
+                    const code = document.getElementById('settings-class-code').value;
+                    const name = document.getElementById('settings-class-name').value;
+                    // Read checked state directly from the checkbox
+                    const allowPosting = document.getElementById('settings-allow-posting').checked;
+                    const allowCommenting = document.getElementById('settings-allow-commenting').checked;
+                    saveClassSettings(code, name, allowPosting, allowCommenting);
+                };
+            }
             
-            document.getElementById('settings-modal-title').innerText = `Settings for ${name}`;
-            deleteClassBtn.dataset.classCode = code;
-            deleteClassBtn.dataset.className = name;
-            
-            classSettingsModal.style.display = 'flex';
-        };
-        
-        if (saveSettingsBtn) {
-            saveSettingsBtn.onclick = () => {
-                const code = document.getElementById('settings-class-code').value;
-                const name = document.getElementById('settings-class-name').value;
-                // Read checked state directly from the checkbox
-                const allowPosting = document.getElementById('settings-allow-posting').checked;
-                const allowCommenting = document.getElementById('settings-allow-commenting').checked;
-                saveClassSettings(code, name, allowPosting, allowCommenting);
-            };
-        }
-        
-        if (cancelSettingsBtn) {
-            cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
-        }
-
-        if (deleteClassBtn) {
-            deleteClassBtn.onclick = () => {
-                const classCode = deleteClassBtn.dataset.classCode;
-                const className = deleteClassBtn.dataset.className;
-                showDeleteConfirmation(className, classCode);
-            };
+            if (cancelSettingsBtn) {
+                cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
+            }
+    
+            if (deleteClassBtn) {
+                deleteClassBtn.onclick = () => {
+                    const classCode = deleteClassBtn.dataset.classCode;
+                    const className = deleteClassBtn.dataset.className;
+                    showDeleteConfirmation(className, classCode);
+                };
+            }
         }
         
         // Close modal if user clicks outside of it
         window.onclick = function(event) {
-            // Added null checks to avoid errors if the modals are not yet rendered in the HTML
+            // Get all modal elements on click for safety
             const modal1 = document.getElementById('class-settings-modal');
             const modal2 = document.getElementById('info-dialog-modal');
-            const modal3 = document.getElementById('role-switch-modal'); // Not in HTML, but check included
+            const modal3 = document.getElementById('role-switch-modal'); 
             const modal4 = document.getElementById('class-management-modal');
             const modal5 = document.getElementById('confirm-dialog-modal');
-            const modal6 = document.getElementById('join-class-modal'); // Not in HTML, but check included
+            const modal6 = document.getElementById('join-class-modal'); 
 
-            if (modal1 && event.target == modal1) modal1.style.display = "none";
-            if (modal2 && event.target == modal2) modal2.style.display = "none";
-            if (modal3 && event.target == modal3) modal3.style.display = "none";
-            if (modal4 && event.target == modal4) modal4.style.display = "none";
-            if (modal5 && event.target == modal5) modal5.style.display = "none";
-            if (modal6 && event.target == modal6) modal6.style.display = "none";
+            // Apply style property only if the element exists AND the click target is the modal itself
+            if (modal1 && event.target === modal1) modal1.style.display = "none";
+            if (modal2 && event.target === modal2) modal2.style.display = "none";
+            if (modal3 && event.target === modal3) modal3.style.display = "none";
+            if (modal4 && event.target === modal4) modal4.style.display = "none";
+            if (modal5 && event.target === modal5) modal5.style.display = "none";
+            if (modal6 && event.target === modal6) modal6.style.display = "none";
         }
     }
 
