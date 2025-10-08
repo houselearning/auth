@@ -819,627 +819,723 @@
     </div>
 
 
-    <script>
-        // ======================================================================
-        // 1. CONFIGURATION & GLOBAL VARIABLES
-        // ======================================================================
-        
-        // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE'; 
+<script>
+    // ======================================================================
+    // 1. CONFIGURATION & GLOBAL VARIABLES
+    // ======================================================================
+    
+    // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzn_xqn6L8Mkvomk_6sRslAVZecz9_ZTlH2pi5N4Y2cgML3huCV1ogGIXr3QfsTtoLunw/exec'; 
 
-        // Firebase Configuration (Placeholder - Replace with your actual config)
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+    // 🚨 CRITICAL: REPLACE WITH YOUR FIREBASE CONFIGURATION
+    const firebaseConfig = {
+  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+  authDomain: "contract-center-llc-10.firebaseapp.com",
+  projectId: "contract-center-llc-10",
+  storageBucket: "contract-center-llc-10.firebasestorage.app",
+  messagingSenderId: "323221512767",
+  appId: "1:323221512767:web:6421260f875997dbf64e8a",
+    };
+
+    // Initialize Firebase (keep this as-is)
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    // const db = firebase.firestore(); // Not used to avoid Firestore constraint
+
+    let currentUserId = null;
+    let userRole = 'student'; // Default role
+    let userFullName = 'User Name Placeholder'; // Must be fetched/set on login for posts
+    
+    let currentClassCode = null; 
+    let currentClassName = null; 
+
+    // Base64 Storage Constraint
+    const MAX_FILE_SIZE_BYTES = 30 * 1024; // 30 KB Limit enforced for Sheet cell storage
+
+    // ======================================================================
+    // 2. CORE UTILITIES & HELPERS (JSONP, DIALOGS, AUTH)
+    // ======================================================================
+
+    let jsonpCallbackCounter = 0;
+
+    /**
+     * Generic function to make a JSONP call to Google Apps Script.
+     */
+    function fetchJsonp(action, params = {}) {
+        return new Promise((resolve, reject) => {
+            const callbackName = 'jsonp_callback_' + (jsonpCallbackCounter++);
+            
+            const queryParams = new URLSearchParams({ 
+                action: action, 
+                callback: callbackName, 
+                ...params 
+            }).toString();
+            
+            const url = SCRIPT_URL + '?' + queryParams;
+            
+            window[callbackName] = (data) => {
+                delete window[callbackName];
+                script.remove();
+                resolve(data);
+            };
+
+            const script = document.createElement('script');
+            script.src = url;
+            script.onerror = () => {
+                delete window[callbackName];
+                script.remove();
+                reject(new Error('JSONP request failed or Apps Script URL is incorrect.'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    /**
+     * Handles responses from the hidden iframe after POST submissions.
+     */
+    window.handlePostResponse = function(result) {
+        if (result.status === 'success') {
+            showInfoDialog('Success', result.message, 'success');
+            // Reload teacher classes if a class was created/deleted/updated
+            if (result.message.includes('Class') && currentUserId) {
+                if (userRole === 'teacher') loadTeacherData(currentUserId);
+                // Class update/delete might affect the current dashboard, reload if necessary
+                if (result.message.includes('deleted')) {
+                    renderDashboard(userRole);
+                }
+            }
+        } else {
+            showInfoDialog('Error', result.message, 'error');
+        }
+    };
+
+    /**
+     * Displays a custom modal dialog.
+     */
+    function showInfoDialog(title, message, type) {
+        const modal = document.getElementById('info-dialog-modal');
+        document.getElementById('info-dialog-title').innerText = title;
+        document.getElementById('info-dialog-message').innerText = message;
+        
+        const header = document.getElementById('info-dialog-header');
+        header.style.backgroundColor = type === 'error' ? 'var(--ka-red-error)' : 
+                                       type === 'success' ? 'var(--ka-accent-green)' : 
+                                       'var(--ka-blue-bright)';
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Generates a random 6-character alphanumeric code.
+     */
+    function generateClassCode() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    /**
+     * Fetches the real student enrollment count using JSONP.
+     */
+    async function getStudentEnrollmentCount() {
+        try {
+            const result = await fetchJsonp('loadStudentEnrollmentCount', { 
+                studentId: currentUserId 
+            });
+            if (result.status === 'success') {
+                return result.count;
+            }
+        } catch (error) {
+            console.error("Error fetching enrollment count:", error);
+        }
+        return 0; 
+    }
+
+    // ======================================================================
+    // 3. CLASS MANAGEMENT ACTIONS
+    // ======================================================================
+
+    /**
+     * Submits class creation form.
+     */
+    function createClass() {
+        const form = document.getElementById('create-class-form');
+        document.getElementById('class-code-input').value = generateClassCode();
+        document.getElementById('teacher-id-input').value = currentUserId; // Set the current user ID
+        document.getElementById('teacher-name-input').value = userFullName; // Set the current user name
+        form.submit();
+    }
+
+    /**
+     * Submits class settings update form.
+     */
+    function saveClassSettings(code, name, allowPosting, allowCommenting) {
+        document.getElementById('update-class-code').value = code;
+        document.getElementById('update-class-name').value = name;
+        document.getElementById('update-allow-posting').value = allowPosting ? 'TRUE' : 'FALSE';
+        document.getElementById('update-allow-commenting').value = allowCommenting ? 'TRUE' : 'FALSE';
+        document.getElementById('update-class-form').submit();
+        document.getElementById('class-settings-modal').style.display = 'none';
+    }
+
+    /**
+     * Shows the delete confirmation dialog.
+     */
+    function showDeleteConfirmation(className, classCode) {
+        const modal = document.getElementById('confirm-dialog-modal');
+        document.getElementById('confirm-dialog-title').innerText = `Confirm Deletion`;
+        document.getElementById('confirm-dialog-message').innerHTML = `Are you sure you want to delete the class <strong>${className}</strong> (Code: ${classCode})? This action cannot be undone.`;
+        document.getElementById('confirm-action-btn').onclick = () => submitDeleteClass(classCode);
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Submits class deletion to Apps Script.
+     */
+    function submitDeleteClass(classCode) {
+        document.getElementById('confirm-dialog-modal').style.display = 'none';
+        
+        const form = document.getElementById('delete-class-form');
+        document.getElementById('delete-class-code-input').value = classCode;
+        
+        // This must be done manually for a quick, specific action using the hidden iframe
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'deleteClass';
+        form.appendChild(actionInput);
+        
+        form.submit();
+        form.removeChild(actionInput); // Clean up the temporary input
+    }
+    
+    /**
+     * Placeholder: Students load their assignments here.
+     */
+    function loadAssignments(studentId) {
+        const assignmentList = document.getElementById('assignment-list');
+        if (!assignmentList) return;
+        
+        // --- HARDCODED ASSIGNMENT DATA (REPLACE LATER) ---
+        const assignments = [
+            { name: "Unit 3 Test Review", type: "Test", due: "2025-10-15", progress: "80%" },
+            { name: "Algebra I Quiz 5", type: "Quiz", due: "2025-10-12", progress: "New" },
+        ];
+        
+        assignmentList.innerHTML = assignments.map(a => `
+            <div class="assignment-item">
+                <span class="assignment-name">${a.name} (${a.type})</span>
+                <span class="assignment-progress">${a.progress}</span>
+                <span class="assignment-due">Due: ${a.due}</span>
+            </div>
+        `).join('');
+    }
+
+    // ======================================================================
+    // 4. CLASS DASHBOARD LOGIC (BASE64 INTEGRATION)
+    // ======================================================================
+    
+    /**
+     * Handles file selection, enforces the 30KB limit, and encodes to Base64.
+     */
+    function handleFileUploadSelection(input) {
+        const infoSpan = document.getElementById('file-selection-info');
+        const mediaDataUriInput = document.getElementById('post-media-data-uri');
+        const mediaTypeInput = document.getElementById('post-media-type');
+
+        if (input.files.length === 0) {
+            infoSpan.innerText = '';
+            mediaDataUriInput.value = '';
+            mediaTypeInput.value = 'text';
+            return;
+        }
+
+        const file = input.files[0];
+
+        // 1. Enforce 30KB Size Limit
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            infoSpan.style.color = 'var(--ka-red-error)';
+            infoSpan.innerText = `Error: File size (${(file.size / 1024).toFixed(1)} KB) exceeds the 30KB limit (${(MAX_FILE_SIZE_BYTES / 1024)} KB).`;
+            input.value = ''; // Clear file input
+            mediaDataUriInput.value = '';
+            mediaTypeInput.value = 'text';
+            return;
+        }
+
+        // 2. Read and Encode the file
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            mediaDataUriInput.value = e.target.result; // The data: URI (Base64 string)
+            
+            // Set media type based on MIME type for rendering logic
+            if (file.type.includes('image')) {
+                mediaTypeInput.value = 'image';
+            } else if (file.type.includes('pdf')) {
+                mediaTypeInput.value = 'pdf';
+            } else {
+                mediaTypeInput.value = 'file';
+            }
+
+            infoSpan.style.color = 'var(--ka-accent-green)';
+            infoSpan.innerText = `File ready: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
         };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore(); // Used for demo/roles/assignments until replaced
-
-        let currentUserId = null;
-        let userRole = 'student'; // Default role, updated by loadUserRole
-
-        // New Globals for Class Dashboard
-        let currentClassCode = null; 
-        let currentClassName = null; 
         
-        // Update all form actions to use the SCRIPT_URL
-        document.getElementById('create-class-form').action = SCRIPT_URL;
-        document.getElementById('update-class-form').action = SCRIPT_URL;
+        reader.readAsDataURL(file); // Critical: Read the file as a Data URL (Base64)
+    }
 
-
-        // ======================================================================
-        // 2. CORE UTILITIES & HELPERS
-        // ======================================================================
-        
-        /**
-         * Helper function to show a universal info/error dialog.
-         * @param {string} title - The dialog title.
-         * @param {string} body - The dialog body text.
-         */
-        function showInfoDialog(title, body) {
-            document.getElementById('info-dialog-title').innerText = title;
-            document.getElementById('info-dialog-body').innerHTML = body;
-            document.getElementById('info-dialog-modal').style.display = 'block';
+    /**
+     * Renders a single post item using real data, handling Base64 display.
+     */
+    function renderPostItem(post) {
+        function timeSince(dateString) {
+            const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+            let interval = Math.floor(seconds / 31536000);
+            if (interval > 1) return interval + " years ago";
+            interval = Math.floor(seconds / 2592000);
+            if (interval > 1) return interval + " months ago";
+            interval = Math.floor(seconds / 86400);
+            if (interval > 1) return interval + " days ago";
+            interval = Math.floor(seconds / 3600);
+            if (interval > 1) return interval + " hours ago";
+            interval = Math.floor(seconds / 60);
+            if (interval > 1) return interval + " minutes ago";
+            return "Just now";
         }
 
-        /**
-         * Generates a random 7-character alphanumeric class code.
-         * @returns {string} The generated code.
-         */
-        function generateClassCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 7; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
+        let mediaHTML = '';
+        const mediaDataURI = post.mediaDataURI; 
 
-        /**
-         * Handles the response from the Apps Script POST request (called via hidden iframe).
-         * @param {object} result - The JSON object returned by doPost.
-         */
-        function handlePostResponse(result) {
-            const isSuccess = result.status === 'success';
-            const title = isSuccess ? 'Success!' : 'Error!';
-            const message = result.message || 'Operation failed.';
+        if (mediaDataURI) {
+            if (post.mediaType === 'image') {
+                // Display the Base64 image directly
+                mediaHTML = `<img src="${mediaDataURI}" alt="Posted image" class="posted-media">`;
+            } else if (post.mediaType === 'pdf' || post.mediaType === 'file') {
+                // Provide a download link for the Base64 file
+                const fileExtension = post.mediaType === 'pdf' ? 'pdf' : post.mediaType.split('/')[1] || 'dat';
+                const fileName = `${post.classCode}_attachment.${fileExtension}`;
 
-            showInfoDialog(title, message);
-
-            // If a class was created, updated, or deleted, reload the teacher dashboard
-            if (isSuccess && ['Class created successfully.', 'Class settings updated.', 'Class successfully deleted.'].includes(result.message)) {
-                // Ensure class settings modal is closed after successful update/delete
-                document.getElementById('class-management-modal').style.display = 'none';
-                document.getElementById('class-settings-modal').style.display = 'none';
-                document.getElementById('confirm-dialog-modal').style.display = 'none';
-
-                // Re-render and reload class data
-                loadTeacherData(currentUserId);
+                mediaHTML = `
+                    <div class="file-attachment">
+                        <a href="${mediaDataURI}" download="${fileName}" style="text-decoration: none; display: flex; align-items: center; gap: 5px; color: var(--ka-blue-bright); font-weight: bold;">
+                            <span class="material-icons">${post.mediaType === 'pdf' ? 'picture_as_pdf' : 'attach_file'}</span> 
+                            Download Attachment (${post.mediaType.toUpperCase()})
+                        </a>
+                        <small style="display:block; margin-top:5px; color:#888;">File data is stored directly in the sheet.</small>
+                    </div>`;
             }
         }
         
-        /**
-         * Helper function to get the number of classes a student is enrolled in.
-         * 🚨 NOTE: This is a placeholder. You must implement a new Apps Script action 
-         * (e.g., 'loadStudentClasses') and use JSONP here to fetch the real data.
-         * @returns {number} The count of enrolled courses.
-         */
-        function getStudentEnrollmentCount() {
-            // Hardcoded placeholder count for now.
-            return 3; 
-        }
-
-        // ======================================================================
-        // 3. CLASS MANAGEMENT ACTIONS (APPS SCRIPT INTEGRATION)
-        // ======================================================================
-
-        /**
-         * Displays the delete confirmation modal.
-         * @param {string} className - The name of the class.
-         * @param {string} classCode - The code of the class to delete.
-         */
-        function showDeleteConfirmation(className, classCode) {
-            document.getElementById('class-settings-modal').style.display = 'none';
-            document.getElementById('confirm-dialog-title').innerText = `Delete Class: ${className}`;
-            document.getElementById('confirm-dialog-body').innerHTML = `
-                Are you absolutely sure you want to delete **${className}** (Code: ${classCode})?
-                <br><br>
-                All class data, including class comments, posts, and file uploads, will be lost permanently.
-            `;
-            
-            // Set up the final deletion button action
-            const confirmBtn = document.getElementById('confirm-delete-btn');
-            confirmBtn.onclick = () => submitDeleteClass(classCode);
-
-            document.getElementById('confirm-dialog-modal').style.display = 'block';
-        }
-
-        /**
-         * Submits a request to the Apps Script to delete a class.
-         * @param {string} classCode - The code of the class to delete.
-         */
-        function submitDeleteClass(classCode) {
-            // Create a temporary form to submit the delete action via POST
-            const tempForm = document.createElement('form');
-            tempForm.target = 'hidden-iframe';
-            tempForm.method = 'POST';
-            tempForm.action = SCRIPT_URL;
-
-            // Add required parameters
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'deleteClass';
-            tempForm.appendChild(actionInput);
-
-            const codeInput = document.createElement('input');
-            codeInput.type = 'hidden';
-            codeInput.name = 'code';
-            codeInput.value = classCode;
-            tempForm.appendChild(codeInput);
-
-            document.body.appendChild(tempForm);
-            tempForm.submit();
-            document.body.removeChild(tempForm); // Clean up the form
-        }
+        const initials = post.authorName.split(' ').map(n => n[0]).join('').toUpperCase();
         
-        /**
-         * Handles saving the class settings via a hidden POST form.
-         */
-        function saveClassSettings() {
-            const form = document.getElementById('update-class-form');
-            
-            // Manually update checkbox values before submission
-            document.getElementById('settings-allow-posting').value = document.getElementById('settings-allow-posting').checked ? 'TRUE' : 'FALSE';
-            document.getElementById('settings-allow-commenting').value = document.getElementById('settings-allow-commenting').checked ? 'TRUE' : 'FALSE';
-
-            form.submit();
-        }
-
-        // ... (Other Class Management functions like createClass, submitCreateClass, etc.) ...
-        
-        // Placeholder for Create Class function using the modal form
-        function createClass() {
-            // This function is for initial setup of the create modal before submission
-            document.getElementById('new-class-teacher-id').value = currentUserId;
-            document.getElementById('new-class-code').value = generateClassCode();
-            document.getElementById('class-management-modal').style.display = 'block';
-        }
-
-
-        // ======================================================================
-        // 4. RENDERING FUNCTIONS
-        // ======================================================================
-
-        /**
-         * Renders a single class card for the main dashboard view.
-         * @param {object} classData - The class data object.
-         * @param {string} userRole - The current user role.
-         * @returns {string} The HTML string for the class card.
-         */
-        function renderClassCard(classData, userRole) {
-            const allowPosting = classData.allowPosting === 'TRUE';
-            const allowCommenting = classData.allowCommenting === 'TRUE';
-            
-            // Determine if settings button should be shown (only for teachers)
-            const settingsButton = (userRole === 'teacher') ? 
-                `<button class="settings-button" data-class-code="${classData.code}" data-class-name="${classData.name}" onclick="event.stopPropagation(); openClassSettingsModal('${classData.code}', '${classData.name}', ${allowPosting}, ${allowCommenting})">
-                    <span class="material-icons">more_vert</span>
-                </button>` : '';
-
-            // The entire card is clickable to open the Class Dashboard
-            return `
-                <div class="class-card" 
-                     data-code="${classData.code}" 
-                     data-name="${classData.name}" 
-                     onclick="openClassDashboard('${classData.code}', '${classData.name}')"> 
-
-                    <div class="class-card-header">
-                        <h3>${classData.name}</h3>
-                        ${settingsButton}
+        return `
+            <div class="post-item" data-author-id="${post.authorId}">
+                <div class="post-header">
+                    <div class="profile-pic">${initials}</div>
+                    <div class="post-meta">
+                        <span class="author-name">${post.authorName}</span>
+                        <span class="post-id">(ID: ${post.authorId})</span>
+                        <span class="post-time">${timeSince(post.timestamp)}</span>
                     </div>
-                    <p>Code: ${classData.code}</p>
-                    <p>Teacher: ${classData.teacher}</p>
-                    <div class="class-permissions">
-                        <span>Posting: ${allowPosting ? '✅ On' : '🚫 Off'}</span>
-                        <span>Commenting: ${allowCommenting ? '✅ On' : '🚫 Off'}</span>
-                    </div>
+                    <button class="report-button">Report</button>
                 </div>
-            `;
-        }
-
-
-        /**
-         * Renders the main dashboard based on the user's role.
-         * @param {string} role - 'teacher' or 'student'.
-         */
-        function renderDashboard(role) {
-            let content = '';
-            let header = '';
-
-            const dashboardContainer = document.getElementById('dashboard-container');
-            const appHeader = document.getElementById('app-header');
-
-            userRole = role; // Update the global role
-
-            // --- Teacher View (Main Dashboard) ---
-            if (role === 'teacher') {
-                header = `
-                    <div class="header-controls">
-                        <h1>Coach Dashboard</h1>
-                        <button id="logout-btn" class="logout-button">Sign Out</button>
-                    </div>
-                    <div class="role-switch">
-                        <span>Current View:</span>
-                        <span id="current-role" class="active-role">Coach</span>
-                        <button id="student-role-btn">Switch to Student View</button>
-                    </div>
-                `;
-                content = `
-                    <h2 class="section-title">🏫 My Classes</h2>
-                    <div class="feature-grid class-grid">
-                        <div class="feature-card create-class-card" id="create-class-card">
-                            <span class="material-icons icon">add</span> Create a new class
-                        </div>
-                    </div>
-
-                    <h2 class="section-title">📊 Management Tools</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card" id="manage-assignments-card">
-                            <span class="material-icons icon">assignment</span> Manage Assignments
-                        </div>
-                        <div class="feature-card">
-                            <span class="material-icons icon">bar_chart</span> View Class Progress
-                        </div>
-                        <div class="feature-card">
-                            <span class="material-icons icon">group</span> Manage Roster
-                        </div>
-                    </div>
-                `;
-            } 
-            
-            // --- Student View (Main Dashboard) ---
-            else if (role === 'student') {
-                
-                // === Dynamic Enrollment Count Logic ===
-                const count = getStudentEnrollmentCount(); 
-                const enrollmentText = count === 1 
-                    ? `You are enrolled in 1 course.` 
-                    : `You are enrolled in ${count} courses.`;
-                // =====================================
-                
-                header = `
-                    <div class="header-controls">
-                        <h1>Your Learning Dashboard</h1>
-                        <button id="logout-btn" class="logout-button">Sign Out</button>
-                    </div>
-                    <div class="role-switch">
-                        <span>Current View:</span>
-                        <span id="current-role" class="active-role">Student</span>
-                        <button id="teacher-role-btn">Switch to Coach View</button>
-                    </div>
-                `;
-                content = `
-                    <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
-                    <div id="loading-assignments" class="loading-message">
-                        Loading your assignments... (Firestore/Demo Data)
-                    </div>
-                    <div class="feature-grid assignment-grid" style="display: none;"></div>
-                    <div id="no-assignments-message" class="empty-state-message" style="display: none;">
-                        🎉 Woohoo! No assignments here. Go explore!
-                    </div>
-
-                    <h2 class="section-title">📊 Progress & Mastery</h2>
-                    <div class="feature-grid">
-                        <div class="feature-card"> <div class="card-header"><span class="material-icons icon">check_circle</span> View Full Progress Report / Grades</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="card-header"><span class="material-icons icon">emoji_events</span> My Badges & Energy Points</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="card-header"><span class="material-icons icon">explore</span> Explore All Subjects & Courses</div>
-                        </div>
-                        <div class="feature-card" id="review-enrollment-card">
-                            <div class="card-header"><span class="material-icons icon">push_pin</span> Review Course Enrollment</div>
-                            <div class="card-meta">${enrollmentText}</div> </div>
-                    </div>
-
-                    <h2 class="section-title">🧑‍🏫 Join a Class</h2>
-                    <div class="join-class-container">
-                        <input type="text" id="join-code-input" placeholder="Enter class code (e.g., ABC123D)" maxlength="7">
-                        <button id="join-class-btn">Join Class</button>
-                    </div>
-                    <div id="join-class-message" class="info-message" style="display: none;"></div>
-                `;
-            }
-
-            // Render content
-            appHeader.innerHTML = header;
-            dashboardContainer.innerHTML = content;
-            
-            // Re-attach listeners after content is updated
-            attachDashboardListeners(role);
-
-            // Load role-specific data (classes for teacher, assignments for student)
-            if (role === 'teacher') {
-                loadTeacherData(currentUserId);
-            } else if (role === 'student') {
-                loadAssignments(currentUserId); // Currently uses Firebase demo data
-            }
-        }
-
-        // ======================================================================
-        // 5. CLASS DASHBOARD FUNCTIONS (NEW)
-        // ======================================================================
-
-        /**
-         * Renders the class-specific dashboard view (the class feed).
-         * @param {string} classCode The code of the class to display.
-         * @param {string} className The name of the class to display.
-         */
-        function openClassDashboard(classCode, className) {
-            currentClassCode = classCode; 
-            currentClassName = className; 
-            
-            const appHeader = document.getElementById('app-header');
-            const dashboardContainer = document.getElementById('dashboard-container');
-
-            // --- Header for Class Dashboard ---
-            appHeader.innerHTML = `
-                <div class="class-dashboard-header">
-                    <button id="back-to-main-dashboard-btn" class="back-button">
-                        <span class="material-icons">arrow_back</span> Back to Dashboard
-                    </button>
-                    <div class="header-controls">
-                        <h1>${className}</h1>
-                        <button id="logout-btn" class="logout-button">Sign Out</button>
-                    </div>
+                <div class="post-body">
+                    <p>${post.content}</p>
+                    ${mediaHTML}
                 </div>
-            `;
+                <div class="post-actions">
+                    <button class="reply-button">Reply</button>
+                </div>
+            </div>
+        `;
+    }
 
-            // --- Main Content for Class Dashboard (Based on wireframe) ---
-            dashboardContainer.innerHTML = `
-                <div class="class-view-container">
-                    <div class="class-banner" style="background-image: url('https://via.placeholder.com/1200x200/4CAF50/FFFFFF?text=Class+Banner+Image');">
-                        <div class="class-banner-content">
-                            ${(userRole === 'teacher') ? `<span class="class-banner-settings material-icons" onclick="openClassSettingsModal('${classCode}', '${className}', true, true)">settings</span>` : ''}
-                            <div class="class-info">
-                                <h2>${className}</h2>
-                                <p>Mrs. Scepkowski's Class | Period 4</p> 
-                            </div>
-                        </div>
-                    </div>
+    /**
+     * Fetches and renders all posts for a given class code using JSONP.
+     */
+    async function loadClassPosts(classCode) {
+        const postsSection = document.getElementById('previous-posts-section');
+        postsSection.innerHTML = '<div class="loading-message">Loading class posts...</div>';
+
+        try {
+            const result = await fetchJsonp('loadPosts', { classCode: classCode });
+            
+            if (result.status === 'success' && result.posts && result.posts.length > 0) {
+                postsSection.innerHTML = result.posts.map(renderPostItem).join('');
+            } else {
+                postsSection.innerHTML = '<div class="empty-state-message">Be the first to post in this class!</div>';
+            }
+        } catch (error) {
+            postsSection.innerHTML = `<div class="info-message" style="background-color:var(--ka-red-error); color:white;">Error loading posts: ${error.message}</div>`;
+            console.error("Failed to load posts:", error);
+        }
+    }
+    
+    /**
+     * Re-attaches the listener for the post form submit and clears inputs.
+     */
+    function attachPostFormListener(classCode) {
+        const form = document.getElementById('create-post-form');
+        if (form) {
+            form.onsubmit = function() {
+                // Client-side check before submission
+                const content = document.getElementById('post-text-input').value.trim();
+                const media = document.getElementById('post-media-data-uri').value;
+                if (!content && !media) {
+                    showInfoDialog('Warning', 'Please enter content or select a file.', 'info');
+                    return false; 
+                }
+                return true; 
+            };
+
+            const originalHandlePostResponse = window.handlePostResponse;
+            window.handlePostResponse = (result) => {
+                originalHandlePostResponse(result); 
+                if (result.status === 'success' && result.message === 'Post created successfully.') {
+                    // Clear all post inputs after success
+                    form.reset();
+                    document.getElementById('post-media-data-uri').value = '';
+                    document.getElementById('post-media-type').value = 'text';
+                    document.getElementById('post-file-upload').value = ''; // Clear file input element
+                    document.getElementById('file-selection-info').innerText = '';
                     
+                    // Reload posts after a short delay
+                    setTimeout(() => loadClassPosts(classCode), 1000); 
+                }
+            };
+        }
+    }
+
+    /**
+     * Renders the class-specific dashboard view (the class feed).
+     */
+    function openClassDashboard(classCode, className) {
+        currentClassCode = classCode; 
+        currentClassName = className; 
+        
+        const appHeader = document.getElementById('app-header');
+        const dashboardContainer = document.getElementById('dashboard-container');
+
+        // --- Header for Class Dashboard ---
+        appHeader.innerHTML = `
+            <div class="header-left">
+                <button id="back-to-main-dashboard-btn" class="nav-button">
+                    <span class="material-icons">arrow_back</span>
+                    Back to Dashboard
+                </button>
+            </div>
+            <div class="header-center">
+                <h1 class="app-title">${className}</h1>
+            </div>
+            <div class="header-right">
+                <button id="logout-btn" class="nav-button">
+                    <span class="material-icons">logout</span> Logout
+                </button>
+            </div>`;
+
+        // --- Main Content for Class Dashboard (NEW POST FORM) ---
+        dashboardContainer.innerHTML = `
+            <div class="class-view-container">
+                <div class="class-banner" style="background-image: url('https://via.placeholder.com/1200x200/4CAF50/FFFFFF?text=Class+Banner+Image');">
+                    <div class="class-banner-content">
+                        ${(userRole === 'teacher') ? 
+                            `<span class="class-banner-settings material-icons" onclick="openClassSettingsModal('${classCode}', '${className}', true, true)">settings</span>` 
+                            : ''
+                        }
+                        <div class="class-info">
+                            <h2>${className}</h2>
+                            <p>Class Code: ${classCode}</p> 
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="create-post-form" target="hidden-iframe" method="POST" action="${SCRIPT_URL}">
+                    <input type="hidden" name="action" value="createPost">
+                    <input type="hidden" name="classCode" value="${classCode}">
+                    <input type="hidden" name="authorId" id="post-author-id" value="${currentUserId}">
+                    <input type="hidden" name="authorName" id="post-author-name" value="${userFullName}">
+                    
+                    <input type="hidden" name="mediaDataURI" id="post-media-data-uri" value="">
+                    <input type="hidden" name="mediaType" id="post-media-type" value="text">
+
                     <div class="post-creation-area">
                         <div class="post-input-row">
-                            <input type="text" id="post-text-input" placeholder="Post Something to your class">
-                            <button id="submit-post-btn" class="primary-button">Submit</button>
+                            <input type="text" id="post-text-input" name="content" placeholder="Post Something to your class" required>
+                            <button type="submit" id="submit-post-btn" class="primary-button">Submit</button>
                         </div>
                         <div class="post-options">
-                            <button class="option-button"><span class="material-icons">link</span> Add link</button>
-                            <button class="option-button"><span class="material-icons">perm_media</span> Add multimedia</button>
-                            ${(userRole === 'teacher') ? `<button class="option-button"><span class="material-icons">assignment</span> Create assignment</button>` : `<button class="option-button"><span class="material-icons">send</span> Send to a different class</button>`}
+                            <input type="file" id="post-file-upload" style="display:none;" 
+                                accept="image/*,.pdf,.txt" 
+                                onchange="handleFileUploadSelection(this)">
+
+                            <button type="button" class="option-button" onclick="document.getElementById('post-file-upload').click();">
+                                <span class="material-icons">perm_media</span> Add multimedia (Max 30KB)
+                            </button>
+                            
+                            <span id="file-selection-info" style="font-size:0.9em; color:var(--ka-accent-green); margin-left:10px;"></span>
+
+                            ${(userRole === 'teacher') ? 
+                                `<button type="button" class="option-button"><span class="material-icons">assignment</span> Create assignment</button>` : 
+                                `<button type="button" class="option-button"><span class="material-icons">send</span> Send to a different class</button>`
+                            }
                         </div>
                     </div>
+                </form>
 
-                    <div class="previous-posts-section" id="previous-posts-section">
-                        <div class="post-item">
-                            <div class="post-header">
-                                <img src="https://via.placeholder.com/40" alt="Clara Lee" class="profile-pic">
-                                <div class="post-meta">
-                                    <span class="author-name">Clara Lee</span>
-                                    <span class="post-time">15:02</span>
-                                </div>
-                                <button class="report-button">Report</button>
-                            </div>
-                            <div class="post-body">
-                                <p>Does anyone know what question one is?</p>
-                                <img src="https://via.placeholder.com/200x150?text=Work+Image" alt="Posted content" class="posted-image">
-                            </div>
-                            <div class="post-actions">
-                                <button class="reply-button">Reply</button>
-                            </div>
-                        </div>
-                        <div class="post-item">
-                            <div class="post-header">
-                                <img src="https://via.placeholder.com/40/142838/FFFFFF?text=MS" alt="Teacher" class="profile-pic">
-                                <div class="post-meta">
-                                    <span class="author-name">Mrs. Scepkowski</span>
-                                    <span class="post-time">Yesterday</span>
-                                </div>
-                                <button class="report-button">Report</button>
-                            </div>
-                            <div class="post-body">
-                                <p>Reminder: The Algebra quiz is tomorrow!</p>
-                            </div>
-                            <div class="post-actions">
-                                <button class="reply-button">Reply</button>
-                            </div>
-                        </div>
+                <div class="previous-posts-section" id="previous-posts-section">
                     </div>
-                </div>
-            `;
+            </div>
+        `;
 
-            // Attach listener for the back button
-            document.getElementById('back-to-main-dashboard-btn').addEventListener('click', () => {
-                // Return to the main dashboard of the current user's role
-                renderDashboard(userRole); 
-            });
+        // Attach listeners
+        document.getElementById('back-to-main-dashboard-btn').addEventListener('click', () => {
+            renderDashboard(userRole); 
+        });
+        document.getElementById('logout-btn').addEventListener('click', logout);
+        
+        // Load posts and attach the post form listener
+        loadClassPosts(classCode);
+        attachPostFormListener(classCode);
+    }
+    
+    // ======================================================================
+    // 5. RENDERING & INITIALIZATION
+    // ======================================================================
 
-            // Attach logout listener
-            document.getElementById('logout-btn').addEventListener('click', logout);
-
-            // TODO: Load actual posts for this class from Google Sheet via Apps Script
-            // loadClassPosts(classCode); 
-        }
-
-        // ======================================================================
-        // 6. EVENT LISTENERS & DATA LOADING (Placeholders)
-        // ======================================================================
-
-        /**
-         * Loads class data for the teacher from the Google Sheet (via JSONP/doGet).
-         * @param {string} teacherId - The ID of the teacher.
-         */
-        function loadTeacherData(teacherId) {
-            // Placeholder: Replace with your actual JSONP call to your Apps Script doGet
-            console.log(`JSONP call to Apps Script: action=loadClasses&teacher=${teacherId}`);
+    /**
+     * Renders a single class card for the teacher dashboard.
+     */
+    function renderClassCard(classData, role) {
+        const settingsBtn = (role === 'teacher') 
+            ? `<button class="settings-button" onclick="openClassSettingsModal('${classData.code}', '${classData.name}', ${classData.allowPosting === 'TRUE'}, ${classData.allowCommenting === 'TRUE'})">
+                <span class="material-icons">settings</span>
+               </button>`
+            : '';
             
-            // DEMO DATA: Hardcoded data for rendering
-            const demoClasses = [
-                { name: "Algebra 101", teacher: "Mrs. Scepkowski", code: "ALGEB10", createdAt: new Date(), allowPosting: "TRUE", allowCommenting: "TRUE" },
-                { name: "Geometry H", teacher: "Mrs. Scepkowski", code: "GEOMH01", createdAt: new Date(), allowPosting: "FALSE", allowCommenting: "TRUE" }
-            ];
+        return `
+            <div class="class-card" onclick="openClassDashboard('${classData.code}', '${classData.name}')">
+                <div class="card-header">
+                    <h3>${classData.name}</h3>
+                    ${settingsBtn}
+                </div>
+                <div class="card-meta">Teacher: ${classData.teacher}</div>
+                <div class="card-meta">Code: ${classData.code}</div>
+                <div class="card-status-toggles">
+                    <span class="status-label">Posting: <span class="status-${classData.allowPosting === 'TRUE' ? 'on' : 'off'}">${classData.allowPosting}</span></span>
+                    <span class="status-label">Commenting: <span class="status-${classData.allowCommenting === 'TRUE' ? 'on' : 'off'}">${classData.allowCommenting}</span></span>
+                </div>
+            </div>
+        `;
+    }
 
-            const classGrid = document.querySelector('.class-grid');
-            if (classGrid) {
-                // Clear all except the Create Class card
-                classGrid.querySelectorAll('.class-card').forEach(card => {
-                    if (!card.classList.contains('create-class-card')) {
-                        card.remove();
-                    }
-                });
+    /**
+     * Loads class data for the teacher from the Google Sheet (via JSONP).
+     */
+    async function loadTeacherData(teacherId) {
+        const classGrid = document.querySelector('.class-grid');
+        if (!classGrid) return;
+        
+        // Clear all except the Create Class card
+        classGrid.querySelectorAll('.class-card:not(.create-class-card)').forEach(card => card.remove());
 
-                demoClasses.forEach(classData => {
-                    // Insert new class cards before the 'create class' card
+        try {
+            const result = await fetchJsonp('loadClasses', { teacher: userFullName }); // Use userFullName as the identifier
+            
+            if (result.status === 'success' && result.classes.length > 0) {
+                result.classes.forEach(classData => {
                     classGrid.insertBefore(
                         document.createRange().createContextualFragment(renderClassCard(classData, 'teacher')),
                         document.getElementById('create-class-card')
                     );
                 });
             }
+        } catch (error) {
+            console.error("Failed to load teacher data:", error);
         }
+    }
 
-        function loadAssignments(userId) {
-            // Placeholder: This currently uses Firebase demo logic. Must be converted 
-            // to Apps Script/Sheet logic to adhere to the $0 budget constraint.
+    /**
+     * Renders the main dashboard structure based on the user's role.
+     */
+    async function renderDashboard(role) {
+        let content = '';
+        let header = '';
+
+        const dashboardContainer = document.getElementById('dashboard-container');
+        const appHeader = document.getElementById('app-header');
+
+        userRole = role; 
+
+        // --- Teacher View ---
+        if (role === 'teacher') {
+            header = `
+                <div class="header-left">
+                    <button class="nav-button" onclick="document.getElementById('role-switch-modal').style.display='flex'">
+                        <span class="material-icons">switch_account</span> Switch to Student
+                    </button>
+                </div>
+                <div class="header-center">
+                    <h1 class="app-title">CoolMathTime: Teacher Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button id="logout-btn" class="nav-button">
+                        <span class="material-icons">logout</span> Logout
+                    </button>
+                </div>`;
             
-            const assignmentsGrid = document.querySelector('.assignment-grid');
-            const loadingMsg = document.getElementById('loading-assignments');
-            const noAssignmentsMsg = document.getElementById('no-assignments-message');
-
-            // DEMO DATA: Hardcoded data for rendering
-            const demoAssignments = [
-                { title: "Intro to Functions", dueDate: "Tomorrow", classCode: "ALGEB10", status: "pending" },
-                { title: "Pythagorean Theorem", dueDate: "2 days ago", classCode: "GEOMH01", status: "overdue" },
-                { title: "Unit 1 Review", dueDate: "Last Week", classCode: "GEOMH01", status: "completed" }
-            ];
-
-            if (demoAssignments.length > 0) {
-                assignmentsGrid.style.display = 'grid';
-                loadingMsg.style.display = 'none';
-                assignmentsGrid.innerHTML = demoAssignments.map(data => `
-                    <div class="feature-card assignment-card ${data.status}">
-                        <div class="card-header">${data.title}</div>
-                        <div class="card-meta">Due: ${data.dueDate} | Class: ${data.classCode}</div>
+            content = `
+                <h2 class="section-title">My Classes</h2>
+                <div class="class-grid">
+                    <div class="class-card create-class-card" id="create-class-card" onclick="document.getElementById('class-management-modal').style.display='flex'">
+                        <span class="material-icons icon">add_circle_outline</span>
+                        <h3>Create New Class</h3>
+                        <p>Start a new learning group</p>
                     </div>
-                `).join('');
-            } else {
-                loadingMsg.style.display = 'none';
-                noAssignmentsMsg.style.display = 'block';
-            }
+                </div>`;
+            
+        // --- Student View ---
+        } else if (role === 'student') {
+            
+            const count = await getStudentEnrollmentCount(); // AWAIT THE REAL COUNT
+            const enrollmentText = count === 1 
+                ? `You are enrolled in 1 course.` 
+                : `You are enrolled in ${count} courses.`;
+            
+            header = `
+                <div class="header-left">
+                    <button class="nav-button" onclick="document.getElementById('role-switch-modal').style.display='flex'">
+                        <span class="material-icons">switch_account</span> Switch to Teacher
+                    </button>
+                </div>
+                <div class="header-center">
+                    <h1 class="app-title">CoolMathTime: Learning Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button id="logout-btn" class="nav-button">
+                        <span class="material-icons">logout</span> Logout
+                    </button>
+                </div>`;
+                
+            content = `
+                <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+                <div id="assignment-list" class="assignment-list">Loading assignments...</div>
+
+                <h2 class="section-title">📊 Progress & Mastery</h2>
+                <div class="feature-grid">
+                    <div class="feature-card" onclick="document.getElementById('join-class-modal').style.display='flex'">
+                        <div class="card-header"><span class="material-icons icon">person_add</span> Join a Class</div>
+                        <div class="card-meta">Enter a code to enroll in a new course.</div>
+                    </div>
+                    <div class="feature-card" id="review-enrollment-card">
+                        <div class="card-header"><span class="material-icons icon">push_pin</span> Review Course Enrollment</div>
+                        <div class="card-meta">${enrollmentText}</div> 
+                    </div>
+                </div>`;
         }
+
+        // Render content
+        appHeader.innerHTML = header;
+        dashboardContainer.innerHTML = content;
         
-        function loadUserRole(userId) {
-            // Placeholder: This uses Firebase demo logic. Must be converted 
-            // to Apps Script/Sheet logic to adhere to the $0 budget constraint.
-            // For now, we hardcode the role for rendering demonstration:
-            
-            // In a real app, this would fetch the user's role from a Sheet
-            const loadedRole = (userId === 'teacherDemoID') ? 'teacher' : 'student'; 
-            renderDashboard(loadedRole);
-        }
+        attachDashboardListeners(role);
 
-        function logout() {
-            auth.signOut().then(() => {
-                console.log("Logged out successfully");
-                window.location.replace('index.html');
-            }).catch((error) => {
-                console.error("Logout error:", error);
-            });
+        if (role === 'teacher') {
+            loadTeacherData(userFullName); // Load classes for the teacher's name
+        } else if (role === 'student') {
+            loadAssignments(currentUserId); 
         }
+    }
+
+    /**
+     * Placeholder: Switches the user's role in the UI (not stored in sheet yet).
+     */
+    function switchRole(role) {
+        document.getElementById('role-switch-modal').style.display = 'none';
+        renderDashboard(role);
+    }
+    
+    /**
+     * Loads the user role (Hardcoded for now, will be implemented with Sheets later).
+     */
+    function loadUserRole(userId) {
+        // --- HARDCODED ROLE LOGIC (REPLACE LATER) ---
+        // Assume all users are students unless manually set up as teachers
         
-        function openClassSettingsModal(code, name, allowPostingStatus, allowCommentingStatus) {
-            document.getElementById('settings-modal-title').innerText = `${name} Settings`;
-            document.getElementById('settings-class-code').value = code;
-            document.getElementById('settings-class-name').value = name;
+        // Use a placeholder name based on the UID for posting until real name lookup is implemented
+        userFullName = `User_${userId.substring(0, 5)}`; 
+        
+        // Example logic: if the UID starts with 'T', assume teacher.
+        const role = userId.startsWith('T') ? 'teacher' : 'student';
 
-            // Set Checkbox states
-            const postingToggle = document.getElementById('settings-allow-posting');
-            const commentingToggle = document.getElementById('settings-allow-commenting');
-            
-            postingToggle.checked = allowPostingStatus;
-            commentingToggle.checked = allowCommentingStatus;
-            
-            // Pass data to the delete button
-            const deleteBtn = document.getElementById('delete-class-btn');
-            deleteBtn.dataset.classCode = code;
-            deleteBtn.dataset.className = name;
+        renderDashboard(role);
+    }
 
-            document.getElementById('class-settings-modal').style.display = 'block';
-        }
-
-        /**
-         * Attaches all common and role-specific event listeners to the dashboard elements.
-         * @param {string} role - 'teacher' or 'student'.
-         */
-        function attachDashboardListeners(role) {
-            const classSettingsModal = document.getElementById('class-settings-modal');
-            
-            // Clear previous listeners (important for dynamic content)
-            const oldLogoutBtn = document.getElementById('logout-btn');
-            if(oldLogoutBtn) oldLogoutBtn.onclick = logout;
-
-            // Role Switch Listeners
-            const studentRoleBtn = document.getElementById('student-role-btn');
-            const teacherRoleBtn = document.getElementById('teacher-role-btn');
-            if (studentRoleBtn) studentRoleBtn.onclick = () => loadUserRole('studentDemoID'); // Demo switch
-            if (teacherRoleBtn) teacherRoleBtn.onclick = () => loadUserRole('teacherDemoID'); // Demo switch
-
-            // Teacher View Listeners
-            if (role === 'teacher') {
-                const createClassCard = document.getElementById('create-class-card');
-                if (createClassCard) {
-                    createClassCard.onclick = createClass; 
-                }
-                const cancelCreateBtn = document.getElementById('cancel-create-btn');
-                if (cancelCreateBtn) {
-                    cancelCreateBtn.onclick = () => document.getElementById('class-management-modal').style.display = 'none';
-                }
-                document.getElementById('create-class-form').onsubmit = (e) => {
-                    // Prevent default submission and use handlePostResponse for feedback
-                    // e.preventDefault(); 
-                    // This is currently handled by the hidden iframe target
-                };
-            }
-
-            // Class Settings Listeners (Save, Cancel, Delete)
-            const saveSettingsBtn = document.getElementById('save-settings-btn');
-            const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-            const deleteClassBtn = document.getElementById('delete-class-btn');
-            
-            if (saveSettingsBtn) {
-                saveSettingsBtn.onclick = saveClassSettings;
-            }
-            if (cancelSettingsBtn) {
-                cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
-            }
-            // NEW: Delete button listener
-            if (deleteClassBtn) {
-                deleteClassBtn.onclick = () => {
-                    const classCode = deleteClassBtn.dataset.classCode;
-                    const className = deleteClassBtn.dataset.className;
-                    showDeleteConfirmation(className, classCode);
-                };
-            }
-            
-            // Close modal if user clicks outside of it
-            window.onclick = function(event) {
-                if (event.target == document.getElementById('class-settings-modal') || event.target == document.getElementById('info-dialog-modal') || event.target == document.getElementById('role-switch-modal') || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal')) {
-                    event.target.style.display = "none";
-                }
-            }
-        }
-
-        // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                window.location.replace('index.html');
-            } else {
-                currentUserId = user.uid;
-                // Use a demo ID for rendering based on role for this example
-                currentUserId = (currentUserId === 'teacherDemoID') ? 'teacherDemoID' : 'studentDemoID'; 
-                // This call triggers the entire dashboard rendering process
-                loadUserRole(currentUserId); 
-            }
+    /**
+     * Placeholder: Logs the user out.
+     */
+    function logout() {
+        auth.signOut().then(() => {
+            window.location.replace('index.html');
+        }).catch((error) => {
+            console.error("Logout failed:", error);
         });
-    </script>
+    }
+
+    /**
+     * Attaches event listeners after the dashboard content is rendered.
+     */
+    function attachDashboardListeners(role) {
+        const createClassForm = document.getElementById('create-class-form');
+        const submitCreateClassBtn = document.getElementById('submit-create-class');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        if (createClassForm) createClassForm.action = SCRIPT_URL;
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+        if (submitCreateClassBtn) submitCreateClassBtn.onclick = createClass;
+
+        // Listeners for Modals (keep this general structure)
+        const classSettingsModal = document.getElementById('class-settings-modal');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+        const deleteClassBtn = document.getElementById('delete-class-btn');
+        const roleSwitchModal = document.getElementById('role-switch-modal');
+        
+        if (saveSettingsBtn) {
+            saveSettingsBtn.onclick = () => {
+                const code = document.getElementById('update-class-code').value;
+                const name = document.getElementById('update-class-name').value;
+                const allowPosting = document.getElementById('settings-allow-posting').checked;
+                const allowCommenting = document.getElementById('settings-allow-commenting').checked;
+                saveClassSettings(code, name, allowPosting, allowCommenting);
+            };
+        }
+        
+        if (cancelSettingsBtn) {
+            cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
+        }
+
+        if (deleteClassBtn) {
+            deleteClassBtn.onclick = () => {
+                const classCode = deleteClassBtn.dataset.classCode;
+                const className = deleteClassBtn.dataset.className;
+                showDeleteConfirmation(className, classCode);
+            };
+        }
+        
+        // Close modal if user clicks outside of it
+        window.onclick = function(event) {
+            if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal') || event.target == document.getElementById('join-class-modal')) {
+                event.target.style.display = "none";
+            }
+        }
+    }
+
+    // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.replace('index.html');
+        } else {
+            currentUserId = user.uid;
+            // This call triggers the entire dashboard rendering process
+            loadUserRole(user.uid); 
+        }
+    });
+</script>
 </body>
 </html>
