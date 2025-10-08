@@ -911,7 +911,6 @@
 
     /**
      * Displays a custom modal dialog.
-     * FIX 1: ADDED NULL CHECK HERE - Prevents 'Cannot read properties of null (reading 'style')' if the modal is missing.
      */
     function showInfoDialog(title, message, type) {
         const modal = document.getElementById('info-dialog-modal');
@@ -972,8 +971,7 @@
     // ======================================================================
 
     /**
-     * Opens the Class Settings modal.
-     * FIX 2: MOVED FUNCTION TO GLOBAL SCOPE - Must be global because it's called via inline 'onclick'.
+     * Opens the Class Settings modal. Must be global because it's called via inline 'onclick'.
      */
     window.openClassSettingsModal = function(code, name, allowPosting, allowCommenting) {
         const modal = document.getElementById('class-settings-modal');
@@ -986,11 +984,16 @@
             return; 
         }
 
-        // Safely set element values/properties
-        document.getElementById('settings-class-code').value = code;
-        document.getElementById('settings-class-name').value = name;
-        document.getElementById('settings-allow-posting').checked = allowPosting;
-        document.getElementById('settings-allow-commenting').checked = allowCommenting;
+        // Safely set element values/properties (using null check if not critical)
+        const codeInput = document.getElementById('settings-class-code');
+        const nameInput = document.getElementById('settings-class-name');
+        const postCheck = document.getElementById('settings-allow-posting');
+        const commentCheck = document.getElementById('settings-allow-commenting');
+
+        if (codeInput) codeInput.value = code;
+        if (nameInput) nameInput.value = name;
+        if (postCheck) postCheck.checked = allowPosting;
+        if (commentCheck) commentCheck.checked = allowCommenting;
         
         if (titleElement) titleElement.innerText = `Settings for ${name}`;
         if (deleteBtn) {
@@ -1596,11 +1599,18 @@
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
         if (submitCreateClassBtn) submitCreateClassBtn.onclick = createClass;
 
-        // Listeners for Modals (keep this general structure)
+        // --- Get all modal elements for safe handling ---
         const classSettingsModal = document.getElementById('class-settings-modal');
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
         const deleteClassBtn = document.getElementById('delete-class-btn');
+        
+        const infoDialogModal = document.getElementById('info-dialog-modal');
+        const roleSwitchModal = document.getElementById('role-switch-modal');
+        const classManagementModal = document.getElementById('class-management-modal');
+        const confirmDialogModal = document.getElementById('confirm-dialog-modal');
+        const joinClassModal = document.getElementById('join-class-modal');
+
 
         // Handlers for class-settings-modal (only if modal exists)
         if (classSettingsModal) {
@@ -1629,22 +1639,26 @@
         }
         
         // Close modal if user clicks outside of it
+        // This is the CRITICAL block to fix the global scope error:
         window.onclick = function(event) {
-            // Get all modal elements on click for safety
-            const modal1 = document.getElementById('class-settings-modal');
-            const modal2 = document.getElementById('info-dialog-modal');
-            const modal3 = document.getElementById('role-switch-modal'); 
-            const modal4 = document.getElementById('class-management-modal');
-            const modal5 = document.getElementById('confirm-dialog-modal');
-            const modal6 = document.getElementById('join-class-modal'); 
+            // Create a list of all possible modal elements that can be closed by clicking the backdrop
+            const closableModals = [
+                classSettingsModal,
+                infoDialogModal,
+                roleSwitchModal,
+                classManagementModal,
+                confirmDialogModal,
+                joinClassModal
+            ];
 
-            // Apply style property only if the element exists AND the click target is the modal itself
-            if (modal1 && event.target === modal1) modal1.style.display = "none";
-            if (modal2 && event.target === modal2) modal2.style.display = "none";
-            if (modal3 && event.target === modal3) modal3.style.display = "none";
-            if (modal4 && event.target === modal4) modal4.style.display = "none";
-            if (modal5 && event.target === modal5) modal5.style.display = "none";
-            if (modal6 && event.target === modal6) modal6.style.display = "none";
+            // Iterate through the list and check if the clicked target matches a modal backdrop
+            for (const modal of closableModals) {
+                // IMPORTANT: The modal variable might be null if the HTML element doesn't exist.
+                // We use a null check (if (modal)) AND ensure the event target is the modal itself.
+                if (modal && event.target === modal) {
+                    modal.style.display = "none";
+                }
+            }
         }
     }
 
