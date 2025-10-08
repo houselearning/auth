@@ -5,105 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
     
+    <!-- Link to a style.css is not possible in this single-file environment, 
+         so we include all necessary CSS here. -->
+    
+    <!-- Use Firebase 9.x compatibility libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
-        /* ====================================================================== */
-        /* KHAN ACADEMY STYLE VARIABLES & RESET (BASE STYLES) */
-        /* ====================================================================== */
+        /* KHAN ACADEMY STYLE VARIABLES & RESET */
         :root {
-            --primary-color: #142838; /* KA Blue Dark */
-            --primary-hover-color: #1a3a55;
-            --accent-color: #14a4cc; /* KA Blue Bright */
-            --background-color: #f7f7f7; /* KA Gray Light */
-            --text-color-dark: #2e333b;
-            --text-color-light: #5e646f;
-            --success-color: #008064; /* KA Accent Green */
-            --danger-color: #dc3545; /* KA Red Error */
-            --border-color: #e6e6e6;
+            --ka-blue-dark: #142838;
+            --ka-blue-bright: #14a4cc;
+            --ka-gray-light: #f7f7f7;
+            --ka-text-color: #2e333b;
+            --ka-accent-green: #008064; /* For progress/success */
+            --ka-red-error: #dc3545; /* Used for Delete button */
+            --ka-red-dark: #b62d3c;
         }
-
-        * {
-            box-sizing: border-box;
-        }
-
+        
         body {
-            font-family: Arial, sans-serif;
+            background-color: var(--ka-gray-light); 
+            color: var(--ka-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--background-color);
-            color: var(--text-color-dark);
+            min-height: 100vh;
         }
 
-        #app-header {
+        /* --- Header and Navigation --- */
+        .app-header {
             background-color: white;
-            padding: 10px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--ka-blue-dark);
+        }
+        
+        .main-nav-button {
+            padding: 8px 15px;
+            background-color: var(--ka-blue-bright);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .main-nav-button:hover {
+            background-color: #108bb6;
+        }
+
+        /* --- Main Layout --- */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
         }
 
         .header-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
         }
-
-        h1 {
-            font-size: 1.8em;
+        
+        .header-controls h1 {
+            font-size: 2rem;
+            color: var(--ka-blue-dark);
             margin: 0;
-            color: var(--primary-color);
         }
 
         .logout-button {
-            background-color: var(--danger-color);
-            color: white;
+            background-color: #eee;
+            color: var(--ka-text-color);
+            border: 1px solid #ccc;
             padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .logout-button:hover {
+            background-color: #ddd;
         }
 
         .role-switch {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 5px;
-            font-size: 0.9em;
-            color: var(--text-color-light);
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
         }
 
-        .role-switch .active-role {
+        .role-switch span {
+            margin-right: 10px;
+            font-weight: 500;
+        }
+
+        .active-role {
             font-weight: bold;
-            color: var(--primary-color);
+            color: var(--ka-blue-bright);
+            margin-right: 20px !important;
         }
 
-        .role-switch button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        #dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 20px;
-        }
-
+        /* --- Feature Grids and Cards --- */
         .section-title {
-            color: var(--text-color-dark);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 5px;
-            margin: 25px 0 15px 0;
-            font-size: 1.4em;
+            font-size: 1.4rem;
+            color: var(--ka-blue-dark);
+            margin: 30px 0 15px 0;
+            border-left: 4px solid var(--ka-blue-bright);
+            padding-left: 10px;
         }
-
+        
         .feature-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -112,272 +139,212 @@
 
         .feature-card {
             background-color: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-top: 5px solid transparent;
         }
 
         .feature-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
         }
         
-        /* Neutral look for all cards (removed highlight-progress border) */
+        .feature-card.highlight-progress {
+             border-top-color: var(--ka-accent-green);
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--ka-blue-dark);
+            margin-bottom: 8px;
+        }
+
+        .card-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
         .feature-card .icon {
-            font-size: 1.5em;
-            margin-right: 10px;
-            color: var(--primary-color);
-        }
-
-        .feature-card .card-header {
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-
-        .feature-card .card-meta {
-            font-size: 0.9em;
-            color: var(--text-color-light);
-            margin-top: 5px;
-            padding-left: 30px; /* Align meta text under the header text */
+            margin-right: 8px;
+            font-size: 1.2rem;
         }
         
-        /* Class Card Specific Styles (for Teacher/Student view of classes) */
-        .class-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            border-left: 5px solid var(--accent-color); /* Light blue border */
-        }
-
-        .class-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        .class-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        
-        .class-card h3 {
-            margin: 0;
-            font-size: 1.2em;
-            color: var(--text-color-dark);
-        }
-
-        .class-card p {
-            margin: 3px 0;
-            font-size: 0.9em;
-            color: var(--text-color-light);
-        }
-
-        .class-permissions {
-            margin-top: 10px;
-            font-size: 0.8em;
-            display: flex;
-            gap: 15px;
-        }
-
-        .settings-button {
-            background: none;
-            border: none;
-            color: var(--text-color-light);
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-            transition: background-color 0.1s;
-        }
-
-        .settings-button:hover {
-            background-color: var(--border-color);
-        }
-
-        .create-class-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            border: 2px dashed var(--border-color);
-            color: var(--text-color-light);
-            font-weight: bold;
-            min-height: 150px;
-        }
-
-        .create-class-card:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .create-class-card .icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        /* Assignment Styles (Demo) */
-        .assignment-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        }
-
-        .assignment-card {
-            border-left: 5px solid var(--accent-color);
-        }
-
-        .assignment-card.overdue {
-            border-left: 5px solid var(--danger-color);
-        }
-
-        .assignment-card.completed {
-            border-left: 5px solid var(--success-color);
-        }
-
-        /* Join Class Section */
-        .join-class-container {
-            display: flex;
-            gap: 10px;
+        /* --- Teacher Specific Styles --- */
+        #createClassBtn {
             margin-bottom: 20px;
-        }
-
-        .join-class-container input {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-        }
-
-        .join-class-container button {
-            background-color: var(--success-color);
-            color: white;
             padding: 10px 20px;
+            font-size: 1rem;
+            background-color: var(--ka-blue-dark);
+            color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
-
-        .loading-message, .empty-state-message, .info-message {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: bold;
+        
+        #createClassBtn:hover {
+            background-color: var(--ka-blue-bright);
         }
-
-        .loading-message {
-            background-color: #e9f5ff;
-            color: var(--primary-color);
+        
+        #createClassBtn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
-
+        
         .empty-state-message {
-            background-color: #e6fff2;
-            color: var(--success-color);
+            background: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--ka-blue-bright);
+            font-style: italic;
         }
 
-        .info-message {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        /* Modal Base Styles */
+        /* --- Modal Base Styles --- */
         .modal {
             display: none; 
             position: fixed; 
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
+            width: 100%;
+            height: 100%;
+            overflow: auto;
             background-color: rgba(0,0,0,0.4); 
-            padding-top: 60px;
+            padding-top: 50px;
         }
 
         .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto; /* 5% from the top and centered */
-            padding: 20px;
+            background-color: var(--ka-gray-light);
+            margin: auto;
             border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .modal-content h2 {
-            margin-top: 0;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            position: relative;
+            padding: 0;
         }
         
-        .modal-content label, .modal-content input, .modal-content select {
-            display: block;
-            width: 100%;
+        .modal-header {
+            padding: 20px 30px;
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border-radius: 12px 12px 0 0;
+            color: var(--ka-blue-dark);
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .modal-footer {
+            padding: 15px 30px;
+            border-top: 1px solid #eee;
+            background-color: white;
+            display: flex; /* Use flexbox for button alignment */
+            justify-content: space-between; /* Space out the delete button from the others */
+            align-items: center;
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .primary-button, .secondary-button, .danger-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            margin-left: 10px; /* Separator for secondary/primary */
+        }
+
+        .primary-button {
+            background-color: var(--ka-blue-bright);
+            color: white;
+        }
+        
+        .primary-button:hover {
+            background-color: #108bb6;
+        }
+        
+        .secondary-button {
+            background-color: #ddd;
+            color: var(--ka-text-color);
+            margin-left: 0; /* Align to the right group */
+        }
+        
+        .danger-button {
+            background-color: var(--ka-red-error);
+            color: white;
+            margin-left: 0; /* Align to the left group */
+        }
+
+        .danger-button:hover {
+            background-color: var(--ka-red-dark);
+        }
+        
+        /* --- Toggle Switch Styles (used in settings and management list) --- */
+        .setting-group {
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .setting-group h3 {
+            margin-top: 0;
+            color: var(--ka-blue-dark);
+            font-size: 1.1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
             margin-bottom: 15px;
         }
 
-        .modal-content input[type="text"], .modal-content input[type="url"], .modal-content input[type="password"] {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border-color);
-            margin-top: 15px;
-        }
-
-        .modal-footer button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .save-button {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .cancel-button {
-            background-color: #f0f0f0;
-            color: var(--text-color-dark);
-        }
-
-        .delete-button {
-            background-color: var(--danger-color);
-            color: white;
-            margin-right: auto; /* Push to the left in the footer */
-        }
-        
-        .toggle-switch-container {
+        .toggle-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            cursor: pointer;
-        }
-        
-        .toggle-switch-container span {
-            font-weight: normal;
+            padding: 10px;
+            background: var(--ka-gray-light);
+            border-radius: 6px;
+            border: 1px solid #eee;
         }
 
         .switch {
             position: relative;
             display: inline-block;
-            width: 45px;
-            height: 25px;
+            width: 40px;
+            height: 24px;
+            flex-shrink: 0;
         }
 
         .switch input {
@@ -393,1269 +360,1024 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: var(--text-color-light);
+            background-color: #ccc;
             transition: .4s;
-            border-radius: 34px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
+            height: 16px;
+            width: 16px;
             left: 4px;
-            bottom: 3.5px;
+            bottom: 4px;
             background-color: white;
             transition: .4s;
-            border-radius: 50%;
         }
 
         input:checked + .slider {
-            background-color: var(--success-color);
+            background-color: var(--ka-accent-green);
         }
 
         input:focus + .slider {
-            box-shadow: 0 0 1px var(--success-color);
+            box-shadow: 0 0 1px var(--ka-accent-green);
         }
 
         input:checked + .slider:before {
-            transform: translateX(18px);
+            transform: translateX(16px);
         }
 
-        /* Confirmation Dialog (Modal 4) */
-        .confirm-modal .modal-content {
-            border-top: 5px solid var(--danger-color);
+        .slider.round {
+            border-radius: 24px;
         }
 
-        .confirm-modal .modal-footer .confirm-danger-button {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .confirm-modal .modal-footer .cancel-button {
-            background-color: #f0f0f0;
-            color: var(--text-color-dark);
-        }
-        
-        /* ====================================================================== */
-        /* CLASS DASHBOARD STYLES (NEW) */
-        /* ====================================================================== */
-
-        .class-view-container {
-            padding: 0px; /* Removed padding to let the banner use full width */
-        }
-
-        .class-dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .class-dashboard-header .back-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1em;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: bold;
-        }
-
-        .class-dashboard-header .back-button .material-icons {
-            font-size: 1.2em;
-        }
-
-        .class-dashboard-header h1 {
-            margin: 0;
-            font-size: 1.5em;
-            flex-grow: 1; 
-            text-align: center;
-            color: white; /* Override default h1 color */
-        }
-
-        .class-dashboard-header .logout-button {
-            background-color: var(--accent-color);
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-
-        .class-banner {
-            width: 100%;
-            height: 200px;
-            background-size: cover;
-            background-position: center;
-            border-radius: 0 0 8px 8px; /* Rounded bottom corners */
-            margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: flex-end;
-            color: white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .class-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 50%); 
-            z-index: 1;
-        }
-
-        .class-banner-content {
-            position: relative;
-            z-index: 2;
-            padding: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .class-banner-settings {
-            font-size: 1.5em;
-            cursor: pointer;
-            background: rgba(255,255,255,0.2);
+        .slider.round:before {
             border-radius: 50%;
-            padding: 5px;
-            transition: background-color 0.2s;
         }
 
-        .class-banner-settings:hover {
-            background: rgba(255,255,255,0.4);
+        /* Form Group Styles */
+        .form-group {
+            margin-bottom: 15px;
         }
 
-        .class-banner .class-info h2 {
-            margin: 0;
-            font-size: 2em;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
         }
 
-        .class-banner .class-info p {
-            margin: 5px 0 0;
-            font-size: 1em;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-
-
-        /* Post Creation Area */
-        .post-creation-area {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin: 0 20px 20px 20px; /* Add horizontal padding for content */
-        }
-
-        .post-input-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .post-input-row input[type="text"] {
-            flex-grow: 1;
+        .full-width-input {
+            width: 100%;
             padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box; 
         }
 
-        .post-options {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap; 
+        .disabled-input {
+            background-color: var(--ka-gray-light);
+            color: #666;
+            cursor: not-allowed;
+            font-weight: 500;
         }
 
-        .post-options .option-button {
-            background-color: #f0f2f5;
-            color: #555;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9em;
-            transition: background-color 0.2s;
-        }
-
-        .post-options .option-button:hover {
-            background-color: #e0e2e5;
-        }
-
-        .post-options .option-button .material-icons {
-            font-size: 1.2em;
-        }
-
-        /* Previous Posts Section */
-        .previous-posts-section {
-            display: grid;
-            gap: 15px;
-            padding: 0 20px 20px 20px; /* Add horizontal padding for content */
-        }
-
-        .post-item {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .post-item .post-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .post-item .profile-pic {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            background-color: #eee;
-        }
-
-        .post-item .post-meta {
-            flex-grow: 1;
-        }
-
-        .post-item .author-name {
+        .invite-link-input {
+            cursor: copy;
+            color: var(--ka-blue-bright);
             font-weight: bold;
-            color: var(--text-color-dark);
-        }
-
-        .post-item .post-time {
-            font-size: 0.8em;
-            color: var(--text-color-light);
-            display: block; 
-        }
-
-        .post-item .report-button {
-            background: none;
-            border: 1px solid var(--danger-color);
-            color: var(--danger-color);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.8em;
-            cursor: pointer;
-        }
-
-        .post-item .post-body p {
-            margin: 0 0 10px 0;
-            line-height: 1.5;
-        }
-
-        .post-item .posted-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-
-        .post-item .post-actions {
-            margin-top: 10px;
-            text-align: right; 
-        }
-
-        .post-item .reply-button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s;
         }
         
-        .post-item .reply-button:hover {
-            background-color: var(--primary-hover-color);
+        .invite-link-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(20, 164, 204, 0.5); /* Blue glow on focus/copy */
+        }
+        
+        /* Flex group for buttons in the footer */
+        .button-group-right {
+            display: flex;
+            gap: 10px;
         }
 
-        /* General button styles for consistency */
-        .primary-button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.2s;
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 15px 10px;
+            }
+            .container {
+                padding: 0 10px;
+            }
+            .header-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-controls h1 {
+                margin-bottom: 10px;
+            }
+            .role-switch {
+                flex-wrap: wrap;
+            }
+            .modal-content {
+                width: 95%;
+                margin-top: 20px;
+                padding: 0;
+            }
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .button-group-right {
+                flex-direction: column;
+                width: 100%;
+            }
+            .button-group-right button {
+                margin: 0;
+                width: 100%;
+            }
+            .danger-button {
+                width: 100%;
+            }
         }
-
-        .primary-button:hover {
-            background-color: var(--primary-hover-color);
-        }
-
     </style>
 </head>
 <body>
-    
-    <iframe id="hidden-iframe" name="hidden-iframe" style="display: none;"></iframe>
 
-    <header id="app-header">
-        <div class="header-controls">
-            <h1>CoolMathTime Dashboard</h1>
-            <button id="logout-btn" class="logout-button">Sign Out</button>
-        </div>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="logo">CoolMathTime</div>
+        <button id="nav-action-button" class="main-nav-button">Action</button>
     </header>
 
-    <main id="dashboard-container">
-        <div class="loading-message">Loading dashboard...</div>
-    </main>
+    <!-- Main Dashboard Content -->
+    <div class="container" id="dashboard-content">
+        <!-- Content inserted dynamically by renderDashboard() -->
+        <div class="loading-message">Loading authentication status...</div>
+    </div>
 
-    <div id="class-management-modal" class="modal">
-        <div class="modal-content">
-            <h2>Create New Class</h2>
-            <form id="create-class-form" target="hidden-iframe" method="POST" action="PASTE_YOUR_APPS_SCRIPT_URL_HERE">
-                <input type="hidden" name="action" value="createClass">
+    <!-- ==================================================================== -->
+    <!-- MODALS -->
+    <!-- ==================================================================== -->
 
-                <label for="new-class-name">Class Name:</label>
-                <input type="text" id="new-class-name" name="name" required>
-
-                <label for="new-class-teacher-id">Teacher ID (Current User):</label>
-                <input type="text" id="new-class-teacher-id" name="teacher" readonly required>
-
-                <label for="new-class-code">Class Code (Auto-Generated):</label>
-                <input type="text" id="new-class-code" name="code" readonly required>
-                
-                <div class="toggle-switch-container">
-                    <span>Allow Students to Post on Feed:</span>
-                    <label class="switch">
-                        <input type="checkbox" id="new-class-allow-posting" name="allowPosting" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="toggle-switch-container">
-                    <span>Allow Students to Comment on Posts:</span>
-                    <label class="switch">
-                        <input type="checkbox" id="new-class-allow-commenting" name="allowCommenting" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="cancel-button" id="cancel-create-btn">Cancel</button>
-                    <button type="submit" class="save-button">Create Class</button>
-                </div>
-            </form>
+    <!-- 1. Role Switch Confirmation Modal -->
+    <div id="role-switch-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                Confirm Role Switch
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to switch to the **Coach/Teacher** view?</p>
+                <p>This allows you to create classes and manage assignments.</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button id="cancel-switch" class="secondary-button" style="margin-left: 0;">Cancel</button>
+                <button id="confirm-switch" class="primary-button">Confirm Switch</button>
+            </div>
         </div>
     </div>
 
+    <!-- 2. Class Settings Modal (Full Featured) -->
     <div id="class-settings-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="settings-modal-title">Class Settings</h2>
-            <form id="update-class-form" target="hidden-iframe" method="POST" action="PASTE_YOUR_APPS_SCRIPT_URL_HERE">
-                <input type="hidden" name="action" value="updateClass">
-                <input type="hidden" name="code" id="settings-class-code">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <span id="settings-class-name">Class Name</span> Settings
+                <span class="close-button" onclick="document.getElementById('class-settings-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                
+                <!-- Hidden input to store class data -->
+                <input type="hidden" id="class-code-input" value=""> 
 
-                <label for="settings-class-name">Class Name:</label>
-                <input type="text" id="settings-class-name" name="name" required>
-
-                <div class="toggle-switch-container">
-                    <span>Allow Students to Post on Feed:</span>
-                    <label class="switch">
-                        <input type="checkbox" id="settings-allow-posting" name="allowPosting">
-                        <span class="slider"></span>
-                    </label>
+                <div class="setting-group">
+                    <h3>General Settings</h3>
+                    <div class="form-group">
+                        <label for="class-name-input">Class Name:</label>
+                        <input type="text" id="class-name-input" placeholder="e.g., Algebra 101" class="full-width-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Join Code (Read-Only):</label>
+                        <input type="text" id="class-code-display" value="CODE" readonly class="full-width-input disabled-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Contact:</label>
+                        <input type="text" id="admin-email-display" value="admin@coolmathtime.com" readonly class="full-width-input disabled-input">
+                    </div>
                 </div>
 
-                <div class="toggle-switch-container">
-                    <span>Allow Students to Comment on Posts:</span>
-                    <label class="switch">
-                        <input type="checkbox" id="settings-allow-commenting" name="allowCommenting">
-                        <span class="slider"></span>
-                    </label>
+                <div class="setting-group" style="margin-top: 20px;">
+                    <h3>Student Interaction Permissions</h3>
+                    <div class="toggle-group">
+                        <label for="allow-posting-toggle">Allow students to create new content/posts:</label>
+                        <label class="switch">
+                            <input type="checkbox" id="allow-posting-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <label for="allow-commenting-toggle">Allow students to comment on posts:</label>
+                        <label class="switch">
+                            <input type="checkbox" id="allow-commenting-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="delete-button" id="delete-class-btn" data-class-code="" data-class-name="">
-                        🗑️ Delete Class
-                    </button>
-                    <button type="button" class="cancel-button" id="cancel-settings-btn">Cancel</button>
-                    <button type="button" class="save-button" id="save-settings-btn">Save Changes</button>
+                <div class="setting-group" style="margin-top: 20px;">
+                    <h3>Class Invitation</h3>
+                    <div class="form-group">
+                        <label>Shareable Invite Link:</label>
+                        <input type="text" id="invite-link-display" value="" readonly class="full-width-input invite-link-input" 
+                               onclick="this.select(); document.execCommand('copy'); alert('Link copied!');">
+                        <small>Click the link above to copy it to your clipboard.</small>
+                    </div>
                 </div>
-            </form>
+                
+            </div>
+            <!-- UPDATED FOOTER with Delete Button -->
+            <div class="modal-footer">
+                <button id="delete-class-btn" class="danger-button" data-class-name="" data-class-code="">
+                    🗑️ Delete Class
+                </button>
+                <div class="button-group-right">
+                    <button id="cancel-settings-btn" class="secondary-button">Cancel</button>
+                    <button id="save-settings-btn" class="primary-button">Save Changes</button>
+                </div>
+            </div>
         </div>
     </div>
     
+    <!-- 3. GENERIC INFO DIALOG MODAL (For "Already in Class" message/Join Code) -->
     <div id="info-dialog-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="info-dialog-title"></h2>
-            <p id="info-dialog-body"></p>
-            <div class="modal-footer">
-                <button class="cancel-button" onclick="document.getElementById('info-dialog-modal').style.display='none'">OK</button>
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <span id="info-dialog-title"></span>
+                <span class="close-button" onclick="document.getElementById('info-dialog-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="info-dialog-body"></p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="primary-button" onclick="document.getElementById('info-dialog-modal').style.display='none';" style="margin-left: 0;">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 4. DANGER CONFIRMATION DIALOG MODAL (For Deletion) -->
+    <div id="confirm-dialog-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background-color: var(--ka-red-error); color: white;">
+                <span id="confirm-dialog-title">Delete Class</span>
+                <span class="close-button" onclick="document.getElementById('confirm-dialog-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-dialog-body" style="font-weight: 500;"></p>
+                <p style="font-size: 0.9rem; color: var(--ka-red-dark); font-weight: 600;">
+                    This action is permanent and cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end; align-items: center;">
+                <button id="confirm-delete-cancel" class="secondary-button" style="margin-right: 10px;">Cancel</button>
+                <button id="confirm-delete-action" class="danger-button" style="margin-left: 0;">Yes, Delete Permanently</button>
             </div>
         </div>
     </div>
 
-    <div id="confirm-dialog-modal" class="modal confirm-modal">
-        <div class="modal-content">
-            <h2 id="confirm-dialog-title">Delete Class</h2>
-            <p id="confirm-dialog-body">Are you sure you want to delete this class? All data will be lost permanently.</p>
-            <div class="modal-footer">
-                <button type="button" class="cancel-button" onclick="document.getElementById('confirm-dialog-modal').style.display='none'">Cancel</button>
-                <button type="button" class="confirm-danger-button" id="confirm-delete-btn">Yes, Delete Permanently</button>
+
+    <!-- 5. Class Management Modal (Lists all classes for settings) -->
+    <div id="class-management-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                Select Class to Manage Settings
+                <span class="close-button" onclick="document.getElementById('class-management-modal').style.display='none';">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Select a class below to view or change its permissions and name.</p>
+                <div id="class-management-list">
+                    <!-- Class list will be dynamically inserted here -->
+                    <div class="loading-message">Loading classes...</div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end;">
+                <button class="primary-button" onclick="document.getElementById('class-management-modal').style.display='none';" style="margin-left: 0;">Done</button>
             </div>
         </div>
     </div>
-
-    <!-- Role Switch Modal (previously referenced but missing) -->
-    <div id="role-switch-modal" class="modal">
-        <div class="modal-content">
-            <h2>Switch Role</h2>
-            <p>Select how you want to view the dashboard:</p>
-            <div class="modal-footer">
-                <button type="button" class="cancel-button" onclick="document.getElementById('role-switch-modal').style.display='none'">Cancel</button>
-                <button type="button" class="save-button" onclick="switchRole('student')">View as Student</button>
-                <button type="button" class="save-button" onclick="switchRole('teacher')">View as Teacher</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Join Class Modal (previously referenced but missing) -->
-    <div id="join-class-modal" class="modal">
-        <div class="modal-content">
-            <h2>Join a Class</h2>
-            <p>Enter the class code to join.</p>
-            <label for="join-class-code">Class Code:</label>
-            <input type="text" id="join-class-code" name="joinClassCode" style="width:100%; padding:8px; margin-bottom:10px;" />
-            <div class="modal-footer">
-                <button type="button" class="cancel-button" onclick="document.getElementById('join-class-modal').style.display='none'">Cancel</button>
-                <button type="button" class="save-button" onclick="(function(){ const code=document.getElementById('join-class-code').value.trim(); if(!code){ showInfoDialog('Error','Please enter a valid class code.','error'); return; } document.getElementById('join-class-modal').style.display='none'; /* Placeholder: call Apps Script / API to join */ showInfoDialog('Joined','Requested to join class '+code,'success'); })()">Join Class</button>
-            </div>
-        </div>
-    </div>
-
+    
+    <!-- Hidden Iframe for Apps Script Form Submission (CORS Bypass) -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="handlePostResponse();"></iframe>
 
     <script>
-    // ======================================================================
-    // 1. CONFIGURATION & GLOBAL VARIABLES
-    // ======================================================================
-    
-    // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzn_xqn6L8Mkvomk_6sRslAVZecz9_ZTlH2pi5N4Y2cgML3huCV1ogGIXr3QfsTtoLunw/exec'; 
+        // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkA7g55q4VHkEprZI_4Oqr8X9k3d5dahm9s7pi7HZPp2hQgXf2ZT-3461i4C5HOqYwYA/exec'; 
 
-    // 🚨 CRITICAL: REPLACE WITH YOUR FIREBASE CONFIGURATION
-    const firebaseConfig = {
-      apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-      authDomain: "contract-center-llc-10.firebaseapp.com",
-      projectId: "contract-center-llc-10",
-      storageBucket: "contract-center-llc-10.firebasestorage.app",
-      messagingSenderId: "323221512767",
-      appId: "1:323221512767:web:6421260f875997dbf64e8a",
-    };
-
-    // Initialize Firebase (keep this as-is)
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    // const db = firebase.firestore(); // Not used to avoid Firestore constraint
-
-    let currentUserId = null;
-    let userRole = 'student'; // Default role
-    let userFullName = 'User Name Placeholder'; // Must be fetched/set on login for posts
-    
-    let currentClassCode = null; 
-    let currentClassName = null; 
-
-    // Base64 Storage Constraint
-    const MAX_FILE_SIZE_BYTES = 30 * 1024; // 30 KB Limit enforced for Sheet cell storage
-
-    // ======================================================================
-    // 2. CORE UTILITIES & HELPERS (JSONP, DIALOGS, AUTH)
-    // ======================================================================
-
-    let jsonpCallbackCounter = 0;
-
-    /**
-     * Generic function to make a JSONP call to Google Apps Script.
-     */
-    function fetchJsonp(action, params = {}) {
-        return new Promise((resolve, reject) => {
-            const callbackName = 'jsonp_callback_' + (jsonpCallbackCounter++);
-            
-            const queryParams = new URLSearchParams({ 
-                action: action, 
-                callback: callbackName, 
-                ...params 
-            }).toString();
-            
-            const url = SCRIPT_URL + '?' + queryParams;
-            
-            window[callbackName] = (data) => {
-                delete window[callbackName];
-                script.remove();
-                resolve(data);
-            };
-
-            const script = document.createElement('script');
-            script.src = url;
-            script.onerror = () => {
-                delete window[callbackName];
-                script.remove();
-                reject(new Error('JSONP request failed or Apps Script URL is incorrect.'));
-            };
-            document.head.appendChild(script);
-        });
-    }
-
-    /**
-     * Handles responses from the hidden iframe after POST submissions.
-     */
-    window.handlePostResponse = function(result) {
-        if (result.status === 'success') {
-            showInfoDialog('Success', result.message, 'success');
-            // Reload teacher classes if a class was created/deleted/updated
-            if (result.message.includes('Class') && currentUserId) {
-                if (userRole === 'teacher') loadTeacherData(currentUserId);
-                // Class update/delete might affect the current dashboard, reload if necessary
-                if (result.message.includes('deleted')) {
-                    renderDashboard(userRole);
-                }
-            }
-        } else {
-            showInfoDialog('Error', result.message, 'error');
-        }
-    };
-
-    /**
-     * Displays a custom modal dialog.
-     */
-    function showInfoDialog(title, message, type) {
-        const modal = document.getElementById('info-dialog-modal');
-        // CRITICAL: Stop execution if the main element is missing
-        if (!modal) {
-            console.error("CRITICAL ERROR: Modal 'info-dialog-modal' not found in HTML.");
-            return; 
+        // Function to generate a simple, 6-character, random join code
+        function generateJoinCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
         }
 
-        const content = modal.querySelector('.modal-content');
-        const titleElement = document.getElementById('info-dialog-title');
-        const bodyElement = document.getElementById('info-dialog-body');
-
-        if (titleElement) titleElement.innerText = title;
-        if (bodyElement) bodyElement.innerText = message;
-        
-        let borderColor = 'var(--accent-color)'; 
-        if (type === 'error') {
-            borderColor = 'var(--danger-color)'; 
-        } else if (type === 'success') {
-            borderColor = 'var(--success-color)';
-        }
-
-        // Apply style safely
-        if (content) {
-            content.style.borderTop = `5px solid ${borderColor}`;
-        }
-        
-        modal.style.display = 'flex';
-    }
-
-    /**
-     * Generates a random 6-character alphanumeric code.
-     */
-    function generateClassCode() {
-        return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
-
-    /**
-     * Fetches the real student enrollment count using JSONP.
-     */
-    async function getStudentEnrollmentCount() {
-        try {
-            const result = await fetchJsonp('loadStudentEnrollmentCount', { 
-                studentId: currentUserId 
-            });
-            if (result.status === 'success') {
-                return result.count;
-            }
-        } catch (error) {
-            console.error("Error fetching enrollment count:", error);
-        }
-        return 0; 
-    }
-
-    // ======================================================================
-    // 3. CLASS MANAGEMENT ACTIONS & MODAL OPENERS
-    // ======================================================================
-
-    /**
-     * Opens the Class Settings modal. Must be global because it's called via inline 'onclick'.
-     */
-    window.openClassSettingsModal = function(code, name, allowPosting, allowCommenting) {
-        const modal = document.getElementById('class-settings-modal');
-        const deleteBtn = document.getElementById('delete-class-btn');
-        const titleElement = document.getElementById('settings-modal-title');
-        
-        // CRITICAL: Stop execution if the main element is missing
-        if (!modal) {
-            console.error("CRITICAL ERROR: Modal 'class-settings-modal' not found in HTML.");
-            return; 
-        }
-
-        // Safely set element values/properties (using null check if not critical)
-        const codeInput = document.getElementById('settings-class-code');
-        const nameInput = document.getElementById('settings-class-name');
-        const postCheck = document.getElementById('settings-allow-posting');
-        const commentCheck = document.getElementById('settings-allow-commenting');
-
-        if (codeInput) codeInput.value = code;
-        if (nameInput) nameInput.value = name;
-        if (postCheck) postCheck.checked = allowPosting;
-        if (commentCheck) commentCheck.checked = allowCommenting;
-        
-        if (titleElement) titleElement.innerText = `Settings for ${name}`;
-        if (deleteBtn) {
-            deleteBtn.dataset.classCode = code;
-            deleteBtn.dataset.className = name;
-        }
-        
-        modal.style.display = 'flex';
-    };
-
-
-    /**
-     * Submits class creation form.
-     */
-    function createClass() {
-        const form = document.getElementById('create-class-form');
-        document.getElementById('new-class-code').value = generateClassCode();
-        // Assuming the 'teacher' field in the form uses the user's full name for lookup in Apps Script
-        document.getElementById('new-class-teacher-id').value = userFullName; 
-        
-        form.submit();
-    }
-
-    /**
-     * Submits class settings update form.
-     */
-    function saveClassSettings(code, name, allowPosting, allowCommenting) {
-        const form = document.getElementById('update-class-form');
-        
-        // Use correct IDs for code and name fields
-        document.getElementById('settings-class-code').value = code;
-        document.getElementById('settings-class-name').value = name;
-        
-        // Dynamically create hidden inputs for boolean submission
-        const postInput = document.createElement('input');
-        postInput.type = 'hidden';
-        postInput.name = 'allowPosting';
-        postInput.value = allowPosting ? 'TRUE' : 'FALSE';
-        form.appendChild(postInput);
-
-        const commentInput = document.createElement('input');
-        commentInput.type = 'hidden';
-        commentInput.name = 'allowCommenting';
-        commentInput.value = allowCommenting ? 'TRUE' : 'FALSE';
-        form.appendChild(commentInput);
-        
-        form.submit();
-        
-        const modal = document.getElementById('class-settings-modal');
-        if (modal) modal.style.display = 'none'; // Safely close modal after submit
-        
-        // Clean up
-        form.removeChild(postInput);
-        form.removeChild(commentInput);
-    }
-
-    /**
-     * Shows the delete confirmation dialog.
-     */
-    function showDeleteConfirmation(className, classCode) {
-        const modal = document.getElementById('confirm-dialog-modal');
-        if (!modal) return; // Null check
-        
-        document.getElementById('confirm-dialog-title').innerText = `Confirm Deletion`;
-        document.getElementById('confirm-dialog-body').innerHTML = `Are you sure you want to delete the class <strong>${className}</strong> (Code: ${classCode})? This action cannot be undone.`;
-        // The HTML uses 'confirm-delete-btn' for delete action
-        document.getElementById('confirm-delete-btn').onclick = () => submitDeleteClass(classCode); 
-        modal.style.display = 'flex';
-    }
-
-    /**
-     * Submits class deletion to Apps Script.
-     */
-    function submitDeleteClass(classCode) {
-        const confirmModal = document.getElementById('confirm-dialog-modal');
-        if (confirmModal) confirmModal.style.display = 'none'; // Safely close confirm modal
-        
-        // Temporarily create the form and submit it
-        const tempForm = document.createElement('form');
-        tempForm.target = 'hidden-iframe';
-        tempForm.method = 'POST';
-        tempForm.action = SCRIPT_URL;
-        tempForm.style.display = 'none';
-        
-        const actionInput = document.createElement('input');
-        actionInput.type = 'hidden';
-        actionInput.name = 'action';
-        actionInput.value = 'deleteClass';
-        tempForm.appendChild(actionInput);
-        
-        const codeInput = document.createElement('input');
-        codeInput.type = 'hidden';
-        codeInput.name = 'classCode';
-        codeInput.value = classCode;
-        tempForm.appendChild(codeInput);
-        
-        document.body.appendChild(tempForm);
-        tempForm.submit();
-        document.body.removeChild(tempForm);
-    }
-    
-    /**
-     * Placeholder: Students load their assignments here.
-     */
-    function loadAssignments(studentId) {
-        const assignmentList = document.getElementById('assignment-list');
-        if (!assignmentList) return;
-        
-        // --- HARDCODED ASSIGNMENT DATA (REPLACE LATER) ---
-        const assignments = [
-            { name: "Unit 3 Test Review", type: "Test", due: "2025-10-15", progress: "80%" },
-            { name: "Algebra I Quiz 5", type: "Quiz", due: "2025-10-12", progress: "New" },
-        ];
-        
-        assignmentList.innerHTML = assignments.map(a => `
-            <div class="assignment-item">
-                <span class="assignment-name">${a.name} (${a.type})</span>
-                <span class="assignment-progress">${a.progress}</span>
-                <span class="assignment-due">Due: ${a.due}</span>
-            </div>
-        `).join('');
-    }
-
-    // ======================================================================
-    // 4. CLASS DASHBOARD LOGIC (BASE64 INTEGRATION)
-    // ======================================================================
-    
-    /**
-     * Handles file selection, enforces the 30KB limit, and encodes to Base64.
-     */
-    function handleFileUploadSelection(input) {
-        const infoSpan = document.getElementById('file-selection-info');
-        const mediaDataUriInput = document.getElementById('post-media-data-uri');
-        const mediaTypeInput = document.getElementById('post-media-type');
-
-        if (input.files.length === 0) {
-            if (infoSpan) infoSpan.innerText = '';
-            if (mediaDataUriInput) mediaDataUriInput.value = '';
-            if (mediaTypeInput) mediaTypeInput.value = 'text';
-            return;
-        }
-
-        const file = input.files[0];
-
-        // 1. Enforce 30KB Size Limit
-        if (file.size > MAX_FILE_SIZE_BYTES) {
-            if (infoSpan) {
-                infoSpan.style.color = 'var(--danger-color)';
-                infoSpan.innerText = `Error: File size (${(file.size / 1024).toFixed(1)} KB) exceeds the 30KB limit.`;
-            }
-            input.value = ''; // Clear file input
-            if (mediaDataUriInput) mediaDataUriInput.value = '';
-            if (mediaTypeInput) mediaTypeInput.value = 'text';
-            return;
-        }
-
-        // 2. Read and Encode the file
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if (mediaDataUriInput) mediaDataUriInput.value = e.target.result; // The data: URI (Base64 string)
-            
-            // Set media type based on MIME type for rendering logic
-            let mediaType = 'file';
-            if (file.type.includes('image')) {
-                mediaType = 'image';
-            } else if (file.type.includes('pdf')) {
-                mediaType = 'pdf';
-            }
-            
-            if (mediaTypeInput) mediaTypeInput.value = mediaType;
-
-            if (infoSpan) {
-                infoSpan.style.color = 'var(--success-color)';
-                infoSpan.innerText = `File ready: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-            }
+        // ======================================================================
+        // 1. FIREBASE INITIALIZATION & DOM REFERENCES
+        // ======================================================================
+        // Using sample config as per instructions
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+            authDomain: "contract-center-llc-10.firebaseapp.com",
+            projectId: "contract-center-llc-10",
+            storageBucket: "contract-center-llc-10.firebasestorage.app",
+            messagingSenderId: "323221512767",
+            appId: "1:323221512767:web:6421260f875997dbf64e8a",
         };
-        
-        reader.readAsDataURL(file); // Critical: Read the file as a Data URL (Base64)
-    }
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore(); 
 
-    /**
-     * Renders a single post item using real data, handling Base64 display.
-     */
-    function renderPostItem(post) {
-        function timeSince(dateString) {
-            const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-            let interval = Math.floor(seconds / 31536000);
-            if (interval > 1) return interval + " years ago";
-            interval = Math.floor(seconds / 2592000);
-            if (interval > 1) return interval + " months ago";
-            interval = Math.floor(seconds / 86400);
-            if (interval > 1) return interval + " days ago";
-            interval = Math.floor(seconds / 3600);
-            if (interval > 1) return interval + " hours ago";
-            interval = Math.floor(seconds / 60);
-            if (interval > 1) return interval + " minutes ago";
-            return "Just now";
-        }
+        const dashboardContent = document.getElementById('dashboard-content');
+        const roleSwitchModal = document.getElementById('role-switch-modal');
+        const confirmSwitchBtn = document.getElementById('confirm-switch');
+        const cancelSwitchBtn = document.getElementById('cancel-switch');
+        const navActionButton = document.getElementById('nav-action-button');
 
-        let mediaHTML = '';
-        const mediaDataURI = post.mediaDataURI; 
-
-        if (mediaDataURI) {
-            if (post.mediaType === 'image') {
-                // Display the Base64 image directly
-                mediaHTML = `<img src="${mediaDataURI}" alt="Posted image" class="posted-media">`;
-            } else if (post.mediaType === 'pdf' || post.mediaType === 'file') {
-                // Provide a download link for the Base64 file
-                const fileExtension = post.mediaType === 'pdf' ? 'pdf' : post.mediaType.split('/')[1] || 'dat';
-                const fileName = `${post.classCode}_attachment.${fileExtension}`;
-
-                mediaHTML = `
-                    <div class="file-attachment">
-                        <a href="${mediaDataURI}" download="${fileName}" style="text-decoration: none; display: flex; align-items: center; gap: 5px; color: var(--accent-color); font-weight: bold;">
-                            <span class="material-icons">${post.mediaType === 'pdf' ? 'picture_as_pdf' : 'attach_file'}</span> 
-                            Download Attachment (${post.mediaType.toUpperCase()})
-                        </a>
-                        <small style="display:block; margin-top:5px; color:#888;">File data is stored directly in the sheet.</small>
-                    </div>`;
-            }
-        }
-        
-        const initials = post.authorName.split(' ').map(n => n[0]).join('').toUpperCase();
-        
-        return `
-            <div class="post-item" data-author-id="${post.authorId}">
-                <div class="post-header">
-                    <div class="profile-pic">${initials}</div>
-                    <div class="post-meta">
-                        <span class="author-name">${post.authorName}</span>
-                        <span class="post-id">(ID: ${post.authorId})</span>
-                        <span class="post-time">${timeSince(post.timestamp)}</span>
-                    </div>
-                    <button class="report-button">Report</button>
-                </div>
-                <div class="post-body">
-                    <p>${post.content}</p>
-                    ${mediaHTML}
-                </div>
-                <div class="post-actions">
-                    <button class="reply-button">Reply</button>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Fetches and renders all posts for a given class code using JSONP.
-     */
-    async function loadClassPosts(classCode) {
-        const postsSection = document.getElementById('previous-posts-section');
-        if (!postsSection) return;
-
-        postsSection.innerHTML = '<div class="loading-message">Loading class posts...</div>';
-
-        try {
-            const result = await fetchJsonp('loadPosts', { classCode: classCode });
-            
-            if (result.status === 'success' && result.posts && result.posts.length > 0) {
-                postsSection.innerHTML = result.posts.map(renderPostItem).join('');
-            } else {
-                postsSection.innerHTML = '<div class="empty-state-message">Be the first to post in this class!</div>';
-            }
-        } catch (error) {
-            postsSection.innerHTML = `<div class="info-message" style="background-color:var(--danger-color); color:white;">Error loading posts: ${error.message}</div>`;
-            console.error("Failed to load posts:", error);
-        }
-    }
-    
-    /**
-     * Re-attaches the listener for the post form submit and clears inputs.
-     */
-    function attachPostFormListener(classCode) {
-        const form = document.getElementById('create-post-form');
-        if (form) {
-            form.onsubmit = function() {
-                // Client-side check before submission
-                const content = document.getElementById('post-text-input').value.trim();
-                const media = document.getElementById('post-media-data-uri').value;
-                if (!content && !media) {
-                    showInfoDialog('Warning', 'Please enter content or select a file.', 'info');
-                    return false; 
-                }
-                return true; 
-            };
-
-            const originalHandlePostResponse = window.handlePostResponse;
-            window.handlePostResponse = (result) => {
-                originalHandlePostResponse(result); 
-                if (result.status === 'success' && result.message === 'Post created successfully.') {
-                    // Clear all post inputs after success
-                    form.reset();
-                    const mediaDataUriInput = document.getElementById('post-media-data-uri');
-                    const mediaTypeInput = document.getElementById('post-media-type');
-                    const fileUploadInput = document.getElementById('post-file-upload');
-                    const infoSpan = document.getElementById('file-selection-info');
-
-                    if (mediaDataUriInput) mediaDataUriInput.value = '';
-                    if (mediaTypeInput) mediaTypeInput.value = 'text';
-                    if (fileUploadInput) fileUploadInput.value = ''; // Clear file input element
-                    if (infoSpan) infoSpan.innerText = '';
-                    
-                    // Reload posts after a short delay
-                    setTimeout(() => loadClassPosts(classCode), 1000); 
-                }
-            };
-        }
-    }
-
-    /**
-     * Renders the class-specific dashboard view (the class feed).
-     */
-    function openClassDashboard(classCode, className) {
-        currentClassCode = classCode; 
-        currentClassName = className; 
-        
-        const appHeader = document.getElementById('app-header');
-        const dashboardContainer = document.getElementById('dashboard-container');
-
-        if (!appHeader || !dashboardContainer) return; // Basic null check
-
-        // --- Header for Class Dashboard ---
-        appHeader.innerHTML = `
-            <div class="header-left">
-                <button id="back-to-main-dashboard-btn" class="nav-button">
-                    <span class="material-icons">arrow_back</span>
-                    Back to Dashboard
-                </button>
-            </div>
-            <div class="header-center">
-                <h1 class="app-title">${className}</h1>
-            </div>
-            <div class="header-right">
-                <button id="logout-btn" class="nav-button">
-                    <span class="material-icons">logout</span> Logout
-                </button>
-            </div>`;
-
-        // --- Main Content for Class Dashboard (NEW POST FORM) ---
-        dashboardContainer.innerHTML = `
-            <div class="class-view-container">
-                <div class="class-banner" style="background-image: url('https://via.placeholder.com/1200x200/4CAF50/FFFFFF?text=Class+Banner+Image');">
-                    <div class="class-banner-content">
-                        ${(userRole === 'teacher') ? 
-                            // Note: openClassSettingsModal is now a global function
-                            `<span class="class-banner-settings material-icons" onclick="openClassSettingsModal('${classCode}', '${className}', true, true)">settings</span>` 
-                            : ''
-                        }
-                        <div class="class-info">
-                            <h2>${className}</h2>
-                            <p>Class Code: ${classCode}</p> 
-                        </div>
-                    </div>
-                </div>
-                
-                <form id="create-post-form" target="hidden-iframe" method="POST" action="${SCRIPT_URL}">
-                    <input type="hidden" name="action" value="createPost">
-                    <input type="hidden" name="classCode" value="${classCode}">
-                    <input type="hidden" name="authorId" id="post-author-id" value="${currentUserId}">
-                    <input type="hidden" name="authorName" id="post-author-name" value="${userFullName}">
-                    
-                    <input type="hidden" name="mediaDataURI" id="post-media-data-uri" value="">
-                    <input type="hidden" name="mediaType" id="post-media-type" value="text">
-
-                    <div class="post-creation-area">
-                        <div class="post-input-row">
-                            <input type="text" id="post-text-input" name="content" placeholder="Post Something to your class" required>
-                            <button type="submit" id="submit-post-btn" class="primary-button">Submit</button>
-                        </div>
-                        <div class="post-options">
-                            <input type="file" id="post-file-upload" style="display:none;" 
-                                accept="image/*,.pdf,.txt" 
-                                onchange="handleFileUploadSelection(this)">
-
-                            <button type="button" class="option-button" onclick="document.getElementById('post-file-upload').click();">
-                                <span class="material-icons">perm_media</span> Add multimedia (Max 30KB)
-                            </button>
-                            
-                            <span id="file-selection-info" style="font-size:0.9em; color:var(--success-color); margin-left:10px;"></span>
-
-                            ${(userRole === 'teacher') ? 
-                                `<button type="button" class="option-button"><span class="material-icons">assignment</span> Create assignment</button>` : 
-                                `<button type="button" class="option-button"><span class="material-icons">send</span> Send to a different class</button>`
-                            }
-                        </div>
-                    </div>
-                </form>
-
-                <div class="previous-posts-section" id="previous-posts-section">
-                    </div>
-            </div>
-        `;
-
-        // Attach listeners
-        document.getElementById('back-to-main-dashboard-btn').addEventListener('click', () => {
-            renderDashboard(userRole); 
-        });
-        document.getElementById('logout-btn').addEventListener('click', logout);
-        
-        // Load posts and attach the post form listener
-        loadClassPosts(classCode);
-        attachPostFormListener(classCode);
-    }
-    
-    // ======================================================================
-    // 5. RENDERING & INITIALIZATION
-    // ======================================================================
-
-    /**
-     * Renders a single class card for the teacher dashboard.
-     */
-    function renderClassCard(classData, role) {
-        const settingsBtn = (role === 'teacher') 
-            ? `<button class="settings-button" onclick="openClassSettingsModal('${classData.code}', '${classData.name}', ${classData.allowPosting === 'TRUE'}, ${classData.allowCommenting === 'TRUE'})">
-                <span class="material-icons">settings</span>
-               </button>`
-            : '';
-            
-        return `
-            <div class="class-card" onclick="openClassDashboard('${classData.code}', '${classData.name}')">
-                <div class="card-header">
-                    <h3>${classData.name}</h3>
-                    ${settingsBtn}
-                </div>
-                <div class="card-meta">Teacher: ${classData.teacher}</div>
-                <div class="card-meta">Code: ${classData.code}</div>
-                <div class="card-status-toggles">
-                    <span class="status-label">Posting: <span class="status-${classData.allowPosting === 'TRUE' ? 'on' : 'off'}">${classData.allowPosting}</span></span>
-                    <span class="status-label">Commenting: <span class="status-${classData.allowCommenting === 'TRUE' ? 'on' : 'off'}">${classData.allowCommenting}</span></span>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Loads class data for the teacher from the Google Sheet (via JSONP).
-     */
-    async function loadTeacherData(teacherId) {
-        const classGrid = document.querySelector('.class-grid');
-        if (!classGrid) return;
-        
-        // Clear all except the Create Class card
-        classGrid.querySelectorAll('.class-card:not(.create-class-card)').forEach(card => card.remove());
-
-        try {
-            const result = await fetchJsonp('loadClasses', { teacher: userFullName }); // Use userFullName as the identifier
-            
-            if (result.status === 'success' && result.classes.length > 0) {
-                // Ensure the create card is always last
-                const createCard = document.getElementById('create-class-card');
-                
-                result.classes.forEach(classData => {
-                    const newCard = document.createRange().createContextualFragment(renderClassCard(classData, 'teacher'));
-                    if (createCard) {
-                        classGrid.insertBefore(newCard, createCard);
-                    } else {
-                        classGrid.appendChild(newCard);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error("Failed to load teacher data:", error);
-        }
-    }
-
-    /**
-     * Renders the main dashboard structure based on the user's role.
-     */
-    async function renderDashboard(role) {
-        let content = '';
-        let header = '';
-
-        const dashboardContainer = document.getElementById('dashboard-container');
-        const appHeader = document.getElementById('app-header');
-
-        userRole = role; 
-        
-        if (!dashboardContainer || !appHeader) return; // Check main elements
-
-        // --- Teacher View ---
-        if (role === 'teacher') {
-            header = `
-                <div class="header-left">
-                    <button class="nav-button" onclick="document.getElementById('role-switch-modal').style.display='flex'">
-                        <span class="material-icons">switch_account</span> Switch to Student
-                    </button>
-                </div>
-                <div class="header-center">
-                    <h1 class="app-title">CoolMathTime: Teacher Dashboard</h1>
-                </div>
-                <div class="header-right">
-                    <button id="logout-btn" class="nav-button">
-                        <span class="material-icons">logout</span> Logout
-                    </button>
-                </div>`;
-            
-            content = `
-                <h2 class="section-title">My Classes</h2>
-                <div class="class-grid">
-                    <div class="class-card create-class-card" id="create-class-card" onclick="document.getElementById('class-management-modal').style.display='flex'">
-                        <span class="material-icons icon">add_circle_outline</span>
-                        <h3>Create New Class</h3>
-                        <p>Start a new learning group</p>
-                    </div>
-                </div>`;
-            
-        // --- Student View ---
-        } else if (role === 'student') {
-            
-            const count = await getStudentEnrollmentCount(); // AWAIT THE REAL COUNT
-            const enrollmentText = count === 1 
-                ? `You are enrolled in 1 course.` 
-                : `You are enrolled in ${count} courses.`;
-            
-            header = `
-                <div class="header-left">
-                    <button class="nav-button" onclick="document.getElementById('role-switch-modal').style.display='flex'">
-                        <span class="material-icons">switch_account</span> Switch to Teacher
-                    </button>
-                </div>
-                <div class="header-center">
-                    <h1 class="app-title">CoolMathTime: Learning Dashboard</h1>
-                </div>
-                <div class="header-right">
-                    <button id="logout-btn" class="nav-button">
-                        <span class="material-icons">logout</span> Logout
-                    </button>
-                </div>`;
-                
-            content = `
-                <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
-                <div id="assignment-list" class="assignment-list">Loading assignments...</div>
-
-                <h2 class="section-title">📊 Progress & Mastery</h2>
-                <div class="feature-grid">
-                    <div class="feature-card" onclick="document.getElementById('join-class-modal').style.display='flex'">
-                        <div class="card-header"><span class="material-icons icon">person_add</span> Join a Class</div>
-                        <div class="card-meta">Enter a code to enroll in a new course.</div>
-                    </div>
-                    <div class="feature-card" id="review-enrollment-card">
-                        <div class="card-header"><span class="material-icons icon">push_pin</span> Review Course Enrollment</div>
-                        <div class="card-meta">${enrollmentText}</div> 
-                    </div>
-                </div>`;
-        }
-
-        // Render content
-        appHeader.innerHTML = header;
-        dashboardContainer.innerHTML = content;
-        
-        attachDashboardListeners(role);
-
-        if (role === 'teacher') {
-            loadTeacherData(userFullName); // Load classes for the teacher's name
-        } else if (role === 'student') {
-            loadAssignments(currentUserId); 
-        }
-    }
-
-    /**
-     * Placeholder: Switches the user's role in the UI (not stored in sheet yet).
-     */
-    function switchRole(role) {
-        const modal = document.getElementById('role-switch-modal');
-        if (modal) modal.style.display = 'none'; // Safely close modal
-        renderDashboard(role);
-    }
-    
-    /**
-     * Loads the user role (Hardcoded for now, will be implemented with Sheets later).
-     */
-    function loadUserRole(userId) {
-        // --- HARDCODED ROLE LOGIC (REPLACE LATER) ---
-        // Use a placeholder name based on the UID for posting until real name lookup is implemented
-        userFullName = `User_${userId.substring(0, 5)}`; 
-        
-        // Example logic: if the UID starts with 'T', assume teacher.
-        const role = userId.startsWith('T') ? 'teacher' : 'student';
-
-        renderDashboard(role);
-    }
-
-    /**
-     * Placeholder: Logs the user out.
-     */
-    function logout() {
-        auth.signOut().then(() => {
-            window.location.replace('index.html');
-        }).catch((error) => {
-            console.error("Logout failed:", error);
-        });
-    }
-
-    /**
-     * Attaches event listeners after the dashboard content is rendered.
-     */
-    function attachDashboardListeners(role) {
-        const createClassForm = document.getElementById('create-class-form');
-        const submitCreateClassBtn = createClassForm ? createClassForm.querySelector('button[type="submit"]') : null;
-        const logoutBtn = document.getElementById('logout-btn');
-        
-        if (createClassForm) createClassForm.action = SCRIPT_URL;
-        if (logoutBtn) logoutBtn.addEventListener('click', logout);
-        if (submitCreateClassBtn) submitCreateClassBtn.onclick = createClass;
-
-        // --- Get all modal elements for safe handling ---
         const classSettingsModal = document.getElementById('class-settings-modal');
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-        const deleteClassBtn = document.getElementById('delete-class-btn');
+        const deleteClassBtn = document.getElementById('delete-class-btn'); // NEW
+
+        let currentUserId = null;
+        let globalClassList = []; // Stores the class list fetched by JSONP
         
-        const infoDialogModal = document.getElementById('info-dialog-modal');
-        const roleSwitchModal = document.getElementById('role-switch-modal');
-        const classManagementModal = document.getElementById('class-management-modal');
-        const confirmDialogModal = document.getElementById('confirm-dialog-modal');
-        const joinClassModal = document.getElementById('join-class-modal');
+
+        // ======================================================================
+        // 2. CORE FUNCTION DEFINITIONS (ORDER IS CRITICAL: MUST BE DEFINED FIRST)
+        // ======================================================================
+
+        /**
+         * Placeholder for the full class dashboard view.
+         * @param {object} classData The data of the class card that was clicked.
+         */
+        function openClassDashboardPlaceholder(classData) {
+            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc.`);
+            console.log("Class Data:", classData);
+        }
+
+        /**
+         * Loads student assignments from Firestore (DEMO FEATURE).
+         * @param {string} userId 
+         */
+        async function loadAssignments(userId) {
+            const assignmentsGrid = document.querySelector('.assignment-grid');
+            const loadingMsg = document.getElementById('loading-assignments');
+            const noAssignmentsMsg = document.getElementById('no-assignments-message');
+            
+            if (!assignmentsGrid || !loadingMsg || !noAssignmentsMsg) return;
+
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+            loadingMsg.style.display = 'none';
+
+            try {
+                // Query assignments where studentId matches currentUserId (DEMO ONLY)
+                const snapshot = await db.collection('assignments')
+                    .where('studentId', '==', userId)
+                    .limit(5)
+                    .get();
+
+                if (snapshot.empty) {
+                    assignmentsGrid.style.display = 'none';
+                    noAssignmentsMsg.style.display = 'block';
+                    return;
+                }
+
+                assignmentsGrid.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const cardHtml = `
+                        <div class="feature-card highlight-progress">
+                            <div class="card-header"><span class="icon">➡️</span> ${data.title || 'Untitled Assignment'}</div>	
+                            <div class="card-meta">
+                                Due: ${data.dueDate || 'N/A'} | Class: ${data.classCode || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                    assignmentsGrid.innerHTML += cardHtml;
+                });
+
+                assignmentsGrid.style.display = 'grid';
+                noAssignmentsMsg.style.display = 'none';
+
+            } catch (error) {
+                console.warn("Assignments failed to load (Firestore Demo Feature):", error);
+                assignmentsGrid.style.display = 'none';
+                noAssignmentsMsg.style.display = 'block';
+            }
+        }
+
+        async function loadUserRole(userId) {
+            const docRef = db.collection('user_profiles').doc(userId);
+            try {
+                const doc = await docRef.get();
+                let role = 'student';
+
+                if (doc.exists) {
+                    role = doc.data().role || 'student';
+                } else {
+                    // Create the profile if it doesn't exist (initial login)
+                    await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                }
+                
+                renderDashboard(role);
+
+            } catch (error) {
+                console.error("Error loading user role (Firestore required for roles):", error);
+                renderDashboard('student');
+            }
+        }
+
+        /**
+         * Updates the user's role (teacher/student) in the Firebase Firestore database.
+         * @param {string} newRole The role to switch to ('teacher' or 'student').
+         */
+        async function saveNewRole(newRole) {
+            if (!currentUserId) {
+                console.error("Attempted to save role without a logged-in user ID.");
+                return;
+            }
+            
+            try {
+                // Using .set({ merge: true }) ensures the document is created if it doesn't exist
+                await db.collection('user_profiles').doc(currentUserId).set({
+                    role: newRole,
+                    lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                roleSwitchModal.style.display = 'none';
+                renderDashboard(newRole);
+                
+            } catch (error) {
+                console.error("Error saving new role (Firestore required for roles):", error); 
+                alert(`Could not save role change to database. Error: ${error.message}`);
+            }
+        }
+        
+        // Helper for creating hidden inputs
+        function createHiddenInput(name, value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            return input;
+        }
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For class list fetching (JSONP)
+        window.handleClassesResponse = function(result) {
+            const loadingMsg = document.getElementById('loading-classes');
+            if (loadingMsg) loadingMsg.style.display = 'none';
+            
+            const loadingManagementMsg = document.querySelector('#class-management-list .loading-message');
+            if (loadingManagementMsg) loadingManagementMsg.style.display = 'none';
+
+            if (result.status === 'success') {
+                globalClassList = result.classes; // Store the list globally
+                renderClassList(result.classes);
+                checkUrlParameters(); // Check URL again after data is loaded
+            } else {
+                alert("Error loading classes: " + result.message);
+            }
+        };
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For joinClass (JSONP)
+        window.handleJoinCodeResponse = function(result) {
+            if (result.status === 'found') {
+                alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+            } else if (result.status === 'not_found') {
+                alert(`Sorry, the join code "${result.code}" was not found.`);
+            } else {
+                alert("Error joining class: " + result.message);
+            }
+        };
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For form submission via hidden iframe (POST/CORS Bypass)
+        window.handlePostResponse = function(result) {
+            const iframe = document.getElementById('hidden_iframe');
+            const createButton = document.getElementById('createClassBtn');
+            const saveSettingsButton = document.getElementById('save-settings-btn'); 
+            const deleteButton = document.getElementById('delete-class-btn');
+
+            // Prevent success alert on initial page load of the iframe
+            if (iframe.src.includes('about:blank')) {
+                if (createButton) {
+                    createButton.disabled = false;
+                    createButton.textContent = '➕ Create New Class';
+                }
+                if (saveSettingsButton) saveSettingsButton.disabled = false; 
+                if (deleteButton) deleteButton.disabled = false;
+                return; 
+            } 
+
+            if (createButton) {
+                createButton.disabled = false;
+                createButton.textContent = '➕ Create New Class';
+            }
+            if (saveSettingsButton) saveSettingsButton.disabled = false; 
+            if (deleteButton) deleteButton.disabled = false;
+            
+            if (result && result.status === 'success') {
+                console.log("🎉 Success! Action completed: " + result.message); 
+                // Hide any open modals after success
+                classSettingsModal.style.display = 'none'; 
+                document.getElementById('confirm-dialog-modal').style.display = 'none'; 
+            } else if (result && result.status === 'error') {
+                 alert("❌ Error: " + result.message);
+            } else {
+                 alert("Success! Action completed (but response was unexpected)."); 
+            }
+            
+            loadClasses(); // Refresh the list
+            
+            // Reset the iframe source
+            iframe.src = 'about:blank';
+        }
+
+        // ======================================================================
+        // 3. DATA INTERACTION (Apps Script/Sheets)
+        // ======================================================================
+
+        function loadClasses() {
+            const loadingMsg = document.getElementById('loading-classes');
+            if (loadingMsg) loadingMsg.style.display = 'block';
+            
+            const classManagementList = document.getElementById('class-management-list');
+            if (classManagementList) {
+                // Show loading state in the management modal list too
+                classManagementList.innerHTML = '<div class="loading-message">Loading classes...</div>';
+            }
+
+            const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
+            const callbackName = 'handleClassesResponse';
+            
+            // Construct the URL for the Apps Script doGet function
+            const url = `${SCRIPT_URL}?action=loadClasses&teacher=${currentUserName}&callback=${callbackName}`;
+            
+            // Create a new script tag (JSONP method)
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => {
+                document.head.removeChild(script);
+                if (loadingMsg) loadingMsg.style.display = 'none';
+            };
+            script.onerror = () => {
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                console.error('Could not connect to the class data source (JSONP failed). Check your Apps Script deployment/URL.');
+            };
+        }
+        
+        function loadTeacherData(userId) {
+            loadClasses(); // Loads classes using JSONP
+        }
+
+        function createClass() {
+            const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
+            
+            if (!className || className.trim() === "") {
+                alert("Class creation cancelled.");
+                return;
+            }
+            
+            const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
+            const joinCode = generateJoinCode();
+
+            const createButton = document.getElementById('createClassBtn');
+            if (createButton) {
+                createButton.disabled = true;
+                createButton.textContent = 'Creating...';
+            }
+
+            // Create and Submit Hidden Form (POST)
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            form.appendChild(createHiddenInput('action', 'createClass'));
+            form.appendChild(createHiddenInput('name', className.trim()));
+            form.appendChild(createHiddenInput('teacher', teacherName));
+            form.appendChild(createHiddenInput('code', joinCode));
+            // Add default values for new settings
+            form.appendChild(createHiddenInput('allowPosting', 'TRUE')); 
+            form.appendChild(createHiddenInput('allowCommenting', 'TRUE')); 
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+        
+        /**
+         * Submits a request to delete a class using a hidden form.
+         * This function is called after the user confirms deletion.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function submitDeleteClass(classCode) {
+            classSettingsModal.style.display = 'none';
+            document.getElementById('confirm-dialog-modal').style.display = 'none';
+            deleteClassBtn.disabled = true;
+
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            form.appendChild(createHiddenInput('action', 'deleteClass'));
+            form.appendChild(createHiddenInput('code', classCode));
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function joinClass(inviteCode = null) {
+            const joinCode = inviteCode || prompt("Enter the 6-character class join code:");
+            
+            if (!joinCode || joinCode.length !== 6) {
+                if (!inviteCode) alert("Invalid 6-character join code format.");
+                return;
+            }
+
+            const callbackName = 'handleJoinCodeResponse';
+            const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode.toUpperCase()}&callback=${callbackName}`;
+
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => document.head.removeChild(script);
+            script.onerror = () => alert('A network error occurred while checking the join code.');
+        }
+
+        // ======================================================================
+        // 4. RENDERING & MODAL LOGIC
+        // ======================================================================
+
+        function showInfoDialog(title, body) {
+            document.getElementById('info-dialog-title').textContent = title;
+            document.getElementById('info-dialog-body').textContent = body;
+            document.getElementById('info-dialog-modal').style.display = 'block';
+        }
+        
+        /**
+         * Opens the confirmation dialog for class deletion.
+         * @param {string} className The name of the class to delete.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function showDeleteConfirmation(className, classCode) {
+            // Set the title and body
+            document.getElementById('confirm-dialog-title').textContent = "Delete Class: " + className;
+            document.getElementById('confirm-dialog-body').innerHTML = `
+                Are you absolutely sure you want to delete **${className}** (Code: ${classCode})? 
+                <br><br>
+                All class data, including class comments, posts, and file uploads, will be lost permanently.
+            `;
+            
+            // Update the action button listener
+            const confirmActionBtn = document.getElementById('confirm-delete-action');
+            confirmActionBtn.onclick = () => submitDeleteClass(classCode);
+            
+            // Update the cancel button listener
+            document.getElementById('confirm-delete-cancel').onclick = () => {
+                document.getElementById('confirm-dialog-modal').style.display = 'none';
+                classSettingsModal.style.display = 'block'; // Return to settings after cancel
+            };
+
+            classSettingsModal.style.display = 'none'; // Hide settings
+            document.getElementById('confirm-dialog-modal').style.display = 'block'; // Show confirmation
+        }
+
+        /**
+         * Renders the list of classes for the main dashboard (Teacher View).
+         */
+        function renderClassList(classes) {
+            const classGrid = document.querySelector('.class-grid');
+            const noClassesMsg = document.getElementById('no-classes-message');
+            
+            if (!classGrid || !noClassesMsg) return;
+
+            classGrid.innerHTML = '';
+            
+            if (classes.length > 0) {
+                classes.forEach(cls => {
+                    // Use class code as a unique ID for the card
+                    const classCode = cls.code || 'N/A'; 
+                    
+                    const cardHtml = `
+                        <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
+                            <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
+                            <div class="card-meta">
+                                Students: N/A | Code: <strong>${classCode}</strong>
+                            </div>
+                        </div>
+                    `;
+                    classGrid.innerHTML += cardHtml;
+                });
+                classGrid.style.display = 'grid';	
+                noClassesMsg.style.display = 'none';	
+            } else {
+                classGrid.style.display = 'grid'; 
+                noClassesMsg.style.display = 'block';	
+            }
+
+            // Attach listener to each dynamically created class card (NEW BEHAVIOR)
+            document.querySelectorAll('.class-grid .feature-card').forEach(card => {
+                card.onclick = () => {
+                     const classCode = card.dataset.classCode;
+                     const classData = globalClassList.find(c => c.code === classCode); // Find the full data object
+                     
+                     if (classData) {
+                         // NEW: Open the Class Dashboard Placeholder
+                         openClassDashboardPlaceholder(classData); 
+                     }
+                };
+            });
+            
+            // Also update the Management Modal list if it's currently open/being used
+            updateClassManagementList(classes);
+        }
+        
+        /**
+         * Populates the Class Management Modal list with classes and attaches listeners to open settings.
+         */
+        function updateClassManagementList(classes) {
+            const classListContainer = document.getElementById('class-management-list');
+            if (!classListContainer) return;
+
+            if (classes.length === 0) {
+                classListContainer.innerHTML = '<div class="empty-state-message">No classes found to manage. Please create one first.</div>';
+            } else {
+                classListContainer.innerHTML = classes.map(cls => {
+                    // JSON.stringify must be used carefully for inline onclick, replacing " with &quot;
+                    // We must pass the data as a string and parse it in the target function.
+                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); 
+
+                    return `
+                        <div class="toggle-group" style="padding: 10px 15px; margin-bottom: 10px; border: 1px solid #ddd; background: white;">
+                            <span style="font-weight: 600;">${cls.name} <small>(${cls.code})</small></span>
+                            <button class="primary-button" style="padding: 5px 10px; font-size: 0.9rem;" 
+                                    onclick="openClassSettingsModal('${cls.code}', JSON.parse('${classDataString}')); 
+                                             document.getElementById('class-management-modal').style.display='none';">
+                                Settings ⚙️
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        /**
+         * Opens the modal that lists all classes for managing settings.
+         */
+        function openClassManagementModal() {
+            // The list is updated via updateClassManagementList() when loadClasses runs/completes
+            document.getElementById('class-management-modal').style.display = 'block';
+        }
 
 
-        // Handlers for class-settings-modal (only if modal exists)
-        if (classSettingsModal) {
-            if (saveSettingsBtn) {
-                saveSettingsBtn.onclick = () => {
-                    const code = document.getElementById('settings-class-code').value;
-                    const name = document.getElementById('settings-class-name').value;
-                    // Read checked state directly from the checkbox
-                    const allowPosting = document.getElementById('settings-allow-posting').checked;
-                    const allowCommenting = document.getElementById('settings-allow-commenting').checked;
-                    saveClassSettings(code, name, allowPosting, allowCommenting);
+        /**
+         * Opens the class settings modal, populating it with current data.
+         * @param {string} classCode The unique join code.
+         * @param {object} classData The full class object fetched from the sheet.
+         */
+        function openClassSettingsModal(classCode, classData) {
+            const WEBSITE_URL = window.location.origin + window.location.pathname;
+            
+            // Fill the modal fields
+            document.getElementById('settings-class-name').textContent = classData.name;
+            document.getElementById('class-name-input').value = classData.name;
+            document.getElementById('class-code-display').value = classCode; 
+            
+            // Placeholder (Read-only/Disabled) Fields
+            document.getElementById('admin-email-display').value = "admin@coolmathtime.com";
+            
+            // Toggle switches: Sheet stores "TRUE"/"FALSE" strings, we check for those.
+            document.getElementById('allow-posting-toggle').checked = classData.allowPosting === true || classData.allowPosting === 'TRUE';
+            document.getElementById('allow-commenting-toggle').checked = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
+
+            // Invite Link Feature
+            const inviteLink = `${WEBSITE_URL}?invcode=${classCode}`;
+            document.getElementById('invite-link-display').value = inviteLink;
+            
+            // Store the class code and name on the Save and Delete buttons
+            document.getElementById('save-settings-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.className = classData.name;
+            
+            classSettingsModal.style.display = 'block';
+        }
+
+        /**
+         * Saves class settings by submitting a hidden form to the Apps Script 'updateClass' action.
+         */
+        function saveClassSettings() {
+            const classCode = document.getElementById('save-settings-btn').dataset.classCode;
+            const newClassName = document.getElementById('class-name-input').value.trim();
+            const allowPosting = document.getElementById('allow-posting-toggle').checked;
+            const allowCommenting = document.getElementById('allow-commenting-toggle').checked;
+            
+            if (!classCode || !newClassName) {
+                alert("Cannot save: Class code or name is missing.");
+                return;
+            }
+            
+            saveSettingsBtn.disabled = true; // Disable button before submission
+
+            // Create and Submit Hidden Form
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            // Inputs for the doPost function
+            form.appendChild(createHiddenInput('action', 'updateClass'));
+            form.appendChild(createHiddenInput('code', classCode));
+            form.appendChild(createHiddenInput('name', newClassName));
+            form.appendChild(createHiddenInput('allowPosting', allowPosting.toString().toUpperCase())); 
+            form.appendChild(createHiddenInput('allowCommenting', allowCommenting.toString().toUpperCase())); 
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function renderDashboard(role) {
+            let content = '';
+            let header = '';
+            
+            if (role === 'teacher') {
+                 navActionButton.textContent = 'Create Assignment';
+                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+            } else {
+                navActionButton.textContent = 'Join Class';
+                navActionButton.onclick = joinClass; 
+            }
+
+            // --- Student View ---
+            if (role === 'student') {
+                header = `
+                    <div class="header-controls">
+                        <h1>Your Learning Dashboard</h1>
+                        <button id="logout-btn" class="logout-button">Sign Out</button>
+                    </div>
+                    <div class="role-switch">
+                        <span>Current View:</span>
+                        <span id="current-role" class="active-role">Student</span>
+                        <button id="teacher-role-btn">Switch to Coach View</button>
+                    </div>
+                `;
+                content = `
+                    <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+                    <div id="loading-assignments" class="loading-message">
+                        Loading your assignments... (Firestore/Demo Data)
+                    </div>
+                    <div class="feature-grid assignment-grid" style="display: none;"></div>
+                    <div id="no-assignments-message" class="empty-state-message" style="display: none;">
+                        🎉 Woohoo! No assignments here. Go explore!
+                    </div>
+
+                    <h2 class="section-title">📊 Progress & Mastery</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card highlight-progress">
+                            <span class="icon">✅</span> View Full Progress Report / Grades
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">🏆</span> My Badges & Energy Points
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">🧭</span> Explore All Subjects & Courses
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📌</span> Review Course Enrollment</div>
+                            <div class="card-meta">You are enrolled in 3 courses.</div>
+                        </div>
+                    </div>
+                `;
+            } 
+            // --- Teacher View ---
+            else if (role === 'teacher') {
+                header = `
+                    <div class="header-controls">
+                        <h1>Coach Dashboard</h1>
+                        <button id="logout-btn" class="logout-button">Sign Out</button>
+                    </div>
+                    <div class="role-switch">
+                        <span>Current View:</span>
+                        <span id="current-role" class="active-role">Teacher</span>
+                        <button id="teacher-role-btn">Switch to Student View</button>
+                    </div>
+                `;
+                content = `
+                    <h2 class="section-title">📚 My Classes & Groups (Click to view Class Dashboard)</h2>
+                    <div id="loading-classes" class="loading-message">
+                        Loading your classes...
+                    </div>
+                    <button id="createClassBtn">➕ Create New Class</button>
+                    <div class="feature-grid class-grid">
+                        </div>
+                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                        ✨ No classes found. Create one to get started!
+                    </div>
+
+                    <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📋</span> View All Students</div>
+                            <div class="card-meta">Access full roster and student accounts.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+                            <div class="card-meta">0 students pending approval.</div>
+                        </div>
+                        <div class="feature-card" id="manage-settings-card">
+                            <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+                            <div class="card-meta">Select a class to change permissions and join codes.</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            dashboardContent.innerHTML = header + content;
+            
+            // Re-attach listeners and load dynamic data
+            if (currentUserId) {
+                attachDashboardListeners(role);
+                if (role === 'teacher') {
+                    loadTeacherData(currentUserId);
+                } else {
+                    loadAssignments(currentUserId); 
+                }
+            }
+        }
+
+
+        // ======================================================================
+        // 5. EVENT LISTENERS AND URL CHECK
+        // ======================================================================
+        
+        /**
+         * Checks the URL for an invite code (?invcode=XXXXXX) and handles redirection/dialogs.
+         */
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const inviteCode = urlParams.get('invcode');
+
+            if (inviteCode && globalClassList.length > 0) {
+                const matchingClass = globalClassList.find(cls => cls.code === inviteCode);
+                
+                // CRITICAL: Clean the URL parameter immediately to prevent infinite loops on reload
+                history.replaceState({}, document.title, window.location.pathname);
+
+                if (matchingClass) {
+                    // Assuming a student trying to join their own class means they are "already in class"
+                    showInfoDialog(
+                        matchingClass.name,
+                        `You are already enrolled in this class (Code: ${inviteCode}). You can view it on your dashboard.`
+                    );
+
+                } else {
+                    // If class list is loaded but code isn't found, prompt to join.
+                    if (confirm(`The class code "${inviteCode}" was found. Do you want to join this class?`)) {
+                        joinClass(inviteCode); // Pass the code to skip the prompt step
+                    }
+                }
+            }
+        }
+        
+        function attachDashboardListeners(currentRole) {
+            const logoutBtn = document.getElementById('logout-btn');
+            const teacherRoleBtn = document.getElementById('teacher-role-btn');
+            
+            if (logoutBtn) {
+                logoutBtn.onclick = async () => {
+                    try {
+                        await auth.signOut();
+                    } catch (error) {
+                        console.error("Logout Error:", error);
+                    }
                 };
             }
             
+            if (teacherRoleBtn) {
+                teacherRoleBtn.onclick = () => {
+                    const targetRole = currentRole === 'student' ? 'teacher' : 'student';
+                    
+                    if (currentRole === 'student' && targetRole === 'teacher') {
+                        roleSwitchModal.style.display = 'block';
+                        confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
+                        cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
+                    } else {
+                        saveNewRole(targetRole);
+                    }
+                };
+            }
+
+            if (currentRole === 'teacher') {
+                const createClassBtn = document.getElementById('createClassBtn');
+                const manageSettingsCard = document.getElementById('manage-settings-card');
+
+                if (createClassBtn) {
+                    createClassBtn.addEventListener('click', createClass);
+                }
+                
+                // Attach listener to the Manage Class Settings card
+                if (manageSettingsCard) {
+                    manageSettingsCard.onclick = openClassManagementModal;
+                }
+            }
+            
+            // Class Settings Modal Listeners
+            if (saveSettingsBtn) {
+                saveSettingsBtn.onclick = saveClassSettings;
+            }
             if (cancelSettingsBtn) {
                 cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
             }
-    
+            // NEW: Delete button listener
             if (deleteClassBtn) {
                 deleteClassBtn.onclick = () => {
                     const classCode = deleteClassBtn.dataset.classCode;
@@ -1663,42 +1385,25 @@
                     showDeleteConfirmation(className, classCode);
                 };
             }
-        }
-        
-        // Close modal if user clicks outside of it
-        // This is the CRITICAL block to fix the global scope error:
-        window.onclick = function(event) {
-            // Create a list of all possible modal elements that can be closed by clicking the backdrop
-            const closableModals = [
-                classSettingsModal,
-                infoDialogModal,
-                roleSwitchModal,
-                classManagementModal,
-                confirmDialogModal,
-                joinClassModal
-            ];
-
-            // Iterate through the list and check if the clicked target matches a modal backdrop
-            for (const modal of closableModals) {
-                // IMPORTANT: The modal variable might be null if the HTML element doesn't exist.
-                // We use a null check (if (modal)) AND ensure the event target is the modal itself.
-                if (modal && event.target === modal) {
-                    modal.style.display = "none";
+            
+            // Close modal if user clicks outside of it
+            window.onclick = function(event) {
+                if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal')) {
+                    event.target.style.display = "none";
                 }
             }
         }
-    }
 
-    // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
-    auth.onAuthStateChanged(user => {
-        if (!user) {
-            window.location.replace('index.html');
-        } else {
-            currentUserId = user.uid;
-            // This call triggers the entire dashboard rendering process
-            loadUserRole(user.uid); 
-        }
-    });
-</script>
+        // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.replace('index.html');
+            } else {
+                currentUserId = user.uid;
+                // This call triggers the entire dashboard rendering process
+                loadUserRole(user.uid); 
+            }
+        });
+    </script>
 </body>
 </html>
