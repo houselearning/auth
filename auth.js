@@ -14,7 +14,7 @@ const firebaseConfig = {
 // Declare app and auth globally, but initialize them later.
 let app;
 let auth;
-// NEW: Declare Google and GitHub providers
+// Declare social providers
 let googleProvider;
 let githubProvider;
 
@@ -27,8 +27,8 @@ const formTitle = document.getElementById('form-title');
 const toggleLink = document.getElementById('toggle-auth');
 const errorMessage = document.getElementById('error-message');
 const successMessage = document.getElementById('success-message');
+// NEW: Get the Google and GitHub Sign-In button elements
 const googleSignInButton = document.getElementById('google-signin-button');
-// NEW: Get the GitHub Sign-In button element
 const githubSignInButton = document.getElementById('github-signin-button');
 
 
@@ -55,7 +55,6 @@ function initializeAuthAndListeners() {
         auth = firebase.auth();
         // Initialize Auth Providers
         googleProvider = new firebase.auth.GoogleAuthProvider();
-        // NEW: Initialize GitHub Auth Provider
         githubProvider = new firebase.auth.GithubAuthProvider();
         
         console.log("Firebase Auth initialized successfully.");
@@ -83,10 +82,10 @@ function initializeAuthAndListeners() {
 
     authForm.addEventListener('submit', handleFormSubmission);
     
+    // Add listeners for social sign-in buttons
     if (googleSignInButton) {
         googleSignInButton.addEventListener('click', handleGoogleSignIn);
     }
-    // NEW: Add listener for the GitHub Sign-In button
     if (githubSignInButton) {
         githubSignInButton.addEventListener('click', handleGithubSignIn);
     }
@@ -113,7 +112,7 @@ function updateUI() {
         toggleLink.textContent = 'Log In';
         toggleLink.parentElement.firstChild.nodeValue = "Already have an account? ";
     }
-    // Always show social buttons regardless of mode
+    // Show social buttons if they exist in the HTML
     if (googleSignInButton) googleSignInButton.style.display = 'block';
     if (githubSignInButton) githubSignInButton.style.display = 'block';
 }
@@ -121,7 +120,6 @@ function updateUI() {
 
 /**
  * Handles the submission of the form (Login or Sign Up).
- * (Remains the same as previous version)
  */
 async function handleFormSubmission(e) {
     e.preventDefault();
@@ -132,6 +130,7 @@ async function handleFormSubmission(e) {
     const password = passwordInput.value;
 
     if (isLoginMode) {
+        // --- LOGIN LOGIC (With Persistence) ---
         try {
             await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             await auth.signInWithEmailAndPassword(email, password);
@@ -140,10 +139,12 @@ async function handleFormSubmission(e) {
 
         } catch (error) {
             console.error('Login Error:', error);
+            // Use innerHTML for the error message to display the contact support link
             errorMessage.innerHTML = 'Login failed: ' + formatFirebaseError(error.code);
             submitButton.textContent = 'Log In'; 
         }
     } else {
+        // --- SIGN UP LOGIC ---
         try {
             await auth.createUserWithEmailAndPassword(email, password);
             
@@ -161,7 +162,6 @@ async function handleFormSubmission(e) {
 
 /**
  * Handles Sign In with Google via a popup.
- * (Remains the same as previous version)
  */
 async function handleGoogleSignIn() {
     errorMessage.textContent = '';
@@ -181,7 +181,7 @@ async function handleGoogleSignIn() {
 
 
 /**
- * NEW: Handles Sign In with GitHub via a popup.
+ * Handles Sign In with GitHub via a popup.
  */
 async function handleGithubSignIn() {
     errorMessage.textContent = '';
@@ -189,17 +189,12 @@ async function handleGithubSignIn() {
     githubSignInButton.textContent = 'Waiting for GitHub...';
 
     try {
-        // Use signInWithPopup for the GitHub OAuth flow
         await auth.signInWithPopup(githubProvider);
-        // Redirection is handled by the onAuthStateChanged listener
-
     } catch (error) {
-        // Check for common error where user closes the popup
         if (error.code !== 'auth/popup-closed-by-user') {
             console.error('GitHub Sign-In Error:', error);
             errorMessage.textContent = 'GitHub sign-in failed. Please try again.';
         }
-        // Reset button text
         githubSignInButton.textContent = 'Sign in with GitHub'; 
     }
 }
@@ -207,11 +202,13 @@ async function handleGithubSignIn() {
 
 /**
  * Helper function to format Firebase error codes into readable messages.
- * (Remains the same as previous version)
+ * @param {string} code - The Firebase error code.
+ * @returns {string} - A user-friendly error message (can include HTML for the link).
  */
 function formatFirebaseError(code) {
     switch (code) {
         case 'auth/user-disabled':
+            // Specific message for disabled accounts with the recovery link
             return `This account was disabled. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
         case 'auth/wrong-password':
         case 'auth/user-not-found':
