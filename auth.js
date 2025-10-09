@@ -209,7 +209,7 @@ function formatFirebaseError(code) {
     switch (code) {
         case 'auth/user-disabled':
             // Specific message for disabled accounts with the recovery link
-            return `This account was disabled. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
+            return `This account was disabled or deleted. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
         case 'auth/wrong-password':
         case 'auth/user-not-found':
             return 'Invalid email or password.';
