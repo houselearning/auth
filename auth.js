@@ -14,8 +14,9 @@ const firebaseConfig = {
 // Declare app and auth globally, but initialize them later.
 let app;
 let auth;
-// NEW: Declare Google provider
+// NEW: Declare Google and GitHub providers
 let googleProvider;
+let githubProvider;
 
 // Get DOM elements
 const authForm = document.getElementById('auth-form');
@@ -26,8 +27,9 @@ const formTitle = document.getElementById('form-title');
 const toggleLink = document.getElementById('toggle-auth');
 const errorMessage = document.getElementById('error-message');
 const successMessage = document.getElementById('success-message');
-// NEW: Get the Google Sign-In button element
 const googleSignInButton = document.getElementById('google-signin-button');
+// NEW: Get the GitHub Sign-In button element
+const githubSignInButton = document.getElementById('github-signin-button');
 
 
 let isLoginMode = true; 
@@ -42,7 +44,6 @@ function initializeAuthAndListeners() {
     
     // Safety check (should always pass if SDKs are loaded)
     if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        // If not ready, wait a bit and try again (recursive timeout)
         console.warn("Firebase SDK not yet loaded in auth.js. Retrying initialization in 100ms...");
         setTimeout(initializeAuthAndListeners, 100);
         return;
@@ -52,24 +53,24 @@ function initializeAuthAndListeners() {
         // Initialize Firebase
         app = firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
-        // NEW: Initialize Google Auth Provider
+        // Initialize Auth Providers
         googleProvider = new firebase.auth.GoogleAuthProvider();
+        // NEW: Initialize GitHub Auth Provider
+        githubProvider = new firebase.auth.GithubAuthProvider();
         
         console.log("Firebase Auth initialized successfully.");
         
         // Setup the Auth state change listener (which redirects on success)
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in. Redirect to the dashboard.
                 window.location.replace(DASHBOARD_URL);
             }
-            // If no user, stay on the login page.
         });
         
     } catch(error) {
          console.error("Critical Error: Firebase Auth initialization failed.", error);
          errorMessage.textContent = 'Critical Error: Firebase failed to initialize. Check console.';
-         return; // Stop further execution if initialization fails
+         return; 
     }
 
     
@@ -82,12 +83,14 @@ function initializeAuthAndListeners() {
 
     authForm.addEventListener('submit', handleFormSubmission);
     
-    // NEW: Add listener for the Google Sign-In button
     if (googleSignInButton) {
         googleSignInButton.addEventListener('click', handleGoogleSignIn);
     }
+    // NEW: Add listener for the GitHub Sign-In button
+    if (githubSignInButton) {
+        githubSignInButton.addEventListener('click', handleGithubSignIn);
+    }
     
-    // Initial UI setup (which was at the end of the old file)
     updateUI();
 }
 
@@ -96,29 +99,29 @@ function initializeAuthAndListeners() {
  * Updates the UI to switch between Login and Sign Up modes.
  */
 function updateUI() {
-    errorMessage.textContent = ''; // Clear previous errors
-    successMessage.style.display = 'none'; // Clear success message
+    errorMessage.textContent = ''; 
+    successMessage.style.display = 'none'; 
 
     if (isLoginMode) {
         formTitle.textContent = 'Login';
         submitButton.textContent = 'Log In';
         toggleLink.textContent = 'Sign Up';
         toggleLink.parentElement.firstChild.nodeValue = "Don't have an account? ";
-        // NEW: Show Google button in login mode
-        if (googleSignInButton) googleSignInButton.style.display = 'block';
     } else {
         formTitle.textContent = 'Sign Up';
         submitButton.textContent = 'Create Account';
         toggleLink.textContent = 'Log In';
         toggleLink.parentElement.firstChild.nodeValue = "Already have an account? ";
-        // NEW: Show Google button in sign up mode
-        if (googleSignInButton) googleSignInButton.style.display = 'block';
     }
+    // Always show social buttons regardless of mode
+    if (googleSignInButton) googleSignInButton.style.display = 'block';
+    if (githubSignInButton) githubSignInButton.style.display = 'block';
 }
 
 
 /**
  * Handles the submission of the form (Login or Sign Up).
+ * (Remains the same as previous version)
  */
 async function handleFormSubmission(e) {
     e.preventDefault();
@@ -129,33 +132,24 @@ async function handleFormSubmission(e) {
     const password = passwordInput.value;
 
     if (isLoginMode) {
-        // --- LOGIN LOGIC (With Persistence) ---
         try {
-            // Set persistence to LOCAL so the user stays logged in
             await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             await auth.signInWithEmailAndPassword(email, password);
             
             submitButton.textContent = 'Logged In... Redirecting!'; 
-            // Redirection is handled by the onAuthStateChanged listener above.
 
         } catch (error) {
             console.error('Login Error:', error);
-            // Use innerHTML because formatFirebaseError may return HTML (with the <a> tag)
             errorMessage.innerHTML = 'Login failed: ' + formatFirebaseError(error.code);
-            submitButton.textContent = 'Log In'; // Reset button text
+            submitButton.textContent = 'Log In'; 
         }
     } else {
-        // --- SIGN UP LOGIC ---
         try {
             await auth.createUserWithEmailAndPassword(email, password);
-            
-            // Note: Dashboard now handles role creation in Firestore (loadUserRole)
             
             successMessage.innerHTML = `Account created! Redirecting to dashboard...`;
             successMessage.style.display = 'block';
             authForm.reset();
-            
-            // Redirection is handled by the onAuthStateChanged listener above.
             
         } catch (error) {
             console.error('Sign Up Error:', error);
@@ -166,7 +160,8 @@ async function handleFormSubmission(e) {
 
 
 /**
- * NEW: Handles Sign In with Google via a popup.
+ * Handles Sign In with Google via a popup.
+ * (Remains the same as previous version)
  */
 async function handleGoogleSignIn() {
     errorMessage.textContent = '';
@@ -174,33 +169,50 @@ async function handleGoogleSignIn() {
     googleSignInButton.textContent = 'Waiting for Google...';
 
     try {
-        // Use signInWithPopup for a seamless OAuth experience
         await auth.signInWithPopup(googleProvider);
-        // Redirection is handled by the onAuthStateChanged listener
-
     } catch (error) {
-        // Check for common error where user closes the popup
         if (error.code !== 'auth/popup-closed-by-user') {
             console.error('Google Sign-In Error:', error);
             errorMessage.textContent = 'Google sign-in failed. Please try again.';
         }
-        // Reset button text
         googleSignInButton.textContent = 'Sign in with Google'; 
     }
 }
 
 
 /**
+ * NEW: Handles Sign In with GitHub via a popup.
+ */
+async function handleGithubSignIn() {
+    errorMessage.textContent = '';
+    successMessage.style.display = 'none';
+    githubSignInButton.textContent = 'Waiting for GitHub...';
+
+    try {
+        // Use signInWithPopup for the GitHub OAuth flow
+        await auth.signInWithPopup(githubProvider);
+        // Redirection is handled by the onAuthStateChanged listener
+
+    } catch (error) {
+        // Check for common error where user closes the popup
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error('GitHub Sign-In Error:', error);
+            errorMessage.textContent = 'GitHub sign-in failed. Please try again.';
+        }
+        // Reset button text
+        githubSignInButton.textContent = 'Sign in with GitHub'; 
+    }
+}
+
+
+/**
  * Helper function to format Firebase error codes into readable messages.
- * @param {string} code - The Firebase error code.
- * @returns {string} - A user-friendly error message (can include HTML for the link).
+ * (Remains the same as previous version)
  */
 function formatFirebaseError(code) {
     switch (code) {
         case 'auth/user-disabled':
-            // Specific message for disabled accounts with the recovery link
             return `This account was disabled. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
-
         case 'auth/wrong-password':
         case 'auth/user-not-found':
             return 'Invalid email or password.';
