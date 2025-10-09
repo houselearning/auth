@@ -14,6 +14,8 @@ const firebaseConfig = {
 // Declare app and auth globally, but initialize them later.
 let app;
 let auth;
+// NEW: Declare Google provider
+let googleProvider;
 
 // Get DOM elements
 const authForm = document.getElementById('auth-form');
@@ -24,6 +26,9 @@ const formTitle = document.getElementById('form-title');
 const toggleLink = document.getElementById('toggle-auth');
 const errorMessage = document.getElementById('error-message');
 const successMessage = document.getElementById('success-message');
+// NEW: Get the Google Sign-In button element
+const googleSignInButton = document.getElementById('google-signin-button');
+
 
 let isLoginMode = true; 
 const DASHBOARD_URL = 'dashboard.html'; // The page to redirect to
@@ -44,9 +49,12 @@ function initializeAuthAndListeners() {
     }
 
     try {
-        // Initialize Firebase (This is the line that was causing the original error)
+        // Initialize Firebase
         app = firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
+        // NEW: Initialize Google Auth Provider
+        googleProvider = new firebase.auth.GoogleAuthProvider();
+        
         console.log("Firebase Auth initialized successfully.");
         
         // Setup the Auth state change listener (which redirects on success)
@@ -74,6 +82,11 @@ function initializeAuthAndListeners() {
 
     authForm.addEventListener('submit', handleFormSubmission);
     
+    // NEW: Add listener for the Google Sign-In button
+    if (googleSignInButton) {
+        googleSignInButton.addEventListener('click', handleGoogleSignIn);
+    }
+    
     // Initial UI setup (which was at the end of the old file)
     updateUI();
 }
@@ -91,11 +104,15 @@ function updateUI() {
         submitButton.textContent = 'Log In';
         toggleLink.textContent = 'Sign Up';
         toggleLink.parentElement.firstChild.nodeValue = "Don't have an account? ";
+        // NEW: Show Google button in login mode
+        if (googleSignInButton) googleSignInButton.style.display = 'block';
     } else {
         formTitle.textContent = 'Sign Up';
         submitButton.textContent = 'Create Account';
         toggleLink.textContent = 'Log In';
         toggleLink.parentElement.firstChild.nodeValue = "Already have an account? ";
+        // NEW: Show Google button in sign up mode
+        if (googleSignInButton) googleSignInButton.style.display = 'block';
     }
 }
 
@@ -144,6 +161,31 @@ async function handleFormSubmission(e) {
             console.error('Sign Up Error:', error);
             errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
         }
+    }
+}
+
+
+/**
+ * NEW: Handles Sign In with Google via a popup.
+ */
+async function handleGoogleSignIn() {
+    errorMessage.textContent = '';
+    successMessage.style.display = 'none';
+    googleSignInButton.textContent = 'Waiting for Google...';
+
+    try {
+        // Use signInWithPopup for a seamless OAuth experience
+        await auth.signInWithPopup(googleProvider);
+        // Redirection is handled by the onAuthStateChanged listener
+
+    } catch (error) {
+        // Check for common error where user closes the popup
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error('Google Sign-In Error:', error);
+            errorMessage.textContent = 'Google sign-in failed. Please try again.';
+        }
+        // Reset button text
+        googleSignInButton.textContent = 'Sign in with Google'; 
     }
 }
 
