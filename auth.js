@@ -123,7 +123,8 @@ async function handleFormSubmission(e) {
 
         } catch (error) {
             console.error('Login Error:', error);
-            errorMessage.textContent = 'Login failed: ' + formatFirebaseError(error.code);
+            // Use innerHTML because formatFirebaseError may return HTML (with the <a> tag)
+            errorMessage.innerHTML = 'Login failed: ' + formatFirebaseError(error.code);
             submitButton.textContent = 'Log In'; // Reset button text
         }
     } else {
@@ -150,10 +151,14 @@ async function handleFormSubmission(e) {
 /**
  * Helper function to format Firebase error codes into readable messages.
  * @param {string} code - The Firebase error code.
- * @returns {string} - A user-friendly error message.
+ * @returns {string} - A user-friendly error message (can include HTML for the link).
  */
 function formatFirebaseError(code) {
     switch (code) {
+        case 'auth/user-disabled':
+            // Specific message for disabled accounts with the recovery link
+            return `This account was disabled. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
+
         case 'auth/wrong-password':
         case 'auth/user-not-found':
             return 'Invalid email or password.';
