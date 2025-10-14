@@ -1,0 +1,462 @@
+/* KHAN ACADEMY STYLE VARIABLES & RESET */
+        :root {
+            --ka-blue-dark: #142838;
+            --ka-blue-bright: #14a4cc;
+            --ka-gray-light: #f7f7f7;
+            --ka-text-color: #2e333b;
+            --ka-accent-green: #008064; /* For progress/success */
+            --ka-red-error: #dc3545; /* Used for Delete button */
+            --ka-red-dark: #b62d3c;
+        }
+        
+        body {
+            background-color: var(--ka-gray-light); 
+            color: var(--ka-text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* --- Header and Navigation --- */
+        .app-header {
+            background-color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--ka-blue-dark);
+        }
+        
+        .main-nav-button {
+            padding: 8px 15px;
+            background-color: var(--ka-blue-bright);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .main-nav-button:hover {
+            background-color: #108bb6;
+        }
+
+        /* --- Main Layout --- */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .header-controls h1 {
+            font-size: 2rem;
+            color: var(--ka-blue-dark);
+            margin: 0;
+        }
+
+        .logout-button {
+            background-color: #eee;
+            color: var(--ka-text-color);
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .logout-button:hover {
+            background-color: #ddd;
+        }
+
+        .role-switch {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .role-switch span {
+            margin-right: 10px;
+            font-weight: 500;
+        }
+
+        .active-role {
+            font-weight: bold;
+            color: var(--ka-blue-bright);
+            margin-right: 20px !important;
+        }
+
+        /* --- Feature Grids and Cards --- */
+        .section-title {
+            font-size: 1.4rem;
+            color: var(--ka-blue-dark);
+            margin: 30px 0 15px 0;
+            border-left: 4px solid var(--ka-blue-bright);
+            padding-left: 10px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-top: 5px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-card.highlight-progress {
+             border-top-color: var(--ka-accent-green);
+        }
+
+        .card-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--ka-blue-dark);
+            margin-bottom: 8px;
+        }
+
+        .card-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .feature-card .icon {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+        
+        /* --- Teacher Specific Styles --- */
+        #createClassBtn {
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: var(--ka-blue-dark);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        #createClassBtn:hover {
+            background-color: var(--ka-blue-bright);
+        }
+        
+        #createClassBtn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .empty-state-message {
+            background: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--ka-blue-bright);
+            font-style: italic;
+        }
+
+        /* --- Modal Base Styles --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 50px;
+        }
+
+        .modal-content {
+            background-color: var(--ka-gray-light);
+            margin: auto;
+            border: 1px solid #888;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            position: relative;
+            padding: 0;
+        }
+        
+        .modal-header {
+            padding: 20px 30px;
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border-radius: 12px 12px 0 0;
+            color: var(--ka-blue-dark);
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .modal-footer {
+            padding: 15px 30px;
+            border-top: 1px solid #eee;
+            background-color: white;
+            display: flex; /* Use flexbox for button alignment */
+            justify-content: space-between; /* Space out the delete button from the others */
+            align-items: center;
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .primary-button, .secondary-button, .danger-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            margin-left: 10px; /* Separator for secondary/primary */
+        }
+
+        .primary-button {
+            background-color: var(--ka-blue-bright);
+            color: white;
+        }
+        
+        .primary-button:hover {
+            background-color: #108bb6;
+        }
+        
+        .secondary-button {
+            background-color: #ddd;
+            color: var(--ka-text-color);
+            margin-left: 0; /* Align to the right group */
+        }
+        
+        .danger-button {
+            background-color: var(--ka-red-error);
+            color: white;
+            margin-left: 0; /* Align to the left group */
+        }
+
+        .danger-button:hover {
+            background-color: var(--ka-red-dark);
+        }
+        
+        /* --- Toggle Switch Styles (used in settings and management list) --- */
+        .setting-group {
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .setting-group h3 {
+            margin-top: 0;
+            color: var(--ka-blue-dark);
+            font-size: 1.1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--ka-gray-light);
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: var(--ka-accent-green);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--ka-accent-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        .slider.round {
+            border-radius: 24px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* Form Group Styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .full-width-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box; 
+        }
+
+        .disabled-input {
+            background-color: var(--ka-gray-light);
+            color: #666;
+            cursor: not-allowed;
+            font-weight: 500;
+        }
+
+        .invite-link-input {
+            cursor: copy;
+            color: var(--ka-blue-bright);
+            font-weight: bold;
+        }
+        
+        .invite-link-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(20, 164, 204, 0.5); /* Blue glow on focus/copy */
+        }
+        
+        /* Flex group for buttons in the footer */
+        .button-group-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 15px 10px;
+            }
+            .container {
+                padding: 0 10px;
+            }
+            .header-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-controls h1 {
+                margin-bottom: 10px;
+            }
+            .role-switch {
+                flex-wrap: wrap;
+            }
+            .modal-content {
+                width: 95%;
+                margin-top: 20px;
+                padding: 0;
+            }
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .button-group-right {
+                flex-direction: column;
+                width: 100%;
+            }
+            .button-group-right button {
+                margin: 0;
+                width: 100%;
+            }
+            .danger-button {
+                width: 100%;
+            }
+        }
