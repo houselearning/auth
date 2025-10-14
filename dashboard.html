@@ -182,236 +182,766 @@
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="handlePostResponse();"></iframe>
 
     <script>
-       // ======================================================================
-// ⚠️ IMPORTANT: REPLACE THIS PLACEHOLDER WITH YOUR OWN FIREBASE CONFIG
-// ======================================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-  authDomain: "contract-center-llc-10.firebaseapp.com",
-  projectId: "contract-center-llc-10",
-  storageBucket: "contract-center-llc-10.firebasestorage.app",
-  messagingSenderId: "323221512767",
-  appId: "1:323221512767:web:6421260f875997dbf64e8a",
-  measurementId: "G-S2RJ0C6BWH"
-};
+       // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkA7g55q4VHkEprZI_4Oqr8X9k3d5dahm9s7pi7HZPp2hQgXf2ZT-3461i4C5HOqYwYA/exec'; 
 
-// Declare app and auth globally, but initialize them later.
-let app;
-let auth;
-// Declare social providers
-let googleProvider;
-let githubProvider;
+        // Function to generate a simple, 6-character, random join code
+        function generateJoinCode() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
 
-// Get DOM elements
-const authForm = document.getElementById('auth-form');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const submitButton = document.getElementById('submit-button');
-const formTitle = document.getElementById('form-title');
-const toggleLink = document.getElementById('toggle-auth');
-const errorMessage = document.getElementById('error-message');
-const successMessage = document.getElementById('success-message');
-// NEW: Get the Google and GitHub Sign-In button elements
-const googleSignInButton = document.getElementById('google-signin-button');
-const githubSignInButton = document.getElementById('github-signin-button');
+        // ======================================================================
+        // 1. FIREBASE INITIALIZATION & DOM REFERENCES
+        // ======================================================================
+        // Using sample config as per instructions
+        const firebaseConfig = {
+            apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+            authDomain: "contract-center-llc-10.firebaseapp.com",
+            projectId: "contract-center-llc-10",
+            storageBucket: "contract-center-llc-10.firebasestorage.app",
+            messagingSenderId: "323221512767",
+            appId: "1:323221512767:web:6421260f875997dbf64e8a",
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore(); 
 
+        const dashboardContent = document.getElementById('dashboard-content');
+        const roleSwitchModal = document.getElementById('role-switch-modal');
+        const confirmSwitchBtn = document.getElementById('confirm-switch');
+        const cancelSwitchBtn = document.getElementById('cancel-switch');
+        const navActionButton = document.getElementById('nav-action-button');
 
-let isLoginMode = true; 
-const DASHBOARD_URL = 'dashboard.html'; // The page to redirect to
+        const classSettingsModal = document.getElementById('class-settings-modal');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+        const deleteClassBtn = document.getElementById('delete-class-btn'); // NEW
 
-
-/**
- * FIX: This function initializes Firebase and sets up listeners ONLY after 
- * the 'firebase' object is guaranteed to exist.
- */
-function initializeAuthAndListeners() {
-    
-    // Safety check (should always pass if SDKs are loaded)
-    if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        console.warn("Firebase SDK not yet loaded in auth.js. Retrying initialization in 100ms...");
-        setTimeout(initializeAuthAndListeners, 100);
-        return;
-    }
-
-    try {
-        // Initialize Firebase
-        app = firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        // Initialize Auth Providers
-        googleProvider = new firebase.auth.GoogleAuthProvider();
-        githubProvider = new firebase.auth.GithubAuthProvider();
+        let currentUserId = null;
+        let globalClassList = []; // Stores the class list fetched by JSONP
         
-        console.log("Firebase Auth initialized successfully.");
+
+        // ======================================================================
+        // 2. CORE FUNCTION DEFINITIONS (ORDER IS CRITICAL: MUST BE DEFINED FIRST)
+        // ======================================================================
+
+        /**
+         * Placeholder for the full class dashboard view.
+         * @param {object} classData The data of the class card that was clicked.
+         */
+        function openClassDashboardPlaceholder(classData) {
+            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc.`);
+            console.log("Class Data:", classData);
+        }
+
+        /**
+         * Loads student assignments from Firestore (DEMO FEATURE).
+         * @param {string} userId 
+         */
+        async function loadAssignments(userId) {
+            const assignmentsGrid = document.querySelector('.assignment-grid');
+            const loadingMsg = document.getElementById('loading-assignments');
+            const noAssignmentsMsg = document.getElementById('no-assignments-message');
+            
+            if (!assignmentsGrid || !loadingMsg || !noAssignmentsMsg) return;
+
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+            loadingMsg.style.display = 'none';
+
+            try {
+                // Query assignments where studentId matches currentUserId (DEMO ONLY)
+                const snapshot = await db.collection('assignments')
+                    .where('studentId', '==', userId)
+                    .limit(5)
+                    .get();
+
+                if (snapshot.empty) {
+                    assignmentsGrid.style.display = 'none';
+                    noAssignmentsMsg.style.display = 'block';
+                    return;
+                }
+
+                assignmentsGrid.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const cardHtml = `
+                        <div class="feature-card highlight-progress">
+                            <div class="card-header"><span class="icon">➡️</span> ${data.title || 'Untitled Assignment'}</div>	
+                            <div class="card-meta">
+                                Due: ${data.dueDate || 'N/A'} | Class: ${data.classCode || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                    assignmentsGrid.innerHTML += cardHtml;
+                });
+
+                assignmentsGrid.style.display = 'grid';
+                noAssignmentsMsg.style.display = 'none';
+
+            } catch (error) {
+                console.warn("Assignments failed to load (Firestore Demo Feature):", error);
+                assignmentsGrid.style.display = 'none';
+                noAssignmentsMsg.style.display = 'block';
+            }
+        }
+
+        async function loadUserRole(userId) {
+            const docRef = db.collection('user_profiles').doc(userId);
+            try {
+                const doc = await docRef.get();
+                let role = 'student';
+
+                if (doc.exists) {
+                    role = doc.data().role || 'student';
+                } else {
+                    // Create the profile if it doesn't exist (initial login)
+                    await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                }
+                
+                renderDashboard(role);
+
+            } catch (error) {
+                console.error("Error loading user role (Firestore required for roles):", error);
+                renderDashboard('student');
+            }
+        }
+
+        /**
+         * Updates the user's role (teacher/student) in the Firebase Firestore database.
+         * @param {string} newRole The role to switch to ('teacher' or 'student').
+         */
+        async function saveNewRole(newRole) {
+            if (!currentUserId) {
+                console.error("Attempted to save role without a logged-in user ID.");
+                return;
+            }
+            
+            try {
+                // Using .set({ merge: true }) ensures the document is created if it doesn't exist
+                await db.collection('user_profiles').doc(currentUserId).set({
+                    role: newRole,
+                    lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                roleSwitchModal.style.display = 'none';
+                renderDashboard(newRole);
+                
+            } catch (error) {
+                console.error("Error saving new role (Firestore required for roles):", error); 
+                alert(`Could not save role change to database. Error: ${error.message}`);
+            }
+        }
         
-        // Setup the Auth state change listener (which redirects on success)
+        // Helper for creating hidden inputs
+        function createHiddenInput(name, value) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            return input;
+        }
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For class list fetching (JSONP)
+        window.handleClassesResponse = function(result) {
+            const loadingMsg = document.getElementById('loading-classes');
+            if (loadingMsg) loadingMsg.style.display = 'none';
+            
+            const loadingManagementMsg = document.querySelector('#class-management-list .loading-message');
+            if (loadingManagementMsg) loadingManagementMsg.style.display = 'none';
+
+            if (result.status === 'success') {
+                globalClassList = result.classes; // Store the list globally
+                renderClassList(result.classes);
+                checkUrlParameters(); // Check URL again after data is loaded
+            } else {
+                alert("Error loading classes: " + result.message);
+            }
+        };
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For joinClass (JSONP)
+        window.handleJoinCodeResponse = function(result) {
+            if (result.status === 'found') {
+                alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+            } else if (result.status === 'not_found') {
+                alert(`Sorry, the join code "${result.code}" was not found.`);
+            } else {
+                alert("Error joining class: " + result.message);
+            }
+        };
+
+        // 🚨 GLOBAL CALLBACK FUNCTION: For form submission via hidden iframe (POST/CORS Bypass)
+        window.handlePostResponse = function(result) {
+            const iframe = document.getElementById('hidden_iframe');
+            const createButton = document.getElementById('createClassBtn');
+            const saveSettingsButton = document.getElementById('save-settings-btn'); 
+            const deleteButton = document.getElementById('delete-class-btn');
+
+            // Prevent success alert on initial page load of the iframe
+            if (iframe.src.includes('about:blank')) {
+                if (createButton) {
+                    createButton.disabled = false;
+                    createButton.textContent = '➕ Create New Class';
+                }
+                if (saveSettingsButton) saveSettingsButton.disabled = false; 
+                if (deleteButton) deleteButton.disabled = false;
+                return; 
+            } 
+
+            if (createButton) {
+                createButton.disabled = false;
+                createButton.textContent = '➕ Create New Class';
+            }
+            if (saveSettingsButton) saveSettingsButton.disabled = false; 
+            if (deleteButton) deleteButton.disabled = false;
+            
+            if (result && result.status === 'success') {
+                console.log("🎉 Success! Action completed: " + result.message); 
+                // Hide any open modals after success
+                classSettingsModal.style.display = 'none'; 
+                document.getElementById('confirm-dialog-modal').style.display = 'none'; 
+            } else if (result && result.status === 'error') {
+                 alert("❌ Error: " + result.message);
+            } else {
+                 alert("Success! Action completed (but response was unexpected)."); 
+            }
+            
+            loadClasses(); // Refresh the list
+            
+            // Reset the iframe source
+            iframe.src = 'about:blank';
+        }
+
+        // ======================================================================
+        // 3. DATA INTERACTION (Apps Script/Sheets)
+        // ======================================================================
+
+        function loadClasses() {
+            const loadingMsg = document.getElementById('loading-classes');
+            if (loadingMsg) loadingMsg.style.display = 'block';
+            
+            const classManagementList = document.getElementById('class-management-list');
+            if (classManagementList) {
+                // Show loading state in the management modal list too
+                classManagementList.innerHTML = '<div class="loading-message">Loading classes...</div>';
+            }
+
+            const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
+            const callbackName = 'handleClassesResponse';
+            
+            // Construct the URL for the Apps Script doGet function
+            const url = `${SCRIPT_URL}?action=loadClasses&teacher=${currentUserName}&callback=${callbackName}`;
+            
+            // Create a new script tag (JSONP method)
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => {
+                document.head.removeChild(script);
+                if (loadingMsg) loadingMsg.style.display = 'none';
+            };
+            script.onerror = () => {
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                console.error('Could not connect to the class data source (JSONP failed). Check your Apps Script deployment/URL.');
+            };
+        }
+        
+        function loadTeacherData(userId) {
+            loadClasses(); // Loads classes using JSONP
+        }
+
+        function createClass() {
+            const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
+            
+            if (!className || className.trim() === "") {
+                alert("Class creation cancelled.");
+                return;
+            }
+            
+            const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
+            const joinCode = generateJoinCode();
+
+            const createButton = document.getElementById('createClassBtn');
+            if (createButton) {
+                createButton.disabled = true;
+                createButton.textContent = 'Creating...';
+            }
+
+            // Create and Submit Hidden Form (POST)
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            form.appendChild(createHiddenInput('action', 'createClass'));
+            form.appendChild(createHiddenInput('name', className.trim()));
+            form.appendChild(createHiddenInput('teacher', teacherName));
+            form.appendChild(createHiddenInput('code', joinCode));
+            // Add default values for new settings
+            form.appendChild(createHiddenInput('allowPosting', 'TRUE')); 
+            form.appendChild(createHiddenInput('allowCommenting', 'TRUE')); 
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+        
+        /**
+         * Submits a request to delete a class using a hidden form.
+         * This function is called after the user confirms deletion.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function submitDeleteClass(classCode) {
+            classSettingsModal.style.display = 'none';
+            document.getElementById('confirm-dialog-modal').style.display = 'none';
+            deleteClassBtn.disabled = true;
+
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            form.appendChild(createHiddenInput('action', 'deleteClass'));
+            form.appendChild(createHiddenInput('code', classCode));
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function joinClass(inviteCode = null) {
+            const joinCode = inviteCode || prompt("Enter the 6-character class join code:");
+            
+            if (!joinCode || joinCode.length !== 6) {
+                if (!inviteCode) alert("Invalid 6-character join code format.");
+                return;
+            }
+
+            const callbackName = 'handleJoinCodeResponse';
+            const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode.toUpperCase()}&callback=${callbackName}`;
+
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => document.head.removeChild(script);
+            script.onerror = () => alert('A network error occurred while checking the join code.');
+        }
+
+        // ======================================================================
+        // 4. RENDERING & MODAL LOGIC
+        // ======================================================================
+
+        function showInfoDialog(title, body) {
+            document.getElementById('info-dialog-title').textContent = title;
+            document.getElementById('info-dialog-body').textContent = body;
+            document.getElementById('info-dialog-modal').style.display = 'block';
+        }
+        
+        /**
+         * Opens the confirmation dialog for class deletion.
+         * @param {string} className The name of the class to delete.
+         * @param {string} classCode The code of the class to delete.
+         */
+        function showDeleteConfirmation(className, classCode) {
+            // Set the title and body
+            document.getElementById('confirm-dialog-title').textContent = "Delete Class: " + className;
+            document.getElementById('confirm-dialog-body').innerHTML = `
+                Are you absolutely sure you want to delete **${className}** (Code: ${classCode})? 
+                <br><br>
+                All class data, including class comments, posts, and file uploads, will be lost permanently.
+            `;
+            
+            // Update the action button listener
+            const confirmActionBtn = document.getElementById('confirm-delete-action');
+            confirmActionBtn.onclick = () => submitDeleteClass(classCode);
+            
+            // Update the cancel button listener
+            document.getElementById('confirm-delete-cancel').onclick = () => {
+                document.getElementById('confirm-dialog-modal').style.display = 'none';
+                classSettingsModal.style.display = 'block'; // Return to settings after cancel
+            };
+
+            classSettingsModal.style.display = 'none'; // Hide settings
+            document.getElementById('confirm-dialog-modal').style.display = 'block'; // Show confirmation
+        }
+
+        /**
+         * Renders the list of classes for the main dashboard (Teacher View).
+         */
+        function renderClassList(classes) {
+            const classGrid = document.querySelector('.class-grid');
+            const noClassesMsg = document.getElementById('no-classes-message');
+            
+            if (!classGrid || !noClassesMsg) return;
+
+            classGrid.innerHTML = '';
+            
+            if (classes.length > 0) {
+                classes.forEach(cls => {
+                    // Use class code as a unique ID for the card
+                    const classCode = cls.code || 'N/A'; 
+                    
+                    const cardHtml = `
+                        <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
+                            <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
+                            <div class="card-meta">
+                                Students: N/A | Code: <strong>${classCode}</strong>
+                            </div>
+                        </div>
+                    `;
+                    classGrid.innerHTML += cardHtml;
+                });
+                classGrid.style.display = 'grid';	
+                noClassesMsg.style.display = 'none';	
+            } else {
+                classGrid.style.display = 'grid'; 
+                noClassesMsg.style.display = 'block';	
+            }
+
+            // Attach listener to each dynamically created class card (NEW BEHAVIOR)
+            document.querySelectorAll('.class-grid .feature-card').forEach(card => {
+                card.onclick = () => {
+                     const classCode = card.dataset.classCode;
+                     const classData = globalClassList.find(c => c.code === classCode); // Find the full data object
+                     
+                     if (classData) {
+                         // NEW: Open the Class Dashboard Placeholder
+                         openClassDashboardPlaceholder(classData); 
+                     }
+                };
+            });
+            
+            // Also update the Management Modal list if it's currently open/being used
+            updateClassManagementList(classes);
+        }
+        
+        /**
+         * Populates the Class Management Modal list with classes and attaches listeners to open settings.
+         */
+        function updateClassManagementList(classes) {
+            const classListContainer = document.getElementById('class-management-list');
+            if (!classListContainer) return;
+
+            if (classes.length === 0) {
+                classListContainer.innerHTML = '<div class="empty-state-message">No classes found to manage. Please create one first.</div>';
+            } else {
+                classListContainer.innerHTML = classes.map(cls => {
+                    // JSON.stringify must be used carefully for inline onclick, replacing " with &quot;
+                    // We must pass the data as a string and parse it in the target function.
+                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); 
+
+                    return `
+                        <div class="toggle-group" style="padding: 10px 15px; margin-bottom: 10px; border: 1px solid #ddd; background: white;">
+                            <span style="font-weight: 600;">${cls.name} <small>(${cls.code})</small></span>
+                            <button class="primary-button" style="padding: 5px 10px; font-size: 0.9rem;" 
+                                    onclick="openClassSettingsModal('${cls.code}', JSON.parse('${classDataString}')); 
+                                             document.getElementById('class-management-modal').style.display='none';">
+                                Settings ⚙️
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        /**
+         * Opens the modal that lists all classes for managing settings.
+         */
+        function openClassManagementModal() {
+            // The list is updated via updateClassManagementList() when loadClasses runs/completes
+            document.getElementById('class-management-modal').style.display = 'block';
+        }
+
+
+        /**
+         * Opens the class settings modal, populating it with current data.
+         * @param {string} classCode The unique join code.
+         * @param {object} classData The full class object fetched from the sheet.
+         */
+        function openClassSettingsModal(classCode, classData) {
+            const WEBSITE_URL = window.location.origin + window.location.pathname;
+            
+            // Fill the modal fields
+            document.getElementById('settings-class-name').textContent = classData.name;
+            document.getElementById('class-name-input').value = classData.name;
+            document.getElementById('class-code-display').value = classCode; 
+            
+            // Placeholder (Read-only/Disabled) Fields
+            document.getElementById('admin-email-display').value = "admin@coolmathtime.com";
+            
+            // Toggle switches: Sheet stores "TRUE"/"FALSE" strings, we check for those.
+            document.getElementById('allow-posting-toggle').checked = classData.allowPosting === true || classData.allowPosting === 'TRUE';
+            document.getElementById('allow-commenting-toggle').checked = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
+
+            // Invite Link Feature
+            const inviteLink = `${WEBSITE_URL}?invcode=${classCode}`;
+            document.getElementById('invite-link-display').value = inviteLink;
+            
+            // Store the class code and name on the Save and Delete buttons
+            document.getElementById('save-settings-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.classCode = classCode;
+            document.getElementById('delete-class-btn').dataset.className = classData.name;
+            
+            classSettingsModal.style.display = 'block';
+        }
+
+        /**
+         * Saves class settings by submitting a hidden form to the Apps Script 'updateClass' action.
+         */
+        function saveClassSettings() {
+            const classCode = document.getElementById('save-settings-btn').dataset.classCode;
+            const newClassName = document.getElementById('class-name-input').value.trim();
+            const allowPosting = document.getElementById('allow-posting-toggle').checked;
+            const allowCommenting = document.getElementById('allow-commenting-toggle').checked;
+            
+            if (!classCode || !newClassName) {
+                alert("Cannot save: Class code or name is missing.");
+                return;
+            }
+            
+            saveSettingsBtn.disabled = true; // Disable button before submission
+
+            // Create and Submit Hidden Form
+            const form = document.createElement('form');
+            form.action = SCRIPT_URL;
+            form.method = 'POST';
+            form.target = 'hidden_iframe'; 
+            form.style.display = 'none';
+
+            // Inputs for the doPost function
+            form.appendChild(createHiddenInput('action', 'updateClass'));
+            form.appendChild(createHiddenInput('code', classCode));
+            form.appendChild(createHiddenInput('name', newClassName));
+            form.appendChild(createHiddenInput('allowPosting', allowPosting.toString().toUpperCase())); 
+            form.appendChild(createHiddenInput('allowCommenting', allowCommenting.toString().toUpperCase())); 
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        function renderDashboard(role) {
+            let content = '';
+            let header = '';
+            
+            if (role === 'teacher') {
+                 navActionButton.textContent = 'Create Assignment';
+                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+            } else {
+                navActionButton.textContent = 'Join Class';
+                navActionButton.onclick = joinClass; 
+            }
+
+            // --- Student View ---
+            if (role === 'student') {
+                header = `
+                    <div class="header-controls">
+                        <h1>Your Learning Dashboard</h1>
+                        <button id="logout-btn" class="logout-button">Sign Out</button>
+                    </div>
+                    <div class="role-switch">
+                        <span>Current View:</span>
+                        <span id="current-role" class="active-role">Student</span>
+                        <button id="teacher-role-btn">Switch to Coach View</button>
+                    </div>
+                `;
+                content = `
+                    <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
+                    <div id="loading-assignments" class="loading-message">
+                        Loading your assignments... (Firestore/Demo Data)
+                    </div>
+                    <div class="feature-grid assignment-grid" style="display: none;"></div>
+                    <div id="no-assignments-message" class="empty-state-message" style="display: none;">
+                        🎉 Woohoo! No assignments here. Go explore!
+                    </div>
+
+                    <h2 class="section-title">📊 Progress & Mastery</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card highlight-progress">
+                            <span class="icon">✅</span> View Full Progress Report / Grades
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">🏆</span> My Badges & Energy Points
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">🧭</span> Explore All Subjects & Courses
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📌</span> Review Course Enrollment</div>
+                            <div class="card-meta">You are enrolled in 3 courses.</div>
+                        </div>
+                    </div>
+                `;
+            } 
+            // --- Teacher View ---
+            else if (role === 'teacher') {
+                header = `
+                    <div class="header-controls">
+                        <h1>Coach Dashboard</h1>
+                        <button id="logout-btn" class="logout-button">Sign Out</button>
+                    </div>
+                    <div class="role-switch">
+                        <span>Current View:</span>
+                        <span id="current-role" class="active-role">Teacher</span>
+                        <button id="teacher-role-btn">Switch to Student View</button>
+                    </div>
+                `;
+                content = `
+                    <h2 class="section-title">📚 My Classes & Groups (Click to view Class Dashboard)</h2>
+                    <div id="loading-classes" class="loading-message">
+                        Loading your classes...
+                    </div>
+                    <button id="createClassBtn">➕ Create New Class</button>
+                    <div class="feature-grid class-grid">
+                        </div>
+                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                        ✨ No classes found. Create one to get started!
+                    </div>
+
+                    <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">📋</span> View All Students</div>
+                            <div class="card-meta">Access full roster and student accounts.</div>
+                        </div>
+                        <div class="feature-card">
+                            <div class="card-header"><span class="icon">🔔</span> Pending Student Requests</div>
+                            <div class="card-meta">0 students pending approval.</div>
+                        </div>
+                        <div class="feature-card" id="manage-settings-card">
+                            <div class="card-header"><span class="icon">⚙️</span> Manage Class Settings</div>
+                            <div class="card-meta">Select a class to change permissions and join codes.</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            dashboardContent.innerHTML = header + content;
+            
+            // Re-attach listeners and load dynamic data
+            if (currentUserId) {
+                attachDashboardListeners(role);
+                if (role === 'teacher') {
+                    loadTeacherData(currentUserId);
+                } else {
+                    loadAssignments(currentUserId); 
+                }
+            }
+        }
+
+
+        // ======================================================================
+        // 5. EVENT LISTENERS AND URL CHECK
+        // ======================================================================
+        
+        /**
+         * Checks the URL for an invite code (?invcode=XXXXXX) and handles redirection/dialogs.
+         */
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const inviteCode = urlParams.get('invcode');
+
+            if (inviteCode && globalClassList.length > 0) {
+                const matchingClass = globalClassList.find(cls => cls.code === inviteCode);
+                
+                // CRITICAL: Clean the URL parameter immediately to prevent infinite loops on reload
+                history.replaceState({}, document.title, window.location.pathname);
+
+                if (matchingClass) {
+                    // Assuming a student trying to join their own class means they are "already in class"
+                    showInfoDialog(
+                        matchingClass.name,
+                        `You are already enrolled in this class (Code: ${inviteCode}). You can view it on your dashboard.`
+                    );
+
+                } else {
+                    // If class list is loaded but code isn't found, prompt to join.
+                    if (confirm(`The class code "${inviteCode}" was found. Do you want to join this class?`)) {
+                        joinClass(inviteCode); // Pass the code to skip the prompt step
+                    }
+                }
+            }
+        }
+        
+        function attachDashboardListeners(currentRole) {
+            const logoutBtn = document.getElementById('logout-btn');
+            const teacherRoleBtn = document.getElementById('teacher-role-btn');
+            
+            if (logoutBtn) {
+                logoutBtn.onclick = async () => {
+                    try {
+                        await auth.signOut();
+                    } catch (error) {
+                        console.error("Logout Error:", error);
+                    }
+                };
+            }
+            
+            if (teacherRoleBtn) {
+                teacherRoleBtn.onclick = () => {
+                    const targetRole = currentRole === 'student' ? 'teacher' : 'student';
+                    
+                    if (currentRole === 'student' && targetRole === 'teacher') {
+                        roleSwitchModal.style.display = 'block';
+                        confirmSwitchBtn.onclick = () => saveNewRole(targetRole);
+                        cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none';
+                    } else {
+                        saveNewRole(targetRole);
+                    }
+                };
+            }
+
+            if (currentRole === 'teacher') {
+                const createClassBtn = document.getElementById('createClassBtn');
+                const manageSettingsCard = document.getElementById('manage-settings-card');
+
+                if (createClassBtn) {
+                    createClassBtn.addEventListener('click', createClass);
+                }
+                
+                // Attach listener to the Manage Class Settings card
+                if (manageSettingsCard) {
+                    manageSettingsCard.onclick = openClassManagementModal;
+                }
+            }
+            
+            // Class Settings Modal Listeners
+            if (saveSettingsBtn) {
+                saveSettingsBtn.onclick = saveClassSettings;
+            }
+            if (cancelSettingsBtn) {
+                cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
+            }
+            // NEW: Delete button listener
+            if (deleteClassBtn) {
+                deleteClassBtn.onclick = () => {
+                    const classCode = deleteClassBtn.dataset.classCode;
+                    const className = deleteClassBtn.dataset.className;
+                    showDeleteConfirmation(className, classCode);
+                };
+            }
+            
+            // Close modal if user clicks outside of it
+            window.onclick = function(event) {
+                if (event.target == classSettingsModal || event.target == document.getElementById('info-dialog-modal') || event.target == roleSwitchModal || event.target == document.getElementById('class-management-modal') || event.target == document.getElementById('confirm-dialog-modal')) {
+                    event.target.style.display = "none";
+                }
+            }
+        }
+
+        // --- CHECK AUTH STATUS AND REDIRECT IF NOT LOGGED IN ---
         auth.onAuthStateChanged(user => {
-            if (user) {
-                window.location.replace(DASHBOARD_URL);
+            if (!user) {
+                window.location.replace('index.html');
+            } else {
+                currentUserId = user.uid;
+                // This call triggers the entire dashboard rendering process
+                loadUserRole(user.uid); 
             }
         });
-        
-    } catch(error) {
-         console.error("Critical Error: Firebase Auth initialization failed.", error);
-         errorMessage.textContent = 'Critical Error: Firebase failed to initialize. Check console.';
-         return; 
-    }
-
-    
-    // Attach all event listeners now that 'auth' is defined
-    toggleLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        isLoginMode = !isLoginMode;
-        updateUI();
-    });
-
-    authForm.addEventListener('submit', handleFormSubmission);
-    
-    // Add listeners for social sign-in buttons
-    if (googleSignInButton) {
-        googleSignInButton.addEventListener('click', handleGoogleSignIn);
-    }
-    if (githubSignInButton) {
-        githubSignInButton.addEventListener('click', handleGithubSignIn);
-    }
-    
-    updateUI();
-}
-
-
-/**
- * Updates the UI to switch between Login and Sign Up modes.
- */
-function updateUI() {
-    errorMessage.textContent = ''; 
-    successMessage.style.display = 'none'; 
-
-    if (isLoginMode) {
-        formTitle.textContent = 'Login';
-        submitButton.textContent = 'Log In';
-        toggleLink.textContent = 'Sign Up';
-        toggleLink.parentElement.firstChild.nodeValue = "Don't have an account? ";
-    } else {
-        formTitle.textContent = 'Sign Up';
-        submitButton.textContent = 'Create Account';
-        toggleLink.textContent = 'Log In';
-        toggleLink.parentElement.firstChild.nodeValue = "Already have an account? ";
-    }
-    // Show social buttons if they exist in the HTML
-    if (googleSignInButton) googleSignInButton.style.display = 'block';
-    if (githubSignInButton) githubSignInButton.style.display = 'block';
-}
-
-
-/**
- * Handles the submission of the form (Login or Sign Up).
- */
-async function handleFormSubmission(e) {
-    e.preventDefault();
-    errorMessage.textContent = '';
-    successMessage.style.display = 'none';
-
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
-    if (isLoginMode) {
-        // --- LOGIN LOGIC (With Persistence) ---
-        try {
-            await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            await auth.signInWithEmailAndPassword(email, password);
-            
-            submitButton.textContent = 'Logged In... Redirecting!'; 
-
-        } catch (error) {
-            console.error('Login Error:', error);
-            // Use innerHTML for the error message to display the contact support link
-            errorMessage.innerHTML = 'Login failed: ' + formatFirebaseError(error.code);
-            submitButton.textContent = 'Log In'; 
-        }
-    } else {
-        // --- SIGN UP LOGIC ---
-        try {
-            await auth.createUserWithEmailAndPassword(email, password);
-            
-            successMessage.innerHTML = `Account created! Redirecting to dashboard...`;
-            successMessage.style.display = 'block';
-            authForm.reset();
-            
-        } catch (error) {
-            console.error('Sign Up Error:', error);
-            errorMessage.textContent = 'Sign up failed: ' + formatFirebaseError(error.code);
-        }
-    }
-}
-
-
-/**
- * Handles Sign In with Google via a popup.
- */
-async function handleGoogleSignIn() {
-    errorMessage.textContent = '';
-    successMessage.style.display = 'none';
-    googleSignInButton.textContent = 'Waiting for Google...';
-
-    try {
-        await auth.signInWithPopup(googleProvider);
-    } catch (error) {
-        if (error.code !== 'auth/popup-closed-by-user') {
-            console.error('Google Sign-In Error:', error);
-            errorMessage.textContent = 'Google sign-in failed. Please try again.';
-        }
-        googleSignInButton.textContent = 'Sign in with Google'; 
-    }
-}
-
-
-/**
- * Handles Sign In with GitHub via a popup.
- */
-async function handleGithubSignIn() {
-    errorMessage.textContent = '';
-    successMessage.style.display = 'none';
-    githubSignInButton.textContent = 'Waiting for GitHub...';
-
-    try {
-        await auth.signInWithPopup(githubProvider);
-    } catch (error) {
-        if (error.code !== 'auth/popup-closed-by-user') {
-            console.error('GitHub Sign-In Error:', error);
-            errorMessage.textContent = 'GitHub sign-in failed. Please try again.';
-        }
-        githubSignInButton.textContent = 'Sign in with GitHub'; 
-    }
-}
-
-
-/**
- * Helper function to format Firebase error codes into readable messages.
- * @param {string} code - The Firebase error code.
- * @returns {string} - A user-friendly error message (can include HTML for the link).
- */
-function formatFirebaseError(code) {
-    switch (code) {
-        case 'auth/user-disabled':
-            // Specific message for disabled accounts with the recovery link
-            return `This account was disabled or deleted. To recover, please <a href="https://docs.google.com/forms/d/e/1FAIpQLSfCIyPXOPKTrPczbSOHovRtMcHZZoUt_EE6kuNSfYdAYNgcGA/viewform?usp=send_form" target="_blank">contact support</a>.`;
-        case 'auth/wrong-password':
-        case 'auth/user-not-found':
-            return 'Invalid email or password.';
-        case 'auth/email-already-in-use':
-            return 'This email address is already in use.';
-        case 'auth/weak-password':
-            return 'Password should be at least 6 characters.';
-        case 'auth/invalid-email':
-            return 'The email address is not valid.';
-        case 'auth/operation-not-allowed':
-            return 'Email/password sign-in is not enabled. Please check your Firebase settings.';
-        default:
-            return 'An unknown error occurred. Please try again.';
-    }
-}
-
-// Start the initialization check after the DOM is ready
-document.addEventListener('DOMContentLoaded', initializeAuthAndListeners);
 
     </script>
 </body>
