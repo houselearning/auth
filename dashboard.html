@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
         <script src="https://houselearning.github.io/cookiebanner.js"></script>  
+    <script src="dashboard/init/app.js"></script>
     <link rel="stylesheet" href="dashboard/init/style.css">
     <style>
         /* KHAN ACADEMY STYLE VARIABLES & RESET */
@@ -744,7 +745,7 @@
 
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzs7Wl-3qhg5nUzCro9Q1tAPC3mKXzpIIbKKhcahyacEAbH9ZHUVxELimN4D7IKSyxHRg/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkA7g55q4VHkEprZI_4Oqr8X9k3d5dahm9s7pi7HZPp2hQgXf2ZT-3461i4C5HOYwYA/exec'; 
 
         // Function to generate a simple, 6-character, random join code
         function generateJoinCode() {
@@ -834,6 +835,12 @@
             // Use the full class data object from globalClassList
             const classData = globalClassList.find(c => c.code === classCode); 
             
+            if (!classData) {
+                showInfoDialog("Error", "Could not find class data. Please reload your dashboard.");
+                renderDashboard(role);
+                return;
+            }
+
             // Render the UI shell with data from the global list
             renderClassDashboard(classData, role);
             
@@ -884,6 +891,7 @@
             `;
             
             if (isTeacher) {
+                 // FIX APPLIED: Removed inline JSON stringification for classData, only passing code.
                  sidebarCard1 += `
                     <hr style="border-top: 1px solid #eee; margin: 15px 0;">
                     <button class="sidebar-action-button" onclick="alert('Roster will load here!');">
@@ -894,7 +902,7 @@
                     </button>
                     <button class="sidebar-action-button secondary-button" 
                             style="background-color: #f0f0f0; color: var(--ka-blue-dark);"
-                            onclick="openClassSettingsModal('${classData.code}', JSON.parse(JSON.stringify(classData)));">
+                            onclick="openClassSettingsModal('${classData.code}');"> 
                         <span class="icon">⚙️</span> Manage Settings
                     </button>
                 `;
@@ -952,7 +960,8 @@
         function renderPosts(posts) {
             const postsContainer = document.getElementById('posts-container');
             const classData = globalClassList.find(c => c.code === currentClassCode);
-            const allowCommenting = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
+            // Ensure classData exists before trying to access its properties
+            const allowCommenting = classData ? (classData.allowCommenting === true || classData.allowCommenting === 'TRUE') : true;
 
             if (!postsContainer) return;
 
@@ -984,9 +993,6 @@
 
             postsContainer.innerHTML = postsHtml;
         }
-
-
-        // REMOVED: openClassDashboardPlaceholder is removed and merged into openClassDashboard
 
 
         async function loadAssignments(userId) {
@@ -1487,8 +1493,6 @@
                     const cardActionText = isTeacherForThisClass ? 'View Coach Dashboard' : 'View Class Stream';
                     const cardTitle = isTeacherForThisClass ? `🏫 ${cls.name}` : `👩‍🏫 ${cls.name}`;
                     
-                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); // For use in onclick attribute
-                    
                     const cardHtml = `
                         <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
                             <div class="card-header"><span class="icon">${cardTitle}</span></div>	
@@ -1551,13 +1555,12 @@
                 classListContainer.innerHTML = '<div class="empty-state-message">No classes found to manage. Please create one first.</div>';
             } else {
                 classListContainer.innerHTML = teacherClasses.map(cls => {
-                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); 
-
+                    // FIX APPLIED: Only pass the class code to the settings modal
                     return `
                         <div class="toggle-group" style="padding: 10px 15px; margin-bottom: 10px; border: 1px solid #ddd; background: white;">
                             <span style="font-weight: 600;">${cls.name} <small>(${cls.code})</small></span>
                             <button class="primary-button" style="padding: 5px 10px; font-size: 0.9rem;" 
-                                    onclick="openClassSettingsModal('${cls.code}', JSON.parse('${classDataString}')); 
+                                    onclick="openClassSettingsModal('${cls.code}'); 
                                              document.getElementById('class-management-modal').style.display='none';">
                                 Settings ⚙️
                             </button>
@@ -1578,8 +1581,16 @@
 
         /**
          * Opens the class settings modal, populating it with current data.
+         * @param {string} classCode The code of the class to manage. (MODIFIED)
          */
-        function openClassSettingsModal(classCode, classData) {
+        function openClassSettingsModal(classCode) {
+            const classData = globalClassList.find(c => c.code === classCode);
+            
+            if (!classData) {
+                showInfoDialog("Error", "Could not retrieve class settings data.");
+                return;
+            }
+
             const WEBSITE_URL = window.location.origin + window.location.pathname;
             
             // Fill the modal fields
@@ -1588,7 +1599,7 @@
             document.getElementById('class-code-display').value = classCode; 
             
             // Placeholder (Read-only/Disabled) Fields
-            document.getElementById('admin-email-display').value = "admin@coolmathtime.com";
+            document.getElementById('admin-email-display').value = classData.teacher + "@coolmathtime.com";
             
             // Toggle switches: Sheet stores "TRUE"/"FALSE" strings, we check for those.
             document.getElementById('allow-posting-toggle').checked = classData.allowPosting === true || classData.allowPosting === 'TRUE';
