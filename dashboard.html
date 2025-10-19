@@ -5,36 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
     
-    <!-- Link to a style.css is not possible in this single-file environment, 
-         so we include all necessary CSS here. -->
-    
-    <!-- Use Firebase 9.x compatibility libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://houselearning.github.io/cookiebanner.js"></script>  
     <script src="dashboard/init/app.js"></script>
     <link rel="stylesheet" href="dashboard/init/style.css">
+    
+    <style>
+        .class-dashboard-header {
+            background-color: white;
+            padding: 20px 30px;
+            margin: -20px -20px 20px -20px; /* Adjust padding of container */
+            border-bottom: 2px solid var(--ka-blue-bright);
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
+        .class-dashboard-title {
+            font-size: 1.8rem;
+            color: var(--ka-blue-dark);
+            margin: 0;
+        }
+
+        .back-to-dashboard {
+            background: none;
+            border: none;
+            color: var(--ka-blue-bright);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        
+        .class-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 3fr; /* Side bar for info, main area for posts */
+            gap: 20px;
+        }
+        
+        .class-sidebar-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .class-sidebar-card h3 {
+            margin-top: 0;
+            color: var(--ka-blue-dark);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .class-post-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .create-post-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            cursor: pointer;
+            border: 1px dashed var(--ka-blue-bright);
+        }
+
+        .post-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .post-header {
+            font-weight: 600;
+            color: var(--ka-blue-dark);
+            margin-bottom: 5px;
+        }
+        
+        .post-meta {
+            font-size: 0.85rem;
+            color: #666;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .class-dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .class-dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .back-to-dashboard {
+                margin-top: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-    <!-- Header -->
     <header class="app-header">
         <div class="logo">CoolMathTime</div>
         <button id="nav-action-button" class="main-nav-button">Action</button>
     </header>
 
-    <!-- Main Dashboard Content -->
     <div class="container" id="dashboard-content">
-        <!-- Content inserted dynamically by renderDashboard() -->
         <div class="loading-message">Loading authentication status...</div>
     </div>
 
-    <!-- ==================================================================== -->
-    <!-- MODALS -->
-    <!-- ==================================================================== -->
-
-    <!-- 1. Role Switch Confirmation Modal -->
     <div id="role-switch-modal" class="modal">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
@@ -51,7 +138,6 @@
         </div>
     </div>
 
-    <!-- 2. Class Settings Modal (Full Featured) -->
     <div id="class-settings-modal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
@@ -60,7 +146,6 @@
             </div>
             <div class="modal-body">
                 
-                <!-- Hidden input to store class data -->
                 <input type="hidden" id="class-code-input" value=""> 
 
                 <div class="setting-group">
@@ -108,7 +193,6 @@
                 </div>
                 
             </div>
-            <!-- UPDATED FOOTER with Delete Button -->
             <div class="modal-footer">
                 <button id="delete-class-btn" class="danger-button" data-class-name="" data-class-code="">
                     🗑️ Delete Class
@@ -121,7 +205,6 @@
         </div>
     </div>
     
-    <!-- 3. GENERIC INFO DIALOG MODAL (For "Already in Class" message/Join Code) -->
     <div id="info-dialog-modal" class="modal">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header">
@@ -137,7 +220,6 @@
         </div>
     </div>
     
-    <!-- 4. DANGER CONFIRMATION DIALOG MODAL (For Deletion) -->
     <div id="confirm-dialog-modal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header" style="background-color: var(--ka-red-error); color: white;">
@@ -158,7 +240,6 @@
     </div>
 
 
-    <!-- 5. Class Management Modal (Lists all classes for settings) -->
     <div id="class-management-modal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
@@ -168,7 +249,6 @@
             <div class="modal-body">
                 <p>Select a class below to view or change its permissions and name.</p>
                 <div id="class-management-list">
-                    <!-- Class list will be dynamically inserted here -->
                     <div class="loading-message">Loading classes...</div>
                 </div>
             </div>
@@ -177,12 +257,10 @@
             </div>
         </div>
     </div>
-    
-    <!-- Hidden Iframe for Apps Script Form Submission (CORS Bypass) -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="handlePostResponse();"></iframe>
 
-    <script>
-       // 🚨 CRITICAL: REPLACE THIS WITH THE URL from your LATEST Apps Script deployment
+<script>
+       // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkA7g55q4VHkEprZI_4Oqr8X9k3d5dahm9s7pi7HZPp2hQgXf2ZT-3461i4C5HOqYwYA/exec'; 
 
         // Function to generate a simple, 6-character, random join code
@@ -215,29 +293,109 @@
         const classSettingsModal = document.getElementById('class-settings-modal');
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-        const deleteClassBtn = document.getElementById('delete-class-btn'); // NEW
+        const deleteClassBtn = document.getElementById('delete-class-btn'); 
 
         let currentUserId = null;
         let globalClassList = []; // Stores the class list fetched by JSONP
+        let currentView = 'dashboard'; // Tracks if we are in 'dashboard' or 'class' view
         
 
         // ======================================================================
-        // 2. CORE FUNCTION DEFINITIONS (ORDER IS CRITICAL: MUST BE DEFINED FIRST)
+        // 2. CORE FUNCTION DEFINITIONS
         // ======================================================================
 
         /**
-         * Placeholder for the full class dashboard view.
-         * @param {object} classData The data of the class card that was clicked.
+         * Loads the detailed class dashboard view for students.
+         * @param {string} classCode The code of the class.
          */
-        function openClassDashboardPlaceholder(classData) {
-            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc.`);
-            console.log("Class Data:", classData);
+        function openClassDashboard(classCode) {
+            currentView = 'class';
+            // Start by fetching class details (especially permissions for posting)
+            loadClassDetails(classCode); 
         }
 
         /**
-         * Loads student assignments from Firestore (DEMO FEATURE).
-         * @param {string} userId 
+         * Renders the class dashboard view after details are fetched.
+         * @param {object} classData The full class data including permissions.
          */
+        function renderClassDashboard(classData) {
+            const allowPosting = classData.allowPosting === true || classData.allowPosting === 'TRUE';
+            const allowCommenting = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
+            
+            let postCreationHtml = '';
+            if (allowPosting) {
+                postCreationHtml = `
+                    <div class="create-post-card" onclick="alert('Open a form to create a new post in ${classData.name}')">
+                        <span class="icon">✍️</span> Share something with your class...
+                    </div>
+                `;
+            } else {
+                postCreationHtml = `
+                    <div class="empty-state-message" style="border: 1px solid #ccc; background-color: #fff;">
+                        Posting is currently disabled by your coach.
+                    </div>
+                `;
+            }
+
+            const content = `
+                <div class="class-dashboard-header">
+                    <h1 class="class-dashboard-title">Class: ${classData.name}</h1>
+                    <button class="back-to-dashboard" onclick="renderDashboard('student')">← Back to Dashboard</button>
+                </div>
+                
+                <div class="class-dashboard-grid">
+                    <div class="class-sidebar">
+                        <div class="class-sidebar-card">
+                            <h3>Class Info</h3>
+                            <p><strong>Coach:</strong> ${classData.teacher}</p>
+                            <p><strong>Join Code:</strong> <code>${classData.code}</code></p>
+                            <p><strong>Posting:</strong> ${allowPosting ? '✅ Allowed' : '❌ Disabled'}</p>
+                            <p><strong>Commenting:</strong> ${allowCommenting ? '✅ Allowed' : '❌ Disabled'}</p>
+                        </div>
+                        <div class="class-sidebar-card">
+                            <h3>Upcoming Work</h3>
+                            <p style="color: var(--ka-accent-green); font-weight: 600;">Math Quiz - Due Today!</p>
+                            <p>Review Chapter 3 - Due Fri</p>
+                        </div>
+                    </div>
+                    
+                    <div class="class-post-area">
+                        <h2 class="section-title" style="margin-top: 0;">Class Stream & Announcements</h2>
+                        ${postCreationHtml}
+                        
+                        <div class="post-card">
+                            <div class="post-header">Welcome to Algebra! <span style="font-size: 0.9rem; font-weight: normal;">(Coach Post)</span></div>
+                            <div class="post-meta">Posted by ${classData.teacher} on Oct 18</div>
+                            <p>Hi everyone! Please check the Upcoming Work section for your first assignment. Looking forward to a great year!</p>
+                            ${allowCommenting ? `<small style="color: var(--ka-blue-bright); cursor: pointer;">Add a class comment...</small>` : ''}
+                        </div>
+                        
+                        <div class="post-card">
+                            <div class="post-header">Need help with fractions?</div>
+                            <div class="post-meta">Posted by Jane Doe on Oct 19</div>
+                            <p>Does anyone know a good video for dividing fractions? I'm a little stuck on problem #5!</p>
+                            ${allowCommenting ? `<small style="color: var(--ka-blue-bright); cursor: pointer;">View 2 comments</small>` : ''}
+                        </div>
+                        
+                    </div>
+                </div>
+            `;
+            dashboardContent.innerHTML = content;
+            navActionButton.textContent = 'Add Assignment';
+            navActionButton.onclick = () => alert('Adding assignment to this class!');
+        }
+
+
+        /**
+         * Placeholder for the full class dashboard view (Teacher/Coach).
+         * @param {object} classData The data of the class card that was clicked.
+         */
+        function openClassDashboardPlaceholder(classData) {
+            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc. (Teacher View)`);
+            console.log("Class Data:", classData);
+        }
+
+        // NOTE: loadAssignments remains a demo relying on Firestore, as the user is avoiding it.
         async function loadAssignments(userId) {
             const assignmentsGrid = document.querySelector('.assignment-grid');
             const loadingMsg = document.getElementById('loading-assignments');
@@ -308,7 +466,6 @@
 
         /**
          * Updates the user's role (teacher/student) in the Firebase Firestore database.
-         * @param {string} newRole The role to switch to ('teacher' or 'student').
          */
         async function saveNewRole(newRole) {
             if (!currentUserId) {
@@ -357,11 +514,24 @@
                 alert("Error loading classes: " + result.message);
             }
         };
+        
+        // 🚨 GLOBAL CALLBACK FUNCTION: For single class detail fetching (JSONP)
+        window.handleClassDetailsResponse = function(result) {
+             if (result.status === 'found') {
+                renderClassDashboard(result.class); // Render the new student class dashboard
+            } else {
+                alert("Error loading class details: " + result.message);
+                renderDashboard('student'); // Fallback to student dashboard
+            }
+        };
 
-        // 🚨 GLOBAL CALLBACK FUNCTION: For joinClass (JSONP)
+        // 🚨 GLOBAL CALLBACK FUNCTION: For joinClass (JSONP) (MODIFIED)
         window.handleJoinCodeResponse = function(result) {
-            if (result.status === 'found') {
+            if (result.status === 'joined_success') {
                 alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+                loadStudentData(currentUserId); // Reload data to update dashboard
+            } else if (result.status === 'already_joined') {
+                alert(`You are already enrolled in the class: ${result.class.name}.`);
             } else if (result.status === 'not_found') {
                 alert(`Sorry, the join code "${result.code}" was not found.`);
             } else {
@@ -414,6 +584,25 @@
         // ======================================================================
         // 3. DATA INTERACTION (Apps Script/Sheets)
         // ======================================================================
+        
+        function loadClassDetails(classCode) {
+            const callbackName = 'handleClassDetailsResponse';
+            // Construct the URL for the Apps Script doGet function
+            const url = `${SCRIPT_URL}?action=loadClassDetails&code=${classCode}&callback=${callbackName}`;
+            
+            // Create a new script tag (JSONP method)
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => document.head.removeChild(script);
+            script.onerror = () => {
+                console.error('Could not connect to the class data source (JSONP failed).');
+                alert('Failed to load class details.');
+                renderDashboard('student'); // Fallback
+            };
+        }
+
 
         function loadClasses() {
             const loadingMsg = document.getElementById('loading-classes');
@@ -446,6 +635,36 @@
             };
         }
         
+        // MODIFIED: This now loads real data from the Enrollments sheet
+        function loadStudentData(userId) {
+            // We now use the actual full email address as the identifier for Sheets
+            const studentEmail = auth.currentUser ? auth.currentUser.email : "demo.student@example.com"; 
+
+            const loadingMsg = document.getElementById('loading-classes');
+            if (loadingMsg) loadingMsg.style.display = 'block';
+
+            const callbackName = 'handleClassesResponse'; // Re-use the existing handler for consistency
+            
+            // Construct the URL for the Apps Script doGet function using the new action
+            const url = `${SCRIPT_URL}?action=loadStudentClasses&email=${encodeURIComponent(studentEmail)}&callback=${callbackName}`;
+            
+            // Create a new script tag (JSONP method)
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+
+            script.onload = () => {
+                document.head.removeChild(script);
+                if (loadingMsg) loadingMsg.style.display = 'none';
+            };
+            script.onerror = () => {
+                if (loadingMsg) loadingMsg.style.display = 'none';
+                console.error('Could not connect to the student class data source (JSONP failed).');
+            };
+            
+            loadAssignments(userId);
+        }
+
         function loadTeacherData(userId) {
             loadClasses(); // Loads classes using JSONP
         }
@@ -489,7 +708,6 @@
         
         /**
          * Submits a request to delete a class using a hidden form.
-         * This function is called after the user confirms deletion.
          * @param {string} classCode The code of the class to delete.
          */
         function submitDeleteClass(classCode) {
@@ -511,27 +729,37 @@
             document.body.removeChild(form);
         }
 
+        // MODIFIED: This now calls the joinClassAndRecord action in Apps Script
         function joinClass(inviteCode = null) {
-            const joinCode = inviteCode || prompt("Enter the 6-character class join code:");
+            const joinCode = (inviteCode || prompt("Enter the 6-character class join code:") || '').toUpperCase();
             
             if (!joinCode || joinCode.length !== 6) {
                 if (!inviteCode) alert("Invalid 6-character join code format.");
                 return;
             }
+            
+            if (!auth.currentUser) {
+                alert("You must be logged in to join a class.");
+                return;
+            }
 
+            // The full email is needed for the Enrollments sheet lookup
+            const studentEmail = auth.currentUser.email; 
+            
             const callbackName = 'handleJoinCodeResponse';
-            const url = `${SCRIPT_URL}?action=checkJoinCode&code=${joinCode.toUpperCase()}&callback=${callbackName}`;
+            // Use the new Apps Script action 'joinClassAndRecord'
+            const url = `${SCRIPT_URL}?action=joinClassAndRecord&code=${joinCode}&email=${encodeURIComponent(studentEmail)}&callback=${callbackName}`;
 
             const script = document.createElement('script');
             script.src = url;
             document.head.appendChild(script);
 
             script.onload = () => document.head.removeChild(script);
-            script.onerror = () => alert('A network error occurred while checking the join code.');
+            script.onerror = () => alert('A network error occurred while joining the class.');
         }
 
         // ======================================================================
-        // 4. RENDERING & MODAL LOGIC
+        // 4. RENDERING & MODAL LOGIC (UNCHANGED)
         // ======================================================================
 
         function showInfoDialog(title, body) {
@@ -542,8 +770,6 @@
         
         /**
          * Opens the confirmation dialog for class deletion.
-         * @param {string} className The name of the class to delete.
-         * @param {string} classCode The code of the class to delete.
          */
         function showDeleteConfirmation(className, classCode) {
             // Set the title and body
@@ -569,7 +795,7 @@
         }
 
         /**
-         * Renders the list of classes for the main dashboard (Teacher View).
+         * Renders the list of classes for the main dashboard (Teacher and Student View).
          */
         function renderClassList(classes) {
             const classGrid = document.querySelector('.class-grid');
@@ -583,13 +809,20 @@
                 classes.forEach(cls => {
                     // Use class code as a unique ID for the card
                     const classCode = cls.code || 'N/A'; 
+                    // Determine if the current user is the teacher of this class
+                    const isTeacher = currentView === 'dashboard' && auth.currentUser && auth.currentUser.email.split('@')[0] === cls.teacher;
+                    const cardActionText = isTeacher ? 'View Coach Dashboard' : 'View Class Stream';
+                    const cardTitle = isTeacher ? `🏫 ${cls.name}` : `👩‍🏫 ${cls.name}`;
                     
                     const cardHtml = `
                         <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
-                            <div class="card-header"><span class="icon">🏫</span> ${cls.name || 'Untitled Class'}</div>	
+                            <div class="card-header"><span class="icon">${cardTitle}</span></div>	
                             <div class="card-meta">
-                                Students: N/A | Code: <strong>${classCode}</strong>
+                                Teacher: ${cls.teacher} | Code: <strong>${classCode}</strong>
                             </div>
+                            <small style="color: var(--ka-blue-bright); display: block; margin-top: 10px; font-weight: 600;">
+                                ${cardActionText}
+                            </small>
                         </div>
                     `;
                     classGrid.innerHTML += cardHtml;
@@ -598,18 +831,32 @@
                 noClassesMsg.style.display = 'none';	
             } else {
                 classGrid.style.display = 'grid'; 
+                // Show a different message for student vs teacher
+                if (auth.currentUser && auth.currentUser.email.split('@')[0] === document.getElementById('current-role').textContent.toLowerCase()) {
+                    noClassesMsg.innerHTML = '✨ No classes found. Use the "Join Class" button!';
+                } else {
+                    noClassesMsg.innerHTML = '✨ No classes found. Create one to get started!';
+                }
                 noClassesMsg.style.display = 'block';	
             }
 
-            // Attach listener to each dynamically created class card (NEW BEHAVIOR)
+            // Attach listener to each dynamically created class card
             document.querySelectorAll('.class-grid .feature-card').forEach(card => {
                 card.onclick = () => {
                      const classCode = card.dataset.classCode;
                      const classData = globalClassList.find(c => c.code === classCode); // Find the full data object
                      
                      if (classData) {
-                         // NEW: Open the Class Dashboard Placeholder
-                         openClassDashboardPlaceholder(classData); 
+                         // Logic to check if user is the teacher (by split email name)
+                         const isTeacher = auth.currentUser && auth.currentUser.email.split('@')[0] === classData.teacher;
+                         
+                         if (isTeacher) {
+                              // Teacher view: Open the Class Dashboard Placeholder
+                             openClassDashboardPlaceholder(classData); 
+                         } else {
+                             // Student view: Open the full Class Dashboard
+                             openClassDashboard(classCode);
+                         }
                      }
                 };
             });
@@ -625,12 +872,15 @@
             const classListContainer = document.getElementById('class-management-list');
             if (!classListContainer) return;
 
-            if (classes.length === 0) {
+            // Only show classes created by the current user for management
+            const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
+            const teacherClasses = classes.filter(cls => cls.teacher === teacherName);
+
+            if (teacherClasses.length === 0) {
                 classListContainer.innerHTML = '<div class="empty-state-message">No classes found to manage. Please create one first.</div>';
             } else {
-                classListContainer.innerHTML = classes.map(cls => {
+                classListContainer.innerHTML = teacherClasses.map(cls => {
                     // JSON.stringify must be used carefully for inline onclick, replacing " with &quot;
-                    // We must pass the data as a string and parse it in the target function.
                     const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); 
 
                     return `
@@ -724,6 +974,7 @@
         }
 
         function renderDashboard(role) {
+            currentView = 'dashboard'; // Reset view state
             let content = '';
             let header = '';
             
@@ -749,6 +1000,16 @@
                     </div>
                 `;
                 content = `
+                    <h2 class="section-title">📚 My Joined Classes (Click to view Class Stream)</h2>
+                    <div id="loading-classes" class="loading-message">
+                        Loading your classes...
+                    </div>
+                    <div class="feature-grid class-grid">
+                        </div>
+                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                        ✨ Not enrolled in any classes. Use the "Join Class" button!
+                    </div>
+                    
                     <h2 class="section-title">📝 My Assignments & Recommended Practice</h2>
                     <div id="loading-assignments" class="loading-message">
                         Loading your assignments... (Firestore/Demo Data)
@@ -827,14 +1088,15 @@
                 if (role === 'teacher') {
                     loadTeacherData(currentUserId);
                 } else {
-                    loadAssignments(currentUserId); 
+                    // This now calls the Apps Script to fetch enrolled classes
+                    loadStudentData(currentUserId); 
                 }
             }
         }
 
 
         // ======================================================================
-        // 5. EVENT LISTENERS AND URL CHECK
+        // 5. EVENT LISTENERS AND URL CHECK (UNCHANGED)
         // ======================================================================
         
         /**
@@ -851,7 +1113,7 @@
                 history.replaceState({}, document.title, window.location.pathname);
 
                 if (matchingClass) {
-                    // Assuming a student trying to join their own class means they are "already in class"
+                    // If class is found in the student's already joined list, inform them.
                     showInfoDialog(
                         matchingClass.name,
                         `You are already enrolled in this class (Code: ${inviteCode}). You can view it on your dashboard.`
@@ -915,7 +1177,7 @@
             if (cancelSettingsBtn) {
                 cancelSettingsBtn.onclick = () => classSettingsModal.style.display = 'none';
             }
-            // NEW: Delete button listener
+            // Delete button listener
             if (deleteClassBtn) {
                 deleteClassBtn.onclick = () => {
                     const classCode = deleteClassBtn.dataset.classCode;
