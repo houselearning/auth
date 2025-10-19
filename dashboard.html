@@ -1350,7 +1350,7 @@
 
         // MODIFIED: This now calls the joinClassAndRecord action in Apps Script
         function joinClass(inviteCode = null) {
-            const joinCode = (inviteCode || prompt("Enter the 6-character class join code:") || '').toUpperCase();
+            const joinCode = (inviteCode || prompt("Enter the 6-character class join code:") || "");
             
             if (!joinCode || joinCode.length !== 6) {
                 if (!inviteCode) alert("Invalid 6-character join code format.");
