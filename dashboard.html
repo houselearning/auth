@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CoolMathTime - Learning Dashboard</title>
-    <script src="https://houselearning.github.io/cookiebanner.js"></script>  
+        <script src="https://houselearning.github.io/cookiebanner.js"></script>  
     <link rel="stylesheet" href="dashboard/init/style.css">
     <style>
         /* KHAN ACADEMY STYLE VARIABLES & RESET */
@@ -257,6 +257,23 @@
             border-bottom: 1px solid #eee;
             font-size: 1.2rem;
         }
+        
+        .sidebar-action-button {
+            width: 100%;
+            margin-bottom: 10px;
+            background-color: var(--ka-blue-bright);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .sidebar-action-button:hover {
+             background-color: #0c8aa8;
+        }
+        
         .class-post-area {
             /* Main content area */
         }
@@ -806,10 +823,11 @@
 
 
         /**
-         * Loads the detailed class dashboard view for students. (MODIFIED)
+         * Loads the detailed class dashboard view for students/teachers. (MODIFIED)
          * @param {string} classCode The code of the class.
+         * @param {string} role The user's role: 'student' or 'teacher'.
          */
-        function openClassDashboard(classCode) {
+        function openClassDashboard(classCode, role) {
             currentView = 'class';
             currentClassCode = classCode; // Store the current class code globally
             
@@ -817,7 +835,7 @@
             const classData = globalClassList.find(c => c.code === classCode); 
             
             // Render the UI shell with data from the global list
-            renderClassDashboard(classData);
+            renderClassDashboard(classData, role);
             
             // Fetch the dynamic content (posts)
             loadAndRenderPosts(classCode);
@@ -826,17 +844,20 @@
         /**
          * Renders the class dashboard view after details are fetched. (MODIFIED)
          * @param {object} classData The full class data including permissions.
+         * @param {string} role The user's role: 'student' or 'teacher'.
          */
-        function renderClassDashboard(classData) {
+        function renderClassDashboard(classData, role) {
+            const isTeacher = role === 'teacher';
             const allowPosting = classData.allowPosting === true || classData.allowPosting === 'TRUE';
             const allowCommenting = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
             
             let postCreationHtml = '';
-            if (allowPosting) {
-                // Opens the new post creation modal
+            if (allowPosting || isTeacher) {
+                // Teachers can always post, even if student posting is disabled
+                const promptText = isTeacher ? "Make an announcement to your class..." : "Share something with your class...";
                 postCreationHtml = `
                     <div class="create-post-card" onclick="openCreatePostModal('${classData.name.replace(/'/g, '\\\'')}', '${classData.code}')">
-                        <span class="icon">✍️</span> Share something with your class...
+                        <span class="icon">✍️</span> ${promptText}
                     </div>
                 `;
             } else {
@@ -846,26 +867,60 @@
                     </div>
                 `;
             }
+            
+            // --- Sidebar Content Customization ---
+            let sidebarCard1 = `
+                <h3>Class Info</h3>
+                <p><strong>Coach:</strong> ${classData.teacher}</p>
+                <p><strong>Join Code:</strong> <code>${classData.code}</code></p>
+                <p><strong>Posting:</strong> ${allowPosting ? '✅ Allowed' : '❌ Disabled'}</p>
+                <p><strong>Commenting:</strong> ${allowCommenting ? '✅ Allowed' : '❌ Disabled'}</p>
+            `;
+            
+            let sidebarCard2 = `
+                <h3>Upcoming Work (Demo)</h3>
+                <p style="color: var(--ka-accent-green); font-weight: 600;">Math Quiz - Due Today!</p>
+                <p>Review Chapter 3 - Due Fri</p>
+            `;
+            
+            if (isTeacher) {
+                 sidebarCard1 += `
+                    <hr style="border-top: 1px solid #eee; margin: 15px 0;">
+                    <button class="sidebar-action-button" onclick="alert('Roster will load here!');">
+                        <span class="icon">👥</span> View Class Roster
+                    </button>
+                    <button class="sidebar-action-button" onclick="alert('Assignment creation form will load here!');">
+                        <span class="icon">📝</span> Create New Assignment
+                    </button>
+                    <button class="sidebar-action-button secondary-button" 
+                            style="background-color: #f0f0f0; color: var(--ka-blue-dark);"
+                            onclick="openClassSettingsModal('${classData.code}', JSON.parse(JSON.stringify(classData)));">
+                        <span class="icon">⚙️</span> Manage Settings
+                    </button>
+                `;
+                
+                sidebarCard2 = `
+                    <h3>Class Reports (Demo)</h3>
+                    <p style="color: var(--ka-blue-bright); font-weight: 600;">3 Students need help.</p>
+                    <p>Assignment 1: 85% Class Average</p>
+                `;
+            }
+            // --- End Sidebar Customization ---
+
 
             const content = `
                 <div class="class-dashboard-header">
                     <h1 class="class-dashboard-title">Class: ${classData.name}</h1>
-                    <button class="back-to-dashboard" onclick="renderDashboard('student')">← Back to Dashboard</button>
+                    <button class="back-to-dashboard" onclick="renderDashboard('${role}')">← Back to Dashboard</button>
                 </div>
                 
                 <div class="class-dashboard-grid">
                     <div class="class-sidebar">
                         <div class="class-sidebar-card">
-                            <h3>Class Info</h3>
-                            <p><strong>Coach:</strong> ${classData.teacher}</p>
-                            <p><strong>Join Code:</strong> <code>${classData.code}</code></p>
-                            <p><strong>Posting:</strong> ${allowPosting ? '✅ Allowed' : '❌ Disabled'}</p>
-                            <p><strong>Commenting:</strong> ${allowCommenting ? '✅ Allowed' : '❌ Disabled'}</p>
+                            ${sidebarCard1}
                         </div>
                         <div class="class-sidebar-card">
-                            <h3>Upcoming Work (Demo)</h3>
-                            <p style="color: var(--ka-accent-green); font-weight: 600;">Math Quiz - Due Today!</p>
-                            <p>Review Chapter 3 - Due Fri</p>
+                            ${sidebarCard2}
                         </div>
                     </div>
                     
@@ -880,8 +935,14 @@
                 </div>
             `;
             dashboardContent.innerHTML = content;
-            navActionButton.textContent = 'Add Assignment';
-            navActionButton.onclick = () => alert('Adding assignment to this class!');
+            
+            if (isTeacher) {
+                navActionButton.textContent = 'Create Assignment';
+                navActionButton.onclick = () => alert('Creating assignment for this class!');
+            } else {
+                 navActionButton.textContent = 'Add Assignment';
+                 navActionButton.onclick = () => alert('Adding assignment to this class!');
+            }
         }
 
         /**
@@ -925,14 +986,7 @@
         }
 
 
-        /**
-         * Placeholder for the full class dashboard view (Teacher/Coach).
-         * @param {object} classData The data of the class card that was clicked.
-         */
-        function openClassDashboardPlaceholder(classData) {
-            alert(`Welcome to the Dashboard for ${classData.name}! This is the placeholder for the detailed class view, showing roster, assignments, etc. (Teacher View)`);
-            console.log("Class Data:", classData);
-        }
+        // REMOVED: openClassDashboardPlaceholder is removed and merged into openClassDashboard
 
 
         async function loadAssignments(userId) {
@@ -946,7 +1000,7 @@
             loadingMsg.style.display = 'none';
 
             try {
-                // Query assignments where studentId matches currentUserId (DEMO ONLY)
+                // Query assignments where studentId matches currentUserId (DEMO ONLY - FIRESTORE)
                 const snapshot = await db.collection('assignments')
                     .where('studentId', '==', userId)
                     .limit(5)
@@ -1416,14 +1470,24 @@
 
             classGrid.innerHTML = '';
             
+            // Get the current user's role/view from the main dashboard context
+            const currentRoleText = document.getElementById('current-role') ? document.getElementById('current-role').textContent : 'Unknown';
+            const isDashboardTeacherView = currentRoleText.toLowerCase() === 'teacher';
+
             if (classes.length > 0) {
                 classes.forEach(cls => {
                     // Use class code as a unique ID for the card
                     const classCode = cls.code || 'N/A'; 
-                    // Determine if the current user is the teacher of this class
-                    const isTeacher = currentView === 'dashboard' && auth.currentUser && auth.currentUser.email.split('@')[0] === cls.teacher;
-                    const cardActionText = isTeacher ? 'View Coach Dashboard' : 'View Class Stream';
-                    const cardTitle = isTeacher ? `🏫 ${cls.name}` : `👩‍🏫 ${cls.name}`;
+                    // Determine if the *current user* is the teacher of *this specific class*
+                    const isTeacherForThisClass = auth.currentUser && auth.currentUser.email.split('@')[0] === cls.teacher;
+                    
+                    // Determine the role for the *action* when clicking the card
+                    const roleToOpenAs = isTeacherForThisClass ? 'teacher' : 'student';
+                    
+                    const cardActionText = isTeacherForThisClass ? 'View Coach Dashboard' : 'View Class Stream';
+                    const cardTitle = isTeacherForThisClass ? `🏫 ${cls.name}` : `👩‍🏫 ${cls.name}`;
+                    
+                    const classDataString = JSON.stringify(cls).replace(/"/g, '&quot;'); // For use in onclick attribute
                     
                     const cardHtml = `
                         <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
@@ -1442,11 +1506,8 @@
                 noClassesMsg.style.display = 'none';	
             } else {
                 classGrid.style.display = 'grid'; 
-                // Show a different message for student vs teacher
-                const currentRoleText = document.getElementById('current-role') ? document.getElementById('current-role').textContent : 'Unknown';
-                const isTeacherView = currentRoleText.toLowerCase() === 'teacher';
                 
-                if (isTeacherView) {
+                if (isDashboardTeacherView) {
                      noClassesMsg.innerHTML = '✨ No classes found. Create one to get started!';
                 } else {
                      noClassesMsg.innerHTML = '✨ Not enrolled in any classes. Use the "Join Class" button!';
@@ -1454,23 +1515,19 @@
                 noClassesMsg.style.display = 'block';	
             }
 
-            // Attach listener to each dynamically created class card
+            // Attach listener to each dynamically created class card (MODIFIED)
             document.querySelectorAll('.class-grid .feature-card').forEach(card => {
                 card.onclick = () => {
                      const classCode = card.dataset.classCode;
-                     const classData = globalClassList.find(c => c.code === classCode); // Find the full data object
+                     const classData = globalClassList.find(c => c.code === classCode);
                      
                      if (classData) {
-                         // Logic to check if user is the teacher (by split email name)
-                         const isTeacher = auth.currentUser && auth.currentUser.email.split('@')[0] === classData.teacher;
+                         // Logic to check if user is the teacher of this class
+                         const isTeacherForThisClass = auth.currentUser && auth.currentUser.email.split('@')[0] === classData.teacher;
+                         const roleToOpenAs = isTeacherForThisClass ? 'teacher' : 'student';
                          
-                         if (isTeacher) {
-                              // Teacher view: Open the Class Dashboard Placeholder
-                             openClassDashboardPlaceholder(classData); 
-                         } else {
-                             // Student view: Open the full Class Dashboard
-                             openClassDashboard(classCode);
-                         }
+                         // Calls the unified class dashboard function
+                         openClassDashboard(classCode, roleToOpenAs);
                      }
                 };
             });
