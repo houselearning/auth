@@ -847,6 +847,40 @@
         </div>
     </div>
     
+    { /* Insert Create Assignment modal near other modals (e.g. after create-post-modal) */ }
+    <div id="create-assignment-modal" class="modal">
+	<div class="modal-content" style="max-width:540px;">
+		<div class="modal-header">
+			Create Assignment
+			<span class="close-button" onclick="document.getElementById('create-assignment-modal').style.display='none';">&times;</span>
+		</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label for="assignment-title">Title</label>
+				<input type="text" id="assignment-title" placeholder="e.g., Chapter 4 Quiz" class="full-width-input">
+			</div>
+			<div class="form-group">
+				<label for="assignment-desc">Description (optional)</label>
+				<textarea id="assignment-desc" rows="4" class="full-width-input" placeholder="Instructions or resources..."></textarea>
+			</div>
+			<div class="form-group">
+				<label for="assignment-due">Due Date</label>
+				<input type="date" id="assignment-due" class="full-width-input">
+			</div>
+			<div class="form-group">
+				<label for="assignment-class-select">Assign to Class</label>
+				<select id="assignment-class-select" class="full-width-input">
+					<option value="">Select a class</option>
+				</select>
+			</div>
+		</div>
+		<div class="modal-footer" style="justify-content: flex-end;">
+			<button id="cancel-assignment-btn" class="secondary-button">Cancel</button>
+			<button id="submit-assignment-btn" class="primary-button" disabled>Create</button>
+		</div>
+	</div>
+</div>
+
     <iframe name="hidden_iframe" id="hidden_iframe" style="display: none;"></iframe>
 
 
@@ -890,6 +924,134 @@
         const createPostModal = document.getElementById('create-post-modal');
         const postContentInput = createPostModal ? document.getElementById('post-content-input') : null;
         const submitPostBtn = createPostModal ? document.getElementById('submit-post-btn') : null;
+
+        // --- Assignment modal helpers ---
+		function openCreateAssignmentModal(defaultClassCode = "") {
+			if (!auth.currentUser) {
+				alert("You must be signed in to create assignments.");
+				return;
+			}
+
+			// Populate class select with teacher's classes from globalClassList
+			const select = document.getElementById('assignment-class-select');
+			select.innerHTML = '<option value="">Select a class</option>';
+			const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : null;
+			if (globalClassList && globalClassList.length > 0) {
+				// filter classes the teacher owns
+				const teacherClasses = globalClassList.filter(c => c.teacher === teacherName);
+				teacherClasses.forEach(cls => {
+					const opt = document.createElement('option');
+					opt.value = cls.code;
+					opt.textContent = `${cls.name} (${cls.code})`;
+					select.appendChild(opt);
+				});
+			}
+
+			// If a default class was provided, try to set it
+			if (defaultClassCode) {
+				select.value = defaultClassCode;
+			}
+
+			// Reset fields
+			document.getElementById('assignment-title').value = '';
+			document.getElementById('assignment-desc').value = '';
+			document.getElementById('assignment-due').value = '';
+
+			// Wire up buttons and validation
+			const submitBtn = document.getElementById('submit-assignment-btn');
+			const cancelBtn = document.getElementById('cancel-assignment-btn');
+			const titleField = document.getElementById('assignment-title');
+
+			function updateAssignmentFormState() {
+				// Require a title and a selected class
+				const titleOk = titleField.value.trim().length >= 3;
+				const classSelected = select.value.trim() !== '';
+				submitBtn.disabled = !(titleOk && classSelected);
+			}
+
+			// Add listeners
+			titleField.oninput = updateAssignmentFormState;
+			select.onchange = updateAssignmentFormState;
+
+			cancelBtn.onclick = () => {
+				document.getElementById('create-assignment-modal').style.display = 'none';
+			};
+
+			submitBtn.onclick = submitAssignment;
+
+			// Initial state
+			updateAssignmentFormState();
+
+			// Show modal
+			document.getElementById('create-assignment-modal').style.display = 'block';
+			titleField.focus();
+		}
+
+		async function submitAssignment() {
+			if (!auth.currentUser) {
+				alert("Not authenticated.");
+				return;
+			}
+			const submitBtn = document.getElementById('submit-assignment-btn');
+			submitBtn.disabled = true;
+			submitBtn.textContent = 'Creating...';
+
+			const title = document.getElementById('assignment-title').value.trim();
+			const description = document.getElementById('assignment-desc').value.trim();
+			const dueDate = document.getElementById('assignment-due').value || null;
+			const classCode = document.getElementById('assignment-class-select').value;
+
+			if (!title || !classCode) {
+				alert("Please provide a title and select a class.");
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Create';
+				return;
+			}
+
+			try {
+				// 1) Save assignment to Firestore (so it appears in assignment lists)
+				await db.collection('assignments').add({
+					title: title,
+					description: description,
+					dueDate: dueDate,
+					classCode: classCode,
+					teacherId: auth.currentUser.uid,
+					teacherName: auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null,
+					createdAt: firebase.firestore.FieldValue.serverTimestamp()
+				});
+
+				// 2) Also create a class stream announcement via Apps Script (so Sheets stream shows it)
+				const posterEmail = auth.currentUser ? auth.currentUser.email : "teacher@example.com";
+				const postContent = `📚 New Assignment: ${title}\n${description ? description + '\n' : ''}Due: ${dueDate || 'No due date provided'}`;
+
+				// Create and Submit Hidden Form (POST) to Apps Script createPost
+				const form = document.createElement('form');
+				form.action = SCRIPT_URL;
+				form.method = 'POST';
+				form.target = 'hidden_iframe';
+				form.style.display = 'none';
+				form.appendChild(createHiddenInput('action', 'createPost'));
+				form.appendChild(createHiddenInput('code', classCode));
+				form.appendChild(createHiddenInput('email', posterEmail));
+				form.appendChild(createHiddenInput('content', postContent));
+				document.body.appendChild(form);
+				form.submit();
+				document.body.removeChild(form);
+
+				// Close modal and refresh assignments immediately
+				document.getElementById('create-assignment-modal').style.display = 'none';
+				showInfoDialog('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
+				loadAssignments(currentUserId); // refresh assignments shown in student dashboard (demo)
+
+				// posts will reload when Apps Script responds (handlePostResponse will call loadAndRenderPosts)
+			} catch (err) {
+				console.error('Error creating assignment:', err);
+				alert('Could not create assignment: ' + (err.message || err));
+			} finally {
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Create';
+			}
+		}
 
         let currentUserId = null;
         let globalClassList = []; // Stores the class list fetched by JSONP
@@ -1053,7 +1215,7 @@
             
             if (isTeacher) {
                 navActionButton.textContent = 'Create Assignment';
-                navActionButton.onclick = () => alert('Creating assignment for this class!');
+                navActionButton.onclick = () => openCreateAssignmentModal(); 
             } else {
                  navActionButton.textContent = 'Add Assignment';
                  navActionButton.onclick = () => alert('Adding assignment to this class!');
@@ -1868,7 +2030,7 @@
             
             if (role === 'teacher') {
                  navActionButton.textContent = 'Create Assignment';
-                 navActionButton.onclick = () => alert('Assignment creation form would open here!');
+                 navActionButton.onclick = () => openCreateAssignmentModal(); 
             } else {
                 navActionButton.textContent = 'Join Class';
                 navActionButton.onclick = joinClass; 
@@ -2090,7 +2252,6 @@
                 loadUserRole(user.uid); 
             }
         });
-
     </script>
 </body>
 </html>
