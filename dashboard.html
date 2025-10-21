@@ -539,6 +539,95 @@
             gap: 10px;
         }
 
+        /* Composer toolbar + media actions */
+        .post-toolbar {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            background: white;
+        }
+        .toolbar-button {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--ka-text-color);
+        }
+        .toolbar-button:hover {
+            background: #f4f8fa;
+            border-color: #e6eef3;
+        }
+        .toolbar-button.active {
+            background: rgba(20,164,204,0.12);
+            border-color: rgba(20,164,204,0.2);
+            color: var(--ka-blue-bright);
+        }
+
+        .post-composer {
+            padding: 12px;
+            background: white;
+        }
+        .post-composer textarea.full-width-input {
+            min-height: 120px;
+            resize: vertical;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .composer-media-actions {
+            display: flex;
+            gap: 10px;
+            padding: 10px 12px;
+            align-items: center;
+            background: white;
+            border-top: 1px solid #f0f0f0;
+        }
+        .media-button {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 8px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--ka-blue-dark);
+        }
+        .media-button:hover {
+            background: #fafafa;
+            border-color: #e6eef3;
+        }
+
+        .post-footer-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+        .post-count {
+            margin-left: auto;
+            color: #888;
+            font-size: 0.9rem;
+            align-self: center;
+            padding-right: 10px;
+        }
+
+        .primary-button[disabled] {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 520px) {
+            .post-composer textarea.full-width-input {
+                min-height: 140px;
+            }
+        }
+
+        /* --- Teacher Dashboard Specific Styles --- */
         @media (max-width: 768px) {
             .app-header {
                 padding: 15px 10px;
@@ -721,21 +810,39 @@
     </div>
 
     <div id="create-post-modal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
                 <span id="post-modal-title">New Post</span>
                 <span class="close-button" onclick="document.getElementById('create-post-modal').style.display='none';">&times;</span>
             </div>
-            <div class="modal-body">
+            <!-- MODIFIED: composer markup + toolbar to match the provided image -->
+            <div class="modal-body post-composer">
                 <input type="hidden" id="post-class-code" value="">
-                <div class="form-group">
-                    <label for="post-content-input" style="display: block; margin-bottom: 5px;">What's on your mind?</label>
-                    <textarea id="post-content-input" rows="5" placeholder="Share an announcement, ask a question, or post a helpful link..." class="full-width-input"></textarea>
+                <div class="post-toolbar" role="toolbar" aria-label="Formatting toolbar">
+                    <button class="toolbar-button" id="format-bold" title="Bold (wrap selection)"><strong>B</strong></button>
+                    <button class="toolbar-button" id="format-italic" title="Italic (wrap selection)"><em>I</em></button>
+                    <button class="toolbar-button" id="format-underline" title="Underline (wrap selection)">U</button>
+                    <button class="toolbar-button" id="format-list" title="Bulleted list">• List</button>
+                    <button class="toolbar-button" id="format-strike" title="Strikethrough">S</button>
+                    <div style="flex:1"></div>
+                    <small style="color:#888; font-weight:500;">Announce something to your class</small>
+                </div>
+
+                <div style="background:white; padding-top:8px;">
+                    <textarea id="post-content-input" rows="6" placeholder="Share an announcement, ask a question, or post helpful resources..." class="full-width-input"></textarea>
+                </div>
+
+                <div class="composer-media-actions">
+                    <button class="media-button" id="media-youtube" title="Attach YouTube link">📺 YouTube</button>
+                    <button class="media-button" id="media-upload" title="Upload file (not implemented)">⬆️ Upload</button>
+                    <button class="media-button" id="media-link" title="Insert link">🔗 Link</button>
+                    <span class="post-count" id="post-char-count">0/500</span>
                 </div>
             </div>
-            <div class="modal-footer" style="justify-content: flex-end;">
+
+            <div class="modal-footer post-footer-actions">
                 <button class="secondary-button" onclick="document.getElementById('create-post-modal').style.display='none';">Cancel</button>
-                <button id="submit-post-btn" class="primary-button" onclick="submitNewPost()">Share Post</button>
+                <button id="submit-post-btn" class="primary-button" disabled>Post</button>
             </div>
         </div>
     </div>
@@ -1383,39 +1490,141 @@
         function openCreatePostModal(className, classCode) {
             // Update modal title
             document.getElementById('post-modal-title').textContent = `New Post in ${className}`;
-            // Clear previous content and store class code
+            // Set class code
             document.getElementById('post-class-code').value = classCode;
-            if (postContentInput) postContentInput.value = '';
-            if (submitPostBtn) {
-                submitPostBtn.disabled = false;
-                submitPostBtn.textContent = 'Share Post';
+            const ta = document.getElementById('post-content-input');
+            const submitBtn = document.getElementById('submit-post-btn');
+
+            if (ta) {
+                ta.value = '';
+                ta.focus();
+                ta.scrollTop = 0;
+                ta.removeAttribute('data-listener');
+                // Attach input listener (idempotent guard)
+                ta.addEventListener('input', updateComposerState);
             }
-            createPostModal.style.display = 'block';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Post';
+                // ensure click triggers submitNewPost
+                submitBtn.onclick = submitNewPost;
+            }
+            document.getElementById('create-post-modal').style.display = 'block';
+            updateComposerState();
         }
 
-        /**
-         * Submits the new post content to the Apps Script 'createPost' action. (NEW)
-         */
+        // --- NEW/UPDATED: Composer utilities and wiring ---
+        // Wraps selected text in the textarea with prefix/suffix
+        function wrapSelection(textarea, prefix, suffix) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const selected = text.substring(start, end);
+            const before = text.substring(0, start);
+            const after = text.substring(end);
+            textarea.value = before + prefix + selected + suffix + after;
+            // restore selection around the newly wrapped content
+            const newStart = start + prefix.length;
+            const newEnd = newStart + selected.length;
+            textarea.focus();
+            textarea.setSelectionRange(newStart, newEnd);
+            updateComposerState();
+        }
+
+        function updateComposerState() {
+            const ta = document.getElementById('post-content-input');
+            const btn = document.getElementById('submit-post-btn');
+            const count = document.getElementById('post-char-count');
+            if (!ta || !btn || !count) return;
+            const len = ta.value.trim().length;
+            count.textContent = `${Math.min(ta.value.length, 500)}/500`;
+            // enable when >=5 chars and <=500
+            btn.disabled = len < 5 || ta.value.length > 500;
+        }
+
+        // Replace or insert a simple list marker at cursor
+        function insertListAtCursor(textarea) {
+            const start = textarea.selectionStart;
+            const text = textarea.value;
+            // find start of current line
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const before = text.substring(0, lineStart);
+            const after = text.substring(lineStart);
+            textarea.value = before + '• ' + after;
+            textarea.focus();
+            textarea.setSelectionRange(lineStart + 2, lineStart + 2);
+            updateComposerState();
+        }
+
+        // Attach toolbar button actions
+        (function attachComposerButtons() {
+            // Delay wiring until DOM is available
+            document.addEventListener('DOMContentLoaded', () => {
+                const ta = document.getElementById('post-content-input');
+                if (!ta) return;
+
+                document.getElementById('format-bold').onclick = () => wrapSelection(ta, '**', '**');
+                document.getElementById('format-italic').onclick = () => wrapSelection(ta, '_', '_');
+                document.getElementById('format-underline').onclick = () => wrapSelection(ta, '<u>', '</u>');
+                document.getElementById('format-strike').onclick = () => wrapSelection(ta, '~~', '~~');
+                document.getElementById('format-list').onclick = () => insertListAtCursor(ta);
+
+                // Media actions — open basic prompts for a link; attach as text for now
+                document.getElementById('media-youtube').onclick = () => {
+                    const url = prompt('Paste YouTube link (it will be inserted into the post):');
+                    if (url && url.trim()) {
+                        const insertAt = ta.selectionEnd || ta.value.length;
+                        ta.value = ta.value.slice(0, insertAt) + '\n' + url + '\n' + ta.value.slice(insertAt);
+                        updateComposerState();
+                    }
+                };
+                document.getElementById('media-link').onclick = () => {
+                    const url = prompt('Paste link (it will be inserted into the post):');
+                    if (url && url.trim()) {
+                        const insertAt = ta.selectionEnd || ta.value.length;
+                        ta.value = ta.value.slice(0, insertAt) + ' ' + url + ' ' + ta.value.slice(insertAt);
+                        updateComposerState();
+                    }
+                };
+                document.getElementById('media-upload').onclick = () => {
+                    alert('File uploads are not enabled in this demo. Use links instead.');
+                };
+
+                // Keep count and enable/disable post button
+                ta.addEventListener('input', updateComposerState);
+
+                // Initialize state
+                updateComposerState();
+            });
+        })();
+
+        // Modified submitNewPost to respect the composer, keep existing hidden-form behavior
         function submitNewPost() {
-            if (!postContentInput || !submitPostBtn) return;
-            
+            const ta = document.getElementById('post-content-input');
+            const submitBtn = document.getElementById('submit-post-btn');
+            if (!ta || !submitBtn) return;
+
             const classCode = document.getElementById('post-class-code').value;
-            const postContent = postContentInput.value.trim();
-            const posterEmail = auth.currentUser ? auth.currentUser.email : "demo.poster@example.com"; 
+            const postContent = ta.value.trim();
+            const posterEmail = auth.currentUser ? auth.currentUser.email : "demo.poster@example.com";
 
             if (postContent.length < 5) {
                 alert("Post content is too short.");
                 return;
             }
-            
-            submitPostBtn.disabled = true;
-            submitPostBtn.textContent = 'Posting...';
+            if (postContent.length > 500) {
+                alert("Post content exceeds 500 characters.");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Posting...';
 
             // Create and Submit Hidden Form (POST)
             const form = document.createElement('form');
             form.action = SCRIPT_URL;
             form.method = 'POST';
-            form.target = 'hidden_iframe'; 
+            form.target = 'hidden_iframe';
             form.style.display = 'none';
 
             form.appendChild(createHiddenInput('action', 'createPost'));
