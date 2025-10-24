@@ -881,12 +881,84 @@
 	</div>
 </div>
 
+    <div id="assignment-dropdown" class="assignment-dropdown" aria-hidden="true" role="dialog" aria-label="Create assignment">
+      <div class="assignment-editor" role="document">
+        <div class="main">
+          <input id="assignment-title-dropdown" class="assignment-title" placeholder="Title * (required)" />
+          <div class="assign-toolbar" aria-hidden="false">
+            <button id="a-bold" title="Bold"><strong>B</strong></button>
+            <button id="a-italic" title="Italic"><em>I</em></button>
+            <button id="a-underline" title="Underline">U</button>
+            <button id="a-list" title="Bulleted list">•</button>
+            <div style="flex:1"></div>
+            <div style="color:#888; font-weight:600;">Description (optional)</div>
+          </div>
+          <textarea id="assignment-desc-dropdown" class="assign-desc" placeholder="Instructions, resources, links..."></textarea>
+
+          <div class="attach-row" aria-label="Attach resources">
+            <div class="attach-icon" id="attach-drive">🟢<small>Drive</small></div>
+            <div class="attach-icon" id="attach-youtube">🔴<small>YouTube</small></div>
+            <div class="attach-icon" id="attach-create">✚<small>Create</small></div>
+            <div class="attach-icon" id="attach-upload">⬆️<small>Upload</small></div>
+            <div class="attach-icon" id="attach-link">🔗<small>Link</small></div>
+          </div>
+        </div>
+
+        <div class="side" aria-label="Assignment options">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-weight:700; font-size:1.0rem;">For</div>
+            <div style="font-size:0.95rem; color:#666;">Classroom</div>
+          </div>
+
+          <div class="panel-item">
+            <label for="assignment-class-select-dropdown">Assign to Class</label>
+            <select id="assignment-class-select-dropdown" class="select">
+              <option value="">Select class</option>
+            </select>
+          </div>
+
+          <div class="panel-item">
+            <label for="assignment-assign-to">Assign to</label>
+            <button id="assignment-assign-to" class="select" style="text-align:left;">All students</button>
+          </div>
+
+          <div class="panel-item">
+            <label for="assignment-points">Points</label>
+            <select id="assignment-points-dropdown" class="points-select">
+              <option value="100">100</option>
+              <option value="50">50</option>
+              <option value="0">Ungraded</option>
+            </select>
+          </div>
+
+          <div class="panel-item">
+            <label for="assignment-due-dropdown">Due</label>
+            <input id="assignment-due-dropdown" type="date" class="date-input" />
+          </div>
+
+          <div class="panel-item">
+            <label>Topic</label>
+            <div class="topic-placeholder">Topic selection coming soon (placeholder)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="assignment-actions">
+        <div>
+          <button id="assignment-cancel-btn" class="secondary">Cancel</button>
+        </div>
+        <div>
+          <button id="assignment-assign-btn" class="primary" disabled>Assign</button>
+        </div>
+      </div>
+    </div>
+
     <iframe name="hidden_iframe" id="hidden_iframe" style="display: none;"></iframe>
 
 
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzs7Wl-3qhg5nUzCro9Q1tAPC3mKXzpIIbKKhcahyacEAbH9ZHUVxELimN4D7IKSyxHRg/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy7Mt1pci9dFahjIQHm2c3wkYZKCqXiv-KK7ENSKF0bp5liAgDEbu4raCg89LpRNppEw/exec'; 
 
         // Function to generate a simple, 6-character, random join code
         function generateJoinCode() {
@@ -2133,7 +2205,7 @@
                  navActionButton.onclick = () => openCreateAssignmentModal(); 
             } else {
                 navActionButton.textContent = 'Join Class';
-                navActionButton.onclick = joinClass; 
+                navActionButton.onclick = openJoinClassModal; 
             }
 
             // --- Student View ---
@@ -2352,6 +2424,212 @@
                 loadUserRole(user.uid); 
             }
         });
+    </script>
+
+    { /* Insert Join Class modal (place near other modals) */ }
+    <div id="join-class-modal" class="modal">
+      <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+          Join Class
+          <span class="close-button" onclick="document.getElementById('join-class-modal').style.display='none'">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="join-class-code-input">Enter 6-character Class Code</label>
+            <input id="join-class-code-input" type="text" maxlength="6" placeholder="e.g. 4F8T2L" class="full-width-input" style="text-transform:uppercase">
+          </div>
+          <p style="color:#666; font-size:0.9rem; margin-top:8px;">Paste a class code or open an invite link to join quickly.</p>
+        </div>
+        <div class="modal-footer" style="justify-content:flex-end;">
+          <button class="secondary-button" onclick="document.getElementById('join-class-modal').style.display='none'">Cancel</button>
+          <button id="join-class-submit" class="primary-button">Join</button>
+        </div>
+      </div>
+    </div>
+
+    { /* Add dropdown + join modal JS wiring (place near other JS helpers) */ }
+    <script>
+    // ...existing code...
+
+    /* ---------- Join Class modal logic ---------- */
+    function openJoinClassModal() {
+      if (!auth.currentUser) { alert('Please sign in to join classes.'); return; }
+      document.getElementById('join-class-code-input').value = '';
+      document.getElementById('join-class-modal').style.display = 'block';
+      document.getElementById('join-class-code-input').focus();
+
+      // wire submit
+      const btn = document.getElementById('join-class-submit');
+      btn.onclick = () => {
+        const code = (document.getElementById('join-class-code-input').value || '').trim().toUpperCase();
+        if (!code || code.length !== 6) { alert('Please enter a valid 6-character code.'); return; }
+        document.getElementById('join-class-modal').style.display = 'none';
+        joinClass(code); // existing function uses JSONP and current auth user
+      };
+    }
+
+    /* ---------- Assignment dropdown editor functionality ---------- */
+
+    /* Show the advanced assignment dropdown (populates classes owned by teacher) */
+    function showAssignmentDropdown(defaultClassCode = '') {
+      if (!auth.currentUser) { alert('Please sign in to create assignments.'); return; }
+
+      const dd = document.getElementById('assignment-dropdown');
+      const select = document.getElementById('assignment-class-select-dropdown');
+
+      // populate class options (teacher's classes)
+      select.innerHTML = '<option value="">Select class</option>';
+      const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : null;
+      if (globalClassList && globalClassList.length) {
+        globalClassList.filter(c => c.teacher === teacherName).forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.code;
+          opt.textContent = `${c.name} (${c.code})`;
+          select.appendChild(opt);
+        });
+      }
+      if (defaultClassCode) select.value = defaultClassCode;
+
+      // reset fields
+      document.getElementById('assignment-title-dropdown').value = '';
+      document.getElementById('assignment-desc-dropdown').value = '';
+      document.getElementById('assignment-due-dropdown').value = '';
+
+      // enable/disable assign button based on title+class
+      const assignBtn = document.getElementById('assignment-assign-btn');
+      const titleField = document.getElementById('assignment-title-dropdown');
+
+      function updateAssignState() {
+        assignBtn.disabled = !(titleField.value.trim().length >= 3 && select.value.trim() !== '');
+      }
+      titleField.oninput = updateAssignState;
+      select.onchange = updateAssignState;
+
+      // cancel
+      document.getElementById('assignment-cancel-btn').onclick = () => {
+        dd.style.display = 'none';
+        dd.setAttribute('aria-hidden','true');
+      };
+
+      // assign action
+      assignBtn.onclick = async () => {
+        const payload = {
+          title: document.getElementById('assignment-title-dropdown').value.trim(),
+          description: document.getElementById('assignment-desc-dropdown').value.trim(),
+          dueDate: document.getElementById('assignment-due-dropdown').value || null,
+          classCode: document.getElementById('assignment-class-select-dropdown').value
+        };
+        dd.style.display = 'none';
+        dd.setAttribute('aria-hidden','true');
+        await submitAssignmentByData(payload);
+      };
+
+      // show
+      dd.style.display = 'block';
+      dd.setAttribute('aria-hidden','false');
+      titleField.focus();
+    }
+
+    /* Minimal formatting toolbar for the dropdown editor */
+    (function assignmentToolbar() {
+      function wrapText(ta, pre, post) {
+        const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+        ta.value = v.slice(0,s) + pre + v.slice(s,e) + post + v.slice(e);
+        const ns = s + pre.length;
+        ta.focus();
+        ta.setSelectionRange(ns, ns + (e-s));
+      }
+      document.addEventListener('click', (ev) => {
+        const id = ev.target && ev.target.id;
+        const ta = document.getElementById('assignment-desc-dropdown');
+        if (!id || !ta) return;
+        if (id === 'a-bold') wrapText(ta, '**','**');
+        if (id === 'a-italic') wrapText(ta, '_','_');
+        if (id === 'a-underline') wrapText(ta, '<u>','</u>');
+        if (id === 'a-list') {
+          const start = ta.selectionStart;
+          const text = ta.value;
+          const lineStart = text.lastIndexOf('\n', start-1) + 1;
+          ta.value = text.slice(0,lineStart) + '• ' + text.slice(lineStart);
+          ta.setSelectionRange(lineStart+2, lineStart+2);
+          ta.focus();
+        }
+      });
+    })();
+
+    /* Submit assignment by data (reuse Firestore + Apps Script fallback logic) */
+    async function submitAssignmentByData({ title, description, dueDate, classCode }) {
+      if (!auth.currentUser) { alert('Not authenticated'); return; }
+      if (!title || !classCode) { alert('Title and class required'); return; }
+
+      try {
+        await db.collection('assignments').add({
+          title,
+          description,
+          dueDate,
+          classCode,
+          teacherId: auth.currentUser.uid,
+          teacherName: auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Post announcement via Apps Script
+        const posterEmail = auth.currentUser.email || 'teacher@example.com';
+        const postContent = `📚 New Assignment: ${title}\n${description ? description + '\n' : ''}Due: ${dueDate || 'No due date provided'}`;
+        const form = document.createElement('form');
+        form.action = SCRIPT_URL;
+        form.method = 'POST';
+        form.target = 'hidden_iframe';
+        form.style.display = 'none';
+        form.appendChild(createHiddenInput('action','createPost'));
+        form.appendChild(createHiddenInput('code', classCode));
+        form.appendChild(createHiddenInput('email', posterEmail));
+        form.appendChild(createHiddenInput('content', postContent));
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+
+        showInfoDialog('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
+        loadAssignments(currentUserId);
+      } catch (err) {
+        console.error('Assignment creation failed:', err);
+        const msg = (err && (err.message || '')).toString().toLowerCase();
+        const code = err && err.code ? err.code.toString().toLowerCase() : '';
+        if (code.includes('permission-denied') || msg.includes('missing or insufficient permissions')) {
+          // fallback to Apps Script
+          fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode });
+          showInfoDialog('Assignment Queued', 'Assignment submitted to server fallback; it will appear shortly.');
+        } else {
+          alert('Could not create assignment: ' + (err.message || err));
+        }
+      }
+    }
+
+    /* Close dropdown when clicking outside */
+    document.addEventListener('click', (e) => {
+      const dd = document.getElementById('assignment-dropdown');
+      if (!dd) return;
+      if (dd.style.display === 'block') {
+        const target = e.target;
+        if (!dd.contains(target) && target !== navActionButton && !target.closest('.sidebar-action-button')) {
+          dd.style.display = 'none';
+          dd.setAttribute('aria-hidden','true');
+        }
+      }
+    });
+
+    /* Make existing openCreateAssignmentModal show the new dropdown (backwards-compatible) */
+    window.openCreateAssignmentModal = function(defaultClassCode = '') {
+      showAssignmentDropdown(defaultClassCode);
+    };
+
+    // Ensure top nav-action button opens create/join context properly (renderDashboard sets this per-role but keep safe default)
+    navActionButton.addEventListener('click', () => {
+      // If dashboard is rendered and role is student, it will be wired to openJoinClassModal; teacher -> openCreateAssignmentModal
+      // Fallback: open join modal
+      openJoinClassModal();
+    });
+
     </script>
 </body>
 </html>
