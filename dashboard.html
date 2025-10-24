@@ -847,6 +847,7 @@
         </div>
     </div>
     
+    { /* Insert Create Assignment modal near other modals (e.g. after create-post-modal) */ }
     <div id="create-assignment-modal" class="modal">
 	<div class="modal-content" style="max-width:540px;">
 		<div class="modal-header">
@@ -1008,7 +1009,7 @@
 			}
 
 			try {
-				// 1) Save assignment to Firestore (so it appears in assignment lists)
+				// Try Firestore first
 				await db.collection('assignments').add({
 					title: title,
 					description: description,
@@ -1019,11 +1020,10 @@
 					createdAt: firebase.firestore.FieldValue.serverTimestamp()
 				});
 
-				// 2) Also create a class stream announcement via Apps Script (so Sheets stream shows it)
+				// Also create a class stream announcement via Apps Script (Sheets)
 				const posterEmail = auth.currentUser ? auth.currentUser.email : "teacher@example.com";
 				const postContent = `📚 New Assignment: ${title}\n${description ? description + '\n' : ''}Due: ${dueDate || 'No due date provided'}`;
 
-				// Create and Submit Hidden Form (POST) to Apps Script createPost
 				const form = document.createElement('form');
 				form.action = SCRIPT_URL;
 				form.method = 'POST';
@@ -1037,19 +1037,62 @@
 				form.submit();
 				document.body.removeChild(form);
 
-				// Close modal and refresh assignments immediately
 				document.getElementById('create-assignment-modal').style.display = 'none';
 				showInfoDialog('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
-				loadAssignments(currentUserId); // refresh assignments shown in student dashboard (demo)
+				loadAssignments(currentUserId);
 
-				// posts will reload when Apps Script responds (handlePostResponse will call loadAndRenderPosts)
 			} catch (err) {
 				console.error('Error creating assignment:', err);
-				alert('Could not create assignment: ' + (err.message || err));
+
+				// Detect Firestore permission error and fallback to Apps Script POST
+				const msg = (err && (err.message || '')).toString().toLowerCase();
+				const code = err && err.code ? err.code.toString().toLowerCase() : '';
+
+				if (code.includes('permission-denied') || msg.includes('missing or insufficient permissions') || msg.includes('permission')) {
+					// Fallback: submit the assignment to Apps Script which can store it in Sheets
+					try {
+						fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode });
+						document.getElementById('create-assignment-modal').style.display = 'none';
+						showInfoDialog('Assignment Queued', 'Firestore write blocked — assignment submitted to server fallback and will appear shortly.');
+					} catch (fallbackErr) {
+						console.error('Fallback submission failed:', fallbackErr);
+						alert('Could not create assignment (fallback failed): ' + (fallbackErr.message || fallbackErr));
+					}
+				} else {
+					alert('Could not create assignment: ' + (err.message || err));
+				}
 			} finally {
 				submitBtn.disabled = false;
 				submitBtn.textContent = 'Create';
 			}
+		}
+
+		/**
+		 * Fallback: POST assignment to Apps Script doPost (action=createAssignment)
+		 * Apps Script must implement a createAssignment action in doPost to persist assignments to Sheets.
+		 */
+		function fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode }) {
+			const posterEmail = auth.currentUser ? auth.currentUser.email : "teacher@example.com";
+
+			const form = document.createElement('form');
+			form.action = SCRIPT_URL;
+			form.method = 'POST';
+			form.target = 'hidden_iframe';
+			form.style.display = 'none';
+
+			form.appendChild(createHiddenInput('action', 'createAssignment'));
+			form.appendChild(createHiddenInput('title', title));
+			form.appendChild(createHiddenInput('description', description));
+			form.appendChild(createHiddenInput('dueDate', dueDate || ''));
+			form.appendChild(createHiddenInput('classCode', classCode));
+			form.appendChild(createHiddenInput('teacherEmail', posterEmail));
+
+			document.body.appendChild(form);
+			form.submit();
+			document.body.removeChild(form);
+
+			// Refresh local assignment list (best-effort)
+			loadAssignments(currentUserId);
 		}
 
         let currentUserId = null;
@@ -1165,7 +1208,7 @@
                     <button class="sidebar-action-button" onclick="alert('Roster will load here!');">
                         <span class="icon">👥</span> View Class Roster
                     </button>
-                    <button class="sidebar-action-button" onclick="alert('Assignment creation form will load here!');">
+                    <button class="sidebar-action-button" onclick="openCreateAssignmentModal('${classData.code}');">
                         <span class="icon">📝</span> Create New Assignment
                     </button>
                     <button class="sidebar-action-button secondary-button" 
@@ -1881,6 +1924,7 @@
             } else {
                 classGrid.style.display = 'grid'; 
                 
+                                
                 if (isDashboardTeacherView) {
                      noClassesMsg.innerHTML = '✨ No classes found. Create one to get started!';
                 } else {
@@ -1972,18 +2016,75 @@
             document.getElementById('admin-email-display').value = classData.teacher + "@coolmathtime.com";
             
             // Toggle switches: Sheet stores "TRUE"/"FALSE" strings, we check for those.
-            document.getElementById('allow-posting-toggle').checked = classData.allowPosting === true || classData.allowPosting === 'TRUE';
-            document.getElementById('allow-commenting-toggle').checked = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
+            const allowPostingCheckbox = document.getElementById('allow-posting-toggle');
+            const allowCommentingCheckbox = document.getElementById('allow-commenting-toggle');
+
+            allowPostingCheckbox.checked = classData.allowPosting === true || classData.allowPosting === 'TRUE';
+            allowCommentingCheckbox.checked = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
 
             // Invite Link Feature
             const inviteLink = `${WEBSITE_URL}?invcode=${classCode}`;
             document.getElementById('invite-link-display').value = inviteLink;
             
             // Store the class code and name on the Save and Delete buttons
-            document.getElementById('save-settings-btn').dataset.classCode = classCode;
-            document.getElementById('delete-class-btn').dataset.classCode = classCode;
-            document.getElementById('delete-class-btn').dataset.className = classData.name;
-            
+            const saveBtn = document.getElementById('save-settings-btn');
+            const deleteBtn = document.getElementById('delete-class-btn');
+
+            saveBtn.dataset.classCode = classCode;
+            deleteBtn.dataset.classCode = classCode;
+            deleteBtn.dataset.className = classData.name;
+
+            // CHANGE DETECTION: snapshot original values
+            const original = {
+                name: classData.name || '',
+                allowPosting: allowPostingCheckbox.checked,
+                allowCommenting: allowCommentingCheckbox.checked
+            };
+
+            // Initialize save button disabled until changes
+            saveBtn.disabled = true;
+
+            // Utility to compare current vs original and enable save when different
+            function checkForSettingsChanges() {
+                const currentName = document.getElementById('class-name-input').value.trim();
+                const currentPosting = allowPostingCheckbox.checked;
+                const currentCommenting = allowCommentingCheckbox.checked;
+
+                const changed = currentName !== original.name ||
+                                currentPosting !== original.allowPosting ||
+                                currentCommenting !== original.allowCommenting;
+
+                saveBtn.disabled = !changed;
+            }
+
+            // Attach lightweight listeners (replace previous handlers)
+            document.getElementById('class-name-input').oninput = checkForSettingsChanges;
+            allowPostingCheckbox.onchange = checkForSettingsChanges;
+            allowCommentingCheckbox.onchange = checkForSettingsChanges;
+
+            // Wire Save and Delete when modal is opened so handlers are current
+            saveBtn.onclick = () => {
+                // small client-side validation
+                const newName = document.getElementById('class-name-input').value.trim();
+                if (!newName) {
+                    alert("Class name cannot be empty.");
+                    return;
+                }
+                // Optimistic UI: disable button and show working state
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                // call existing saveClassSettings which constructs and posts the hidden form
+                saveClassSettings();
+                // Note: handlePostResponse will re-enable the button and hide modal on success.
+            };
+
+            deleteBtn.onclick = () => {
+                const code = deleteBtn.dataset.classCode;
+                const name = deleteBtn.dataset.className;
+                showDeleteConfirmation(name, code);
+            };
+
+            // Show modal
             classSettingsModal.style.display = 'block';
         }
 
