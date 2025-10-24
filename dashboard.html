@@ -672,6 +672,95 @@
                 margin-top: 10px;
             }
         }
+
+        /* Added: assignment dropdown/editor styles (fixes visual/style issues) */
+.assignment-dropdown {
+  position: absolute;
+  right: 24px;
+  top: 64px;
+  width: 960px;
+  max-width: calc(100% - 48px);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(13,38,57,0.12);
+  display: none; /* shown by JS */
+  z-index: 2000;
+  overflow: hidden;
+  animation: km-dropdown .12s ease-out;
+}
+@keyframes km-dropdown { from { transform: translateY(-6px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+
+.assignment-editor {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0;
+  min-height: 320px;
+}
+.assignment-editor .main {
+  padding: 18px;
+  border-right: 1px solid #f0f0f0;
+  background: #fff;
+}
+.assignment-editor .side {
+  padding: 16px;
+  background: #fafafa;
+}
+
+/* Title / Description */
+.assignment-title {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: 1px solid #e6eef3;
+  border-radius: 6px;
+  background: #f6f9fb;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+.assign-desc {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px;
+  border: 1px solid #e9eef3;
+  border-radius: 6px;
+  resize: vertical;
+  font-size: 0.95rem;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+/* Toolbar */
+.assign-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.assign-toolbar button { border: none; background: transparent; cursor: pointer; padding:6px; border-radius:4px; color:var(--ka-blue-dark); }
+
+/* Attach icons */
+.attach-row { display:flex; gap:12px; align-items:center; margin-top:12px; }
+.attach-icon {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:60px; height:60px; border-radius:8px; border:1px dashed #e6eef3; cursor:pointer;
+  background:#fff; color:var(--ka-blue-dark); font-size:18px;
+}
+.attach-icon small { display:block; margin-top:6px; font-size:11px; color:#666; }
+
+/* Side panel inputs */
+.select, .date-input, .points-select {
+  width:100%; padding:10px; border-radius:6px; border:1px solid #e6eef3; background:#fff; box-sizing:border-box;
+}
+
+/* simple button utilities used by the dropdown markup */
+.secondary { background:#f0f0f0; color:var(--ka-text-color); border:1px solid #ddd; padding:8px 12px; border-radius:6px; cursor:pointer; }
+.primary { background:var(--ka-blue-bright); color:#fff; padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
+
+/* assignment actions footer */
+.assignment-actions { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-top:1px solid #f0f0f0; background:#fff; }
+
+/* responsive adjustments */
+@media (max-width: 880px) {
+  .assignment-editor { grid-template-columns: 1fr; }
+  .assignment-dropdown { right: 12px; left: 12px; top: 70px; width: auto; }
+}
+
+/* ...existing styles... */
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -958,7 +1047,7 @@
 
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy7Mt1pci9dFahjIQHm2c3wkYZKCqXiv-KK7ENSKF0bp5liAgDEbu4raCg89LpRNppEw/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR9KAOOu_TqxYPcj9gr8m1QGD-4cH6UWd2bDwZ9TPOzulBrfnJgQT2euwMQDmw6fbscg/exec'; 
 
         // Function to generate a simple, 6-character, random join code
         function generateJoinCode() {
