@@ -1095,9 +1095,46 @@
       </div>
     </div>
 
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display: none;"></iframe>
+    <!-- Add Teacher "View All Students" Modal -->
+    <div id="all-students-modal" class="modal">
+      <div class="modal-content" style="max-width:540px;">
+        <div class="modal-header">
+          View All Students
+          <span class="close-button" onclick="document.getElementById('all-students-modal').style.display='none';">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="all-students-controls" style="margin-bottom:16px;">
+            <button id="view-all-students-btn" style="font-weight:bold; margin-bottom:8px;" class="primary-button">View All Students</button>
+            <div id="class-student-buttons"></div>
+          </div>
+          <div id="all-students-list">
+            <div class="loading-message">Select a class or view all students.</div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button class="secondary-button" onclick="document.getElementById('all-students-modal').style.display='none';">Close</button>
+        </div>
+      </div>
+    </div>
 
-
+    <!-- Add Student "My Assignments" Modal -->
+    <div id="my-assignments-modal" class="modal">
+      <div class="modal-content" style="max-width:640px;">
+        <div class="modal-header">
+          My Assignments
+          <span class="close-button" onclick="document.getElementById('my-assignments-modal').style.display='none';">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="my-assignments-table">
+            <div class="loading-message">Loading assignments...</div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button class="secondary-button" onclick="document.getElementById('my-assignments-modal').style.display='none';">Close</button>
+        </div>
+      </div>
+    </div>
+<iframe name="hidden_iframe" id="hidden_iframe" style="display: none;"></iframe>
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRkZWpJYrpfqzsFu4TgRkot5G-iEhzFJpAlVNe-PZVZs--OzutBXAvDvN9sddZ07px7Q/exec'; 
@@ -2605,6 +2642,49 @@ function openClassDashboard(classCode, role) {
                 loadUserRole(user.uid); 
             }
         });
+
+    /**
+ * Shows a modal dialog for pending student approvals.
+ * (Demo: Just shows a message, you can extend with real data.)
+ */
+function showPendingStudentsModal() {
+    // Create or reuse a modal for pending approvals
+    let modal = document.getElementById('pending-students-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'pending-students-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:400px;">
+                <div class="modal-header">
+                    Pending Student Approvals
+                    <span class="close-button" onclick="document.getElementById('pending-students-modal').style.display='none';">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="pending-students-list">
+                        <div class="empty-state-message">No students pending approval.</div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="justify-content: flex-end;">
+                    <button class="primary-button" onclick="document.getElementById('pending-students-modal').style.display='none';">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'block';
+}
+
+// Attach listener to Pending Student Requests card
+document.addEventListener('DOMContentLoaded', function() {
+    const pendingCard = document.querySelector('.feature-card .card-header span.icon + span:not([class])');
+    // Fallback: use the card with text "Pending Student Requests"
+    document.querySelectorAll('.feature-card').forEach(card => {
+        if (card.textContent.includes('Pending Student Requests')) {
+            card.onclick = showPendingStudentsModal;
+        }
+    });
+});
     </script>
 
     <div id="join-class-modal" class="modal">
@@ -2665,7 +2745,7 @@ function openClassDashboard(classCode, role) {
       };
     }
 
-    /* ---------- Assignment dropdown editor functionality ---------- */
+    /* ---------- Assignment dropdown/editor functionality ---------- */
 
     /* Show the advanced assignment dropdown (populates classes owned by teacher) */
     function showAssignmentDropdown(defaultClassCode = '') {
@@ -2822,9 +2902,16 @@ function openClassDashboard(classCode, role) {
 
     // Ensure top nav-action button opens create/join context properly (renderDashboard sets this per-role but keep safe default)
     navActionButton.addEventListener('click', () => {
-      // If dashboard is rendered and role is student, it will be wired to openJoinClassModal; teacher -> openCreateAssignmentModal
-      // Fallback: open join modal
-      openJoinClassModal();
+        // Only trigger if not already handled by renderDashboard
+        // If teacher, open assignment modal; if student, open join modal
+        if (navActionButton.dataset.action === 'create-assignment') {
+            // Teacher view: open assignment dropdown
+            openCreateAssignmentModal();
+        } else if (navActionButton.dataset.action === 'student-add-assignment') {
+            // Student view: open join class modal
+            openJoinClassModal();
+        }
+        // Otherwise, do nothing (prevents fallback opening both)
     });
 
     /**
@@ -2845,7 +2932,7 @@ function loadRoster(classCode) {
     document.head.appendChild(script);
     script.onload = () => document.head.removeChild(script);
     script.onerror = () => {
-        rosterList.innerHTML = '<div class="empty-state-message" style="color:var(--ka-red-dark);">Network error loading roster.</div>';
+rosterList.innerHTML = '<div class="empty-state-message" style="color:var(--ka-red-dark);">Network error loading roster.</div>';
     };
 }
 
@@ -2855,6 +2942,28 @@ function loadRoster(classCode) {
  */
 function openClassRosterModal(classCode) {
     loadRoster(classCode);
+}
+
+/**
+ * GLOBAL callback for roster JSONP response.
+ * Renders the roster list in the modal.
+ */
+function handleRosterResponse(result) {
+    const rosterList = document.getElementById('class-roster-list');
+    if (!rosterList) return;
+    if (result.status === 'success' && Array.isArray(result.students)) {
+        if (result.students.length === 0) {
+            rosterList.innerHTML = '<div class="empty-state-message">No students enrolled in this class yet.</div>';
+        } else {
+            rosterList.innerHTML = `
+                <ul style="list-style:none; padding:0; margin:0;">
+                    ${result.students.map(s => `<li style="padding:8px 0; border-bottom:1px solid #eee;"><strong>${s.name}</strong> <span style="color:#888;">(${s.email})</span></li>`).join('')}
+                </ul>
+            `;
+        }
+    } else {
+        rosterList.innerHTML = `<div class="empty-state-message" style="color:var(--ka-red-dark);">Error loading roster: ${result.message || 'Unknown error.'}</div>`;
+    }
 }
     </script>
 </body>
