@@ -1428,22 +1428,20 @@
         }
 
         /**
-         * Renders the dynamically fetched list of posts into the class stream.
-         * @param {Array<object>} posts The list of post objects.
-         */
-        function renderPosts(posts) {
-            const postsContainer = document.getElementById('posts-container');
-            if (!postsContainer) return;
-
-            // Hide loading indicator if present
-            const loadingMsg = document.getElementById('loading-posts');
-            if (loadingMsg) loadingMsg.style.display = 'none';
-
-            // Guard: ensure we know the current class settings
+         * Renders the dynamically fetched list of posts into the class stream. (NEW)
+         * @param {Array<object>
             const classData = globalClassList.find(c => c.code === currentClassCode);
+            // Ensure classData exists before trying to access its properties
             const allowCommenting = classData ? (classData.allowCommenting === true || classData.allowCommenting === 'TRUE') : true;
 
-            if (!posts || posts.length === 0) {
+            if (!postsContainer) return;
+
+            // Remove the loading message
+            const loadingMsg = document.getElementById('loading-posts');
+            if (loadingMsg) postsContainer.removeChild(loadingMsg);
+
+
+            if (posts.length === 0) {
                 postsContainer.innerHTML = '<div class="empty-state-message">Be the first to post an announcement or question!</div>';
                 return;
             }
@@ -1453,13 +1451,12 @@
                 const posterTag = post.isCoach ? ` <span style="font-size: 0.9rem; font-weight: normal; color: var(--ka-blue-dark);">(Coach Post)</span>` : '';
                 const posterDisplay = post.posterName || 'Unknown Student';
                 const postDate = formatDate(post.timestamp);
-                const preview = post.content ? post.content.substring(0, 80) : '';
 
                 postsHtml += `
                     <div class="post-card">
-                        <div class="post-header" style="font-weight: 600;">${preview}${post.content && post.content.length > 80 ? '...' : ''}</div>
+                        <div class="post-header" style="font-weight: 600;">${post.content.substring(0, 80)}${post.content.length > 80 ? '...' : ''}</div>
                         <div class="post-meta">Posted by ${posterDisplay}${posterTag} on ${postDate}</div>
-                        <p style="margin-top: 10px; white-space: pre-wrap;">${post.content || ''}</p>
+                        <p style="margin-top: 10px; white-space: pre-wrap;">${post.content}</p>
                         ${allowCommenting ? `<small style="color: var(--ka-blue-bright); cursor: pointer;">Add a class comment...</small>` : ''}
                     </div>
                 `;
@@ -2369,6 +2366,9 @@
                     <button id="createClassBtn">➕ Create New Class</button>
                     <div class="feature-grid class-grid">
                         </div>
+                    <div id="no-classes-message" class="empty-state-message" style="display: none;">
+                        ✨ No classes found. Create one to get started!
+                    </div>
 
                     <h2 class="section-title">👩‍🎓 Student Roster Overview</h2>
                     <div class="feature-grid">
