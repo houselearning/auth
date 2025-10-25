@@ -1862,40 +1862,38 @@ function openClassDashboard(classCode, role) {
                 }
 
                 // Proceed with class creation using the collected data
-                createClassInDatabase(className, classSubject, classDescription);
+                // Moved code block here to fix ReferenceError
+                const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
+                const joinCode = generateJoinCode();
+
+                const createButton = document.getElementById('createClassBtn');
+                if (createButton) {
+                    createButton.disabled = true;
+                    createButton.textContent = 'Creating...';
+                }
+
+                // Create and Submit Hidden Form (POST)
+                const form = document.createElement('form');
+                form.action = SCRIPT_URL;
+                form.method = 'POST';
+                form.target = 'hidden_iframe'; 
+                form.style.display = 'none';
+                form.appendChild(createHiddenInput('action', 'createClass'));
+                form.appendChild(createHiddenInput('name', className.trim()));
+                form.appendChild(createHiddenInput('teacher', teacherName));
+                form.appendChild(createHiddenInput('code', joinCode));
+                // Add default values for new settings
+                form.appendChild(createHiddenInput('allowPosting', 'TRUE')); 
+                form.appendChild(createHiddenInput('allowCommenting', 'TRUE')); 
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+
                 modal.style.display = 'none';
             };
         }
 
-        const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
-        const joinCode = generateJoinCode();
-
-            const createButton = document.getElementById('createClassBtn');
-            if (createButton) {
-                createButton.disabled = true;
-                createButton.textContent = 'Creating...';
-            }
-
-            // Create and Submit Hidden Form (POST)
-            const form = document.createElement('form');
-            form.action = SCRIPT_URL;
-            form.method = 'POST';
-            form.target = 'hidden_iframe'; 
-            form.style.display = 'none';
-
-            form.appendChild(createHiddenInput('action', 'createClass'));
-            form.appendChild(createHiddenInput('name', className.trim()));
-            form.appendChild(createHiddenInput('teacher', teacherName));
-            form.appendChild(createHiddenInput('code', joinCode));
-            // Add default values for new settings
-            form.appendChild(createHiddenInput('allowPosting', 'TRUE')); 
-            form.appendChild(createHiddenInput('allowCommenting', 'TRUE')); 
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        
-        
         /**
          * Submits a request to delete a class using a hidden form.
          * @param {string} classCode The code of the class to delete.
@@ -2031,9 +2029,6 @@ function openClassDashboard(classCode, role) {
                 document.getElementById('format-italic').onclick = () => wrapSelection(ta, '_', '_');
                 document.getElementById('format-underline').onclick = () => wrapSelection(ta, '<u>', '</u>');
                 document.getElementById('format-strike').onclick = () => wrapSelection(ta, '~~', '~~');
-                document.getElementById('format-list').onclick = () => insertListAtCursor(ta);
-
-                // Media actions — open basic prompts for a link; attach as text for now
                 document.getElementById('media-youtube').onclick = () => {
                     const url = prompt('Paste YouTube link (it will be inserted into the post):');
                     if (url && url.trim()) {
@@ -2614,7 +2609,6 @@ function openClassDashboard(classCode, role) {
         });
     </script>
 
-    { /* Insert Join Class modal (place near other modals) } */
     <div id="join-class-modal" class="modal">
       <div class="modal-content" style="max-width:420px;">
         <div class="modal-header">
@@ -2635,13 +2629,12 @@ function openClassDashboard(classCode, role) {
       </div>
     </div>
 
-    { /* Add dropdown + join modal JS wiring (place near other JS helpers) */ }
     <script>
     // ...existing code...
 
     /* ---------- Join Class modal logic ---------- */
     function openJoinClassModal() {
-      if (!auth.currentUser) { showModalAlert('Sign in required', 'Please sign in to join classes.'); return; }
+      if (!auth.currentUser) { showModalAlert('Sign in required', 'You must be signed in to join classes.'); return; }
       document.getElementById('join-class-code-input').value = '';
       document.getElementById('join-class-modal').style.display = 'block';
       document.getElementById('join-class-code-input').focus();
