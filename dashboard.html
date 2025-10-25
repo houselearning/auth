@@ -1299,16 +1299,41 @@
          * @param {string} classCode The code of the class.
          * @param {string} role The user's role: 'student' or 'teacher'.
          */
-        function openClassDashboard(classCode, role) {
-            currentView = 'class';
-            currentClassCode = classCode; // Store the current class code globally
-            
-            // Use the full class data object from globalClassList
-            const classData = globalClassList.find(c => c.code === classCode); 
-            
-            if (!classData) {
-                showInfoDialog("Error", "Could not find class data. Please reload your dashboard.");
-                renderDashboard(role);
+         /**
+ * Displays the generic information/alert modal using the pre-existing #info-dialog-modal structure.
+ * @param {string} title - The title for the modal header.
+ * @param {string} body - The message content for the modal body.
+ */
+function showModalAlert(title, body) {
+    // 1. Set the title text
+    const titleElement = document.getElementById('info-dialog-title');
+    if (titleElement) {
+        titleElement.textContent = title;
+    }
+    
+    // 2. Set the body content
+    const bodyElement = document.getElementById('info-dialog-body');
+    if (bodyElement) {
+        bodyElement.textContent = body;
+    }
+    
+    // 3. Display the modal
+    const modalElement = document.getElementById('info-dialog-modal');
+    if (modalElement) {
+        modalElement.style.display = 'block';
+    }
+}
+
+function openClassDashboard(classCode, role) {
+    currentView = 'class';
+    currentClassCode = classCode; // Store the current class code globally
+
+    // Use the full class data object from globalClassList
+    const classData = globalClassList.find(c => c.code === classCode); 
+
+    if (!classData) {
+        showModalAlert("Error", "Could not find class data. Please reload your dashboard.");
+        renderDashboard(role);
                 return;
             }
 
