@@ -1088,7 +1088,7 @@
         // --- Assignment modal helpers ---
 		function openCreateAssignmentModal(defaultClassCode = "") {
 			if (!auth.currentUser) {
-				alert("You must be signed in to create assignments.");
+				showModalAlert('Sign in required', 'You must be signed in to create assignments.');
 				return;
 			}
 
@@ -1149,7 +1149,7 @@
 
 		async function submitAssignment() {
 			if (!auth.currentUser) {
-				alert("Not authenticated.");
+				showModalAlert('Not authenticated', 'Please sign in to continue.');
 				return;
 			}
 			const submitBtn = document.getElementById('submit-assignment-btn');
@@ -1162,7 +1162,7 @@
 			const classCode = document.getElementById('assignment-class-select').value;
 
 			if (!title || !classCode) {
-				alert("Please provide a title and select a class.");
+				showModalAlert('Missing data', 'Please provide a title and select a class.');
 				submitBtn.disabled = false;
 				submitBtn.textContent = 'Create';
 				return;
@@ -1198,7 +1198,7 @@
 				document.body.removeChild(form);
 
 				document.getElementById('create-assignment-modal').style.display = 'none';
-				showInfoDialog('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
+				showModalAlert('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
 				loadAssignments(currentUserId);
 
 			} catch (err) {
@@ -1213,13 +1213,13 @@
 					try {
 						fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode });
 						document.getElementById('create-assignment-modal').style.display = 'none';
-						showInfoDialog('Assignment Queued', 'Firestore write blocked — assignment submitted to server fallback and will appear shortly.');
+						showModalAlert('Assignment Queued', 'Firestore write blocked — assignment submitted to server fallback and will appear shortly.');
 					} catch (fallbackErr) {
 						console.error('Fallback submission failed:', fallbackErr);
-						alert('Could not create assignment (fallback failed): ' + (fallbackErr.message || fallbackErr));
+						showModalAlert('Assignment Error', 'Could not create assignment (fallback failed): ' + (fallbackErr.message || fallbackErr));
 					}
 				} else {
-					alert('Could not create assignment: ' + (err.message || err));
+					showModalAlert('Assignment Error', 'Could not create assignment: ' + (err.message || err));
 				}
 			} finally {
 				submitBtn.disabled = false;
@@ -1561,7 +1561,7 @@
                 
             } catch (error) {
                 console.error("Error saving new role (Firestore required for roles):", error); 
-                alert(`Could not save role change to database. Error: ${error.message}`);
+                showModalAlert('Save role failed', `Could not save role change to database. Error: ${error.message}`);
             }
         }
         
@@ -1608,14 +1608,14 @@
         // 🚨 GLOBAL CALLBACK FUNCTION: For joinClass (JSONP)
         window.handleJoinCodeResponse = function(result) {
             if (result.status === 'joined_success') {
-                alert(`🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
+                showModalAlert('Joined', `🎉 Success! You joined the class: ${result.class.name} taught by ${result.class.teacher}.`);
                 loadStudentData(currentUserId); // Reload data to update dashboard
             } else if (result.status === 'already_joined') {
-                alert(`You are already enrolled in the class: ${result.class.name}.`);
+                showModalAlert('Already enrolled', `You are already enrolled in the class: ${result.class.name}.`);
             } else if (result.status === 'not_found') {
-                alert(`Sorry, the join code "${result.code}" was not found.`);
+                showModalAlert('Not found', `Sorry, the join code "${result.code}" was not found.`);
             } else {
-                alert("Error joining class: " + result.message);
+                showModalAlert('Error joining class', result.message);
             }
         };
 
@@ -1668,9 +1668,9 @@
                 }
 
             } else if (result && result.status === 'error') {
-                 alert("❌ Error: " + result.message);
+                 showModalAlert('Error', result.message);
             } else {
-                 alert("Success! Action completed (but response was unexpected)."); 
+                 showModalAlert('Notice', 'Success! Action completed (but response was unexpected).'); 
             }
             
             // Reset the iframe source
@@ -1769,7 +1769,7 @@
             const className = prompt("Enter the name for the new class (e.g., Algebra 101):");
             
             if (!className || className.trim() === "") {
-                alert("Class creation cancelled.");
+                showModalAlert('Cancelled', 'Class creation cancelled.');
                 return;
             }
             
@@ -1830,12 +1830,12 @@
             const joinCode = (inviteCode || prompt("Enter the 6-character class join code:") || "");
             
             if (!joinCode || joinCode.length !== 6) {
-                if (!inviteCode) alert("Invalid 6-character join code format.");
+                if (!inviteCode) showModalAlert('Invalid Code', 'Invalid 6-character join code format.');
                 return;
             }
             
             if (!auth.currentUser) {
-                alert("You must be logged in to join a class.");
+                showModalAlert('Sign in required', 'You must be logged in to join a class.');
                 return;
             }
 
@@ -1851,7 +1851,7 @@
             document.head.appendChild(script);
 
             script.onload = () => document.head.removeChild(script);
-            script.onerror = () => alert('A network error occurred while joining the class.');
+            script.onerror = () => showModalAlert('Network Error', 'A network error occurred while joining the class.');
         }
         
         /**
@@ -1957,7 +1957,7 @@
                     }
                 };
                 document.getElementById('media-upload').onclick = () => {
-                    alert('File uploads are not enabled in this demo. Use links instead.');
+                    showModalAlert('Not available', 'File uploads are not enabled in this demo. Use links instead.');
                 };
 
                 // Keep count and enable/disable post button
@@ -1979,11 +1979,11 @@
             const posterEmail = auth.currentUser ? auth.currentUser.email : "demo.poster@example.com";
 
             if (postContent.length < 5) {
-                alert("Post content is too short.");
+                showModalAlert('Post Error', 'Post content is too short.');
                 return;
             }
             if (postContent.length > 500) {
-                alert("Post content exceeds 500 characters.");
+                showModalAlert('Post Error', 'Post content exceeds 500 characters.');
                 return;
             }
 
@@ -2547,7 +2547,7 @@
 
     /* ---------- Join Class modal logic ---------- */
     function openJoinClassModal() {
-      if (!auth.currentUser) { alert('Please sign in to join classes.'); return; }
+      if (!auth.currentUser) { showModalAlert('Sign in required', 'Please sign in to join classes.'); return; }
       document.getElementById('join-class-code-input').value = '';
       document.getElementById('join-class-modal').style.display = 'block';
       document.getElementById('join-class-code-input').focus();
@@ -2556,7 +2556,7 @@
       const btn = document.getElementById('join-class-submit');
       btn.onclick = () => {
         const code = (document.getElementById('join-class-code-input').value || '').trim().toUpperCase();
-        if (!code || code.length !== 6) { alert('Please enter a valid 6-character code.'); return; }
+        if (!code || code.length !== 6) { showModalAlert('Invalid Code', 'Please enter a valid 6-character code.'); return; }
         document.getElementById('join-class-modal').style.display = 'none';
         joinClass(code); // existing function uses JSONP and current auth user
       };
@@ -2566,7 +2566,7 @@
 
     /* Show the advanced assignment dropdown (populates classes owned by teacher) */
     function showAssignmentDropdown(defaultClassCode = '') {
-      if (!auth.currentUser) { alert('Please sign in to create assignments.'); return; }
+      if (!auth.currentUser) { showModalAlert('Sign in required', 'You must be signed in to create assignments.'); return; }
 
       const dd = document.getElementById('assignment-dropdown');
       const select = document.getElementById('assignment-class-select-dropdown');
@@ -2653,8 +2653,8 @@
 
     /* Submit assignment by data (reuse Firestore + Apps Script fallback logic) */
     async function submitAssignmentByData({ title, description, dueDate, classCode }) {
-      if (!auth.currentUser) { alert('Not authenticated'); return; }
-      if (!title || !classCode) { alert('Title and class required'); return; }
+      if (!auth.currentUser) { showModalAlert('Not authenticated', 'Please sign in to continue.'); return; }
+      if (!title || !classCode) { showModalAlert('Missing data', 'Title and class required'); return; }
 
       try {
         await db.collection('assignments').add({
@@ -2683,7 +2683,7 @@
         form.submit();
         document.body.removeChild(form);
 
-        showInfoDialog('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
+        showModalAlert('Assignment Created', `Assignment "${title}" created for class ${classCode}.`);
         loadAssignments(currentUserId);
       } catch (err) {
         console.error('Assignment creation failed:', err);
@@ -2692,9 +2692,9 @@
         if (code.includes('permission-denied') || msg.includes('missing or insufficient permissions')) {
           // fallback to Apps Script
           fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode });
-          showInfoDialog('Assignment Queued', 'Assignment submitted to server fallback; it will appear shortly.');
+          showModalAlert('Assignment Queued', 'Assignment submitted to server fallback; it will appear shortly.');
         } else {
-          alert('Could not create assignment: ' + (err.message || err));
+          showModalAlert('Assignment Error', 'Could not create assignment: ' + (err.message || err));
         }
       }
     }
