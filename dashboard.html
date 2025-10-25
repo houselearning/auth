@@ -1429,7 +1429,13 @@
 
         /**
          * Renders the dynamically fetched list of posts into the class stream. (NEW)
-         * @param {Array<object>
+         * @param {Array<object>} posts The list of post objects to render.
+         */
+        function renderPosts(posts) {
+            const postsContainer = document.getElementById('posts-container');
+            if (!postsContainer) return;
+            postsContainer.innerHTML = ''; // Clear existing content
+
             const classData = globalClassList.find(c => c.code === currentClassCode);
             // Ensure classData exists before trying to access its properties
             const allowCommenting = classData ? (classData.allowCommenting === true || classData.allowCommenting === 'TRUE') : true;
@@ -2514,7 +2520,7 @@
         });
     </script>
 
-    { /* Insert Join Class modal (place near other modals) */ }
+    { /* Insert Join Class modal (place near other modals) } */
     <div id="join-class-modal" class="modal">
       <div class="modal-content" style="max-width:420px;">
         <div class="modal-header">
