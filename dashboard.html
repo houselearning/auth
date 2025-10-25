@@ -1291,8 +1291,8 @@
 			const form = document.createElement('form');
 			form.action = SCRIPT_URL;
 		 form.method = 'POST';
-			form.target = 'hidden_iframe';
-			form.style.display = 'none';
+		 form.target = 'hidden_iframe';
+		 form.style.display = 'none';
 
 			form.appendChild(createHiddenInput('action', 'createAssignment'));
 			form.appendChild(createHiddenInput('title', title));
@@ -2849,6 +2849,13 @@ function loadRoster(classCode) {
     };
 }
 
+/**
+ * Opens the class roster modal and loads the roster for the given class code.
+ * @param {string} classCode
+ */
+function openClassRosterModal(classCode) {
+    loadRoster(classCode);
+}
     </script>
 </body>
 </html>
