@@ -1100,7 +1100,7 @@
 
     <script>
         // 🚨 CRITICAL: REPLACE THIS WITH the URL from your LATEST Apps Script deployment
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRi7E2c8k9TylwmDQzxZJ8Fo8Em6opEGUddxZ1SsKVcVu_Z_IM2KKJwWBx-5G9e1ACiA/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRkZWpJYrpfqzsFu4TgRkot5G-iEhzFJpAlVNe-PZVZs--OzutBXAvDvN9sddZ07px7Q/exec'; 
 
         // Function to generate a simple, 6-character, random join code
         function generateJoinCode() {
@@ -1290,7 +1290,7 @@
 
 			const form = document.createElement('form');
 			form.action = SCRIPT_URL;
-			form.method = 'POST';
+		 form.method = 'POST';
 			form.target = 'hidden_iframe';
 			form.style.display = 'none';
 
@@ -1444,7 +1444,7 @@ function openClassDashboard(classCode, role) {
                  // FIX APPLIED: Removed inline JSON stringification for classData, only passing code.
                  sidebarCard1 += `
                     <hr style="border-top: 1px solid #eee; margin: 15px 0;">
-                    <button class="sidebar-action-button" onclick="alert('Roster will load here!');">
+                    <button class="sidebar-action-button" onclick="openClassRosterModal('${classData.code}');">
                         <span class="icon">👥</span> View Class Roster
                     </button>
                     <button class="sidebar-action-button" onclick="openCreateAssignmentModal('${classData.code}');">
@@ -2627,6 +2627,24 @@ function openClassDashboard(classCode, role) {
       </div>
     </div>
 
+    <!-- Add this modal near other modals -->
+    <div id="class-roster-modal" class="modal">
+      <div class="modal-content" style="max-width:540px;">
+        <div class="modal-header">
+          <span id="class-roster-title">Class Roster</span>
+          <span class="close-button" onclick="document.getElementById('class-roster-modal').style.display='none';">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="class-roster-list">
+            <div class="loading-message">Loading roster...</div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button class="secondary-button" onclick="document.getElementById('class-roster-modal').style.display='none';">Close</button>
+        </div>
+      </div>
+    </div>
+
     <script>
     // ...existing code...
 
@@ -2808,6 +2826,28 @@ function openClassDashboard(classCode, role) {
       // Fallback: open join modal
       openJoinClassModal();
     });
+
+    /**
+ * Fetches the roster for a class and displays it in the roster modal.
+ * @param {string} classCode - The code of the class to fetch roster for.
+ */
+function loadRoster(classCode) {
+    const rosterList = document.getElementById('class-roster-list');
+    if (!rosterList) return;
+    rosterList.innerHTML = '<div class="loading-message">Loading roster...</div>';
+    document.getElementById('class-roster-modal').style.display = 'block';
+
+    // JSONP request to Apps Script for roster
+    const callbackName = 'handleRosterResponse';
+    const url = `${SCRIPT_URL}?action=loadRoster&code=${classCode}&callback=${callbackName}`;
+    const script = document.createElement('script');
+    script.src = url;
+    document.head.appendChild(script);
+    script.onload = () => document.head.removeChild(script);
+    script.onerror = () => {
+        rosterList.innerHTML = '<div class="empty-state-message" style="color:var(--ka-red-dark);">Network error loading roster.</div>';
+    };
+}
 
     </script>
 </body>
