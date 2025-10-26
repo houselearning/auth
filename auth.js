@@ -33,7 +33,9 @@ const githubSignInButton = document.getElementById('github-signin-button');
 
 
 let isLoginMode = true; 
-const DASHBOARD_URL = 'dashboard.html'; // The page to redirect to
+// CHANGED: Redirect to a verification message page instead of dashboard immediately
+const DASHBOARD_URL = 'dashboard.html'; 
+const VERIFICATION_MESSAGE_URL = 'verification-pending.html'; // New page for verification message
 
 
 /**
@@ -62,7 +64,21 @@ function initializeAuthAndListeners() {
         // Setup the Auth state change listener (which redirects on success)
         auth.onAuthStateChanged(user => {
             if (user) {
-                window.location.replace(DASHBOARD_URL);
+                // ADDED: Check if the user is verified before redirecting to the dashboard
+                if (user.emailVerified) {
+                    window.location.replace(DASHBOARD_URL);
+                } else if (!isLoginMode) {
+                    // If the user *just* signed up and is not verified, 
+                    // redirect them to the pending verification message page.
+                    window.location.replace(VERIFICATION_MESSAGE_URL);
+                } else {
+                    // On login, if the user isn't verified, log them out and show error.
+                    // This is handled in handleFormSubmission for the best user experience on login.
+                    // However, if a user reloads the login page while logged in but unverified,
+                    // we log them out and make them login again.
+                    // NOTE: This entire block is now better handled directly in handleFormSubmission
+                    // for the login case, but this onAuthStateChanged handles persistence.
+                }
             }
         });
         
@@ -133,9 +149,29 @@ async function handleFormSubmission(e) {
         // --- LOGIN LOGIC (With Persistence) ---
         try {
             await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            await auth.signInWithEmailAndPassword(email, password);
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const user = userCredential.user;
             
-            submitButton.textContent = 'Logged In... Redirecting!'; 
+            // ADDED: Verification Check on Login
+            if (user && !user.emailVerified) {
+                // User is not verified, sign them out and show a message
+                await auth.signOut(); // Immediately sign them out
+                errorMessage.innerHTML = `Please verify your email address before logging in. We've just sent you another verification email!`;
+                
+                // OPTIONAL: Send a new verification email to help the user
+                try {
+                    await user.sendEmailVerification();
+                } catch(emailError) {
+                    console.error("Error resending verification email:", emailError);
+                }
+                
+                submitButton.textContent = 'Log In';
+                return; // Stop the login process here
+
+            } else {
+                // User is verified, proceed to dashboard
+                submitButton.textContent = 'Logged In... Redirecting!'; 
+            }
 
         } catch (error) {
             console.error('Login Error:', error);
@@ -144,13 +180,24 @@ async function handleFormSubmission(e) {
             submitButton.textContent = 'Log In'; 
         }
     } else {
-        // --- SIGN UP LOGIC ---
+        // --- SIGN UP LOGIC (with Email Verification) ---
         try {
-            await auth.createUserWithEmailAndPassword(email, password);
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const user = userCredential.user; // Get the created user object
             
-            successMessage.innerHTML = `Account created! Redirecting to dashboard...`;
+            // 🔥 NEW: Send the email verification link
+            if (user) {
+                await user.sendEmailVerification();
+                console.log("Email verification sent.");
+            }
+            
+            // Redirect to a page explaining the verification process
+            successMessage.innerHTML = `Account created! Check your email (${email}) for the verification link. Redirecting to instructions...`;
             successMessage.style.display = 'block';
             authForm.reset();
+            
+            // The onAuthStateChanged listener will handle the redirect to VERIFICATION_MESSAGE_URL 
+            // because the user is signed in but not yet verified.
             
         } catch (error) {
             console.error('Sign Up Error:', error);
@@ -162,6 +209,8 @@ async function handleFormSubmission(e) {
 
 /**
  * Handles Sign In with Google via a popup.
+ * NOTE: Social sign-in (Google/GitHub) often returns a verified user, 
+ * so no need to send an email verification link.
  */
 async function handleGoogleSignIn() {
     errorMessage.textContent = '';
@@ -170,6 +219,8 @@ async function handleGoogleSignIn() {
 
     try {
         await auth.signInWithPopup(googleProvider);
+        // Redirect is handled by onAuthStateChanged, which should proceed to dashboard
+        // because Google accounts are typically verified.
     } catch (error) {
         if (error.code !== 'auth/popup-closed-by-user') {
             console.error('Google Sign-In Error:', error);
@@ -190,6 +241,7 @@ async function handleGithubSignIn() {
 
     try {
         await auth.signInWithPopup(githubProvider);
+        // Redirect is handled by onAuthStateChanged.
     } catch (error) {
         if (error.code !== 'auth/popup-closed-by-user') {
             console.error('GitHub Sign-In Error:', error);
