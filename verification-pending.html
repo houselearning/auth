@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CoolMathTime - Verify Your Email</title>
+    <link rel="stylesheet" href="https://houselearning.github.io/auth/style.css">
+    <link rel="stylesheet" href="backend/btn-style.css">
+    <script src="/cookiebanner.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="https://houselearning.github.io/home/#">Home</a>
+            <a href="https://houselearning.github.io/home/math-page.html#">Math Games</a>
+            <a href="https://houselearning.github.io/home/science-page.html#">Science Fun</a>
+            <a href="https://houselearning.github.io/home/computer-science-page.html#">Coding Challenges</a>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <div class="auth-card">
+            <h2 class="verification-title">📧 Verification Sent!</h2>
+
+            <p class="verification-message">
+                A verification link has been sent to the email address you used for signup.
+                Please check your inbox (and spam folder) and click the link to activate your account.
+            </p>
+            
+            <p class="verification-tip">
+                Once verified, return to the <b>Login Page</b> and sign in!
+            </p>
+
+            <button class="button-53" id="resend-email-button" role="button">Resend Verification Email</button>
+            <div id="resend-status-message" class="error-message" style="margin-top: 10px;"></div>
+
+            <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+        </div>
+    </main>
+    <script src="backend/app.js"></script>
+</body>
+</html>
