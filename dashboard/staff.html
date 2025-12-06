@@ -1,290 +1,187 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>HouseLearning — Staff Centre</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <style>
-    :root {
-      --bg:#0f1720;
-      --card:#0b1220;
-      --accent:#61dafb;
-      --muted:#9aa6b2;
-    }
-
-    body {
-      margin:0;
-      font-family:Inter,Segoe UI,system-ui,Roboto,Arial;
-      background:linear-gradient(180deg,#071021, #071529);
-      color:#e6eef6;
-      min-height:100vh;
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      padding:40px;
-      visibility:hidden;
-    }
-
-    body.light{
-      background:#f4f7fb;
-      color:#0f1720;
-    }
-
-    .card {
-      width:900px;
-      background:#07121a;
-      border-radius:14px;
-      padding:22px;
-      box-shadow:0 10px 30px rgba(0,0,0,.7);
-    }
-
-    body.light .card { background:white; }
-
-    input, select, textarea, button {
-      width:100%;
-      padding:10px;
-      border-radius:8px;
-      border:none;
-      margin-top:6px;
-      font-size:14px;
-    }
-
-    textarea { min-height:100px; resize:vertical; }
-
-    button { cursor:pointer; background:var(--accent); font-weight:700; }
-    button.ghost { background:#1e293b; color:white; }
-    button.danger { background:#ff4d4d; color:white; }
-
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .half { flex:1; min-width:260px; }
-
-    .log {
-      background:#021018;
-      border-radius:8px;
-      padding:12px;
-      max-height:260px;
-      overflow:auto;
-      font-size:13px;
-      margin-top:8px;
-    }
-
-    body.light .log{ background:#eef2f7; }
-
-    .badge { background:#1e293b; padding:6px 10px; border-radius:8px; font-weight:700; }
-
-    header { display:flex; align-items:center; justify-content:space-between; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HL Staff Notification Centre</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 400px; }
+        h2 { margin-top: 0; color: #333; }
+        label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 14px; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        textarea { resize: vertical; height: 80px; }
+        button { background: #61dafb; color: #20232a; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 20px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #4fa8c7; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .status { margin-top: 15px; font-size: 14px; text-align: center; }
+        .hidden { display: none; }
+        #login-view { text-align: center; }
+    </style>
 </head>
-
 <body>
 
-<div class="card">
-  <header>
-    <div>
-      <h2>HouseLearning Staff Centre</h2>
-      <small id="signedInAs">authorizing...</small>
-    </div>
-    <div>
-      <span id="staffBadge" class="badge">STAFF</span>
-      <button id="themeToggle" class="ghost">🌙</button>
-      <button id="signOutBtn" class="ghost">Sign Out</button>
-    </div>
-  </header>
-
-  <hr>
-
-  <label>User Email</label>
-  <input id="targetEmail" placeholder="user@email.com">
-
-  <div class="row">
-    <div class="half">
-      <label>Type</label>
-      <select id="notifType">
-        <option value="system">System</option>
-        <option value="warning">Warning</option>
-        <option value="ban">Ban</option>
-        <option value="payment">Payment</option>
-        <option value="random">Random</option>
-      </select>
-    </div>
-
-    <div class="half">
-      <label>Severity</label>
-      <select id="severity">
-        <option value="info">Info</option>
-        <option value="important">Important</option>
-        <option value="critical">Critical</option>
-      </select>
-    </div>
-  </div>
-
-  <label>Title</label>
-  <input id="notifTitle" placeholder="Title">
-
-  <label>Message</label>
-  <textarea id="notifMessage" placeholder="Message..."></textarea>
-
-  <div class="row">
-    <button id="sendBtn">Send Only</button>
-    <button id="sendAndWarnBtn" class="ghost">Send + Warn</button>
-    <button id="sendAndBanBtn" class="danger">Send + Ban</button>
-  </div>
-
-  <div class="log" id="log">Waiting for action...</div>
+<div id="login-view" class="container">
+    <h2>Staff Access Only</h2>
+    <p>Please sign in to access the Notification Centre.</p>
+    <button id="login-btn">Sign in with Google</button>
 </div>
 
-<!-- Firebase v8 -->
+<div id="staff-view" class="container hidden">
+    <h2>Send Notification</h2>
+    <div style="font-size:12px; color:#777; margin-bottom:15px;">Logged in as: <span id="staff-email"></span> <a href="#" id="logout-link" style="color:red; margin-left:10px;">Logout</a></div>
+
+    <label>Recipient Email</label>
+    <input type="email" id="recipient-email" placeholder="student@example.com">
+
+    <label>Notification Type</label>
+    <select id="notif-type">
+        <option value="General">General</option>
+        <option value="Warning">Warning ⚠️</option>
+        <option value="Automated">Automated 🤖</option>
+        <option value="Achievement">Achievement 🏆</option>
+    </select>
+
+    <label>Template (Optional)</label>
+    <select id="template-select">
+        <option value="">-- Select a Template --</option>
+        <option value="Warning: Inactivity">We noticed you haven't logged in recently.</option>
+        <option value="Welcome">Welcome to the Animal Kingdom!</option>
+        <option value="Homework">You have a new assignment pending.</option>
+    </select>
+
+    <label>Title</label>
+    <input type="text" id="notif-title" placeholder="Title">
+
+    <label>Message Body</label>
+    <textarea id="notif-body" placeholder="Type your message here..."></textarea>
+
+    <label>Staff Access Code</label>
+    <input type="password" id="access-code" value="HouseLearningStaff2025">
+
+    <button id="send-btn">Send Notification</button>
+    <div id="status-msg" class="status"></div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+    // 1. REPLACE WITH YOUR GAS WEB APP URL
+    const GAS_ENDPOINT = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE"; 
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+    // 2. FIREBASE CONFIG
+    const firebaseConfig = {
+        apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+        authDomain: "contract-center-llc-10.firebaseapp.com",
+        projectId: "contract-center-llc-10"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-const log = msg => 
-  document.getElementById("log").innerHTML = 
-  `[${new Date().toLocaleTimeString()}] ${msg}<br>` + 
-  document.getElementById("log").innerHTML;
+    // 3. STAFF VERIFICATION LIST (Simple static check)
+    // Add the emails of your staff members here.
+    const ALLOWED_STAFF = [
+        "your.email@example.com", 
+        "staff.member@example.com"
+    ];
 
-const els = {
-  targetEmail: document.getElementById("targetEmail"),
-  notifType: document.getElementById("notifType"),
-  severity: document.getElementById("severity"),
-  notifTitle: document.getElementById("notifTitle"),
-  notifMessage: document.getElementById("notifMessage")
-};
+    // --- UI LOGIC ---
+    const loginView = document.getElementById('login-view');
+    const staffView = document.getElementById('staff-view');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutLink = document.getElementById('logout-link');
+    const sendBtn = document.getElementById('send-btn');
+    const statusMsg = document.getElementById('status-msg');
+    const templateSelect = document.getElementById('template-select');
 
-// ---------------------------
-// STAFF LOCK + AUTO NOTIFICATION
-// ---------------------------
-auth.onAuthStateChanged(async user => {
-  if(!user){ location.replace("/auth"); return; }
+    // Auth Listener
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // Check if user is staff
+            if (ALLOWED_STAFF.includes(user.email)) {
+                loginView.classList.add('hidden');
+                staffView.classList.remove('hidden');
+                document.getElementById('staff-email').textContent = user.email;
+            } else {
+                alert("Access Denied: You are not authorized staff.");
+                auth.signOut();
+            }
+        } else {
+            loginView.classList.remove('hidden');
+            staffView.classList.add('hidden');
+        }
+    });
 
-  const snap = await db.collection("users")
-                       .where("email_lower","==",user.email.toLowerCase())
-                       .limit(1)
-                       .get();
-  if(snap.empty){ location.replace("/auth"); return; }
+    loginBtn.onclick = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => alert(e.message));
+    };
 
-  const data = snap.docs[0].data();
-  const uid = snap.docs[0].id;
+    logoutLink.onclick = () => auth.signOut();
 
-  if(data.role !== "staff"){
-    await db.collection("notifications")
-            .doc(uid)
-            .collection("items")
-            .add({
-              type:"system",
-              title:"Staff Page Access Blocked",
-              body:"Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
-              read:false,
-              createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    // Template Selector Logic
+    templateSelect.onchange = () => {
+        const val = templateSelect.value;
+        if(val) {
+            const text = templateSelect.options[templateSelect.selectedIndex].text;
+            document.getElementById('notif-title').value = val.includes(":") ? val.split(":")[0] : val;
+            document.getElementById('notif-body').value = text;
+        }
+    };
+
+    // Send Logic
+    sendBtn.onclick = async () => {
+        const email = document.getElementById('recipient-email').value;
+        const title = document.getElementById('notif-title').value;
+        const body = document.getElementById('notif-body').value;
+        const type = document.getElementById('notif-type').value;
+        const accessCode = document.getElementById('access-code').value;
+
+        if (!email || !title || !body) {
+            alert("Please fill in all fields");
+            return;
+        }
+
+        statusMsg.textContent = "Sending...";
+        sendBtn.disabled = true;
+
+        const payload = {
+            accessCode: accessCode,
+            email: email,
+            notification: {
+                title: title,
+                body: body,
+                type: type
+            }
+        };
+
+        try {
+            // Send to Google Apps Script
+            const response = await fetch(GAS_ENDPOINT, {
+                method: "POST",
+                mode: "no-cors", // 'no-cors' is required for simple GAS POSTs from browser
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
-    location.replace("/home");
-    return;
-  }
 
-  document.body.style.visibility="visible";
-  document.getElementById("signedInAs").textContent = "Signed in as " + user.email;
-  log("Staff verified ✅");
-});
-
-// ---------------------------
-// EMAIL LOOKUP
-// ---------------------------
-async function getUIDByEmail(email){
-  const snap = await db.collection("users")
-                       .where("email_lower","==",email.toLowerCase())
-                       .limit(1)
-                       .get();
-  if(snap.empty) return null;
-  return snap.docs[0].id;
-}
-
-// ---------------------------
-// SEND NOTIFICATION
-// ---------------------------
-async function sendNotif(uid,payload){
-  await db.collection("notifications").doc(uid).collection("items").add({
-    ...payload,
-    read:false,
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  });
-}
-
-// ---------------------------
-// WARN / BAN USER
-// ---------------------------
-async function warnUser(uid){
-  const ref=db.collection("users").doc(uid);
-  await db.runTransaction(async t=>{
-    const d=await t.get(ref);
-    t.update(ref,{warnings:(d.data().warnings||0)+1});
-  });
-}
-
-async function banUser(uid){
-  await db.collection("users").doc(uid).update({banned:true});
-}
-
-// ---------------------------
-// HANDLERS
-// ---------------------------
-document.getElementById("sendBtn").onclick=()=>handleSend();
-document.getElementById("sendAndWarnBtn").onclick=()=>handleSend(true,false);
-document.getElementById("sendAndBanBtn").onclick=()=>handleSend(false,true);
-
-async function handleSend(warn=false,ban=false){
-  const email=els.targetEmail.value.trim();
-  const uid=await getUIDByEmail(email);
-  if(!uid) return alert("User not found");
-
-  await sendNotif(uid,{
-    type:els.notifType.value,
-    severity:els.severity.value,
-    title:els.notifTitle.value,
-    body:els.notifMessage.value
-  });
-
-  if(warn) await warnUser(uid);
-  if(ban) await banUser(uid);
-
-  log(`✅ Sent to ${email} ${warn?"[WARN]":""} ${ban?"[BAN]":""}`);
-}
-
-// ---------------------------
-// LIGHT/DARK TOGGLE
-// ---------------------------
-const themeToggle=document.getElementById("themeToggle");
-if(localStorage.getItem("hl-theme")==="light"){
-  document.body.classList.add("light");
-  themeToggle.textContent="☀️";
-}
-
-themeToggle.onclick=()=>{
-  document.body.classList.toggle("light");
-  const isLight=document.body.classList.contains("light");
-  localStorage.setItem("hl-theme",isLight?"light":"dark");
-  themeToggle.textContent=isLight?"☀️":"🌙";
-};
-
-// ---------------------------
-// SIGN OUT
-// ---------------------------
-document.getElementById("signOutBtn").onclick=()=>auth.signOut();
-
+            // Note: with 'no-cors', we can't read the response JSON directly in the browser easily.
+            // We assume success if no network error occurred.
+            statusMsg.textContent = "Request sent! Check the user dashboard.";
+            statusMsg.style.color = "green";
+            
+            // Clear form
+            document.getElementById('notif-title').value = "";
+            document.getElementById('notif-body').value = "";
+            
+        } catch (error) {
+            console.error(error);
+            statusMsg.textContent = "Error sending notification.";
+            statusMsg.style.color = "red";
+        } finally {
+            sendBtn.disabled = false;
+        }
+    };
 </script>
 </body>
 </html>
