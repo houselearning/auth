@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -144,9 +145,10 @@ const firebaseConfig = {
   apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
   authDomain: "contract-center-llc-10.firebaseapp.com",
   projectId: "contract-center-llc-10",
-  storageBucket: "contract-center-llc-10.appspot.com",
+  storageBucket: "contract-center-llc-10.firebasestorage.app",
   messagingSenderId: "323221512767",
-  appId: "1:323221512767:web:6421260f875997dbf64e8a"
+  appId: "1:323221512767:web:6421260f875997dbf64e8a",
+  measurementId: "G-S2RJ0C6BWH"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -167,42 +169,69 @@ const els = {
 };
 
 // ✅ HARD STAFF LOCK + AUTO NOTIFICATION + REDIRECT
-auth.onAuthStateChanged(async user=>{
-  if(!user){ location.replace("/auth"); return; }
-
-  const snap = await db.collection("users").doc(user.uid).get();
-  if(!snap.exists){ location.replace("/auth"); return; }
-
-  const data = snap.data();
-
-  if(data.role !== "staff"){
-    await db.collection("notifications").doc(user.uid).collection("items").add({
-      type:"system",
-      title:"Staff Page Access Blocked",
-      body:"Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
-      read:false,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    location.replace("/home");
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    location.replace("/auth");
     return;
   }
 
-  document.body.style.visibility="visible";
+  // ✅ CORRECT ROLE LOOKUP LOCATION
+  const roleSnap = await db.collection("roles").doc(user.uid).get();
+
+  if (!roleSnap.exists) {
+    await blockAndRedirect(user.uid);
+    return;
+  }
+
+  const role = roleSnap.data().role;
+
+  if (role !== "staff" && role !== "admin") {
+    await blockAndRedirect(user.uid);
+    return;
+  }
+
+  // ✅ ACCESS GRANTED
+  document.body.style.visibility = "visible";
   signedInAs.textContent = "Signed in as " + user.email;
+  staffBadge.textContent = role.toUpperCase();
   log("Staff verified ✅");
 });
 
+async function blockAndRedirect(uid) {
+  try {
+    await db.collection("notifications")
+      .doc(uid)
+      .collection("inbox")   // ✅ MATCHES YOUR RULES
+      .add({
+        type: "system",
+        title: "Staff Page Access Blocked",
+        message: "Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
+        read: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+  } catch (e) {
+    console.log("Notification failed:", e);
+  }
+
+  location.replace("/home");
+}
+
+
 // ✅ EMAIL LOOKUP
-async function getUIDByEmail(email){
-  const snap = await db.collection("users").where("email","==",email).get();
-  if(snap.empty) return null;
+async function getUIDByEmail(email) {
+  const snap = await db.collection("email_lookup")
+    .where("email", "==", email)
+    .get();
+
+  if (snap.empty) return null;
+
   return snap.docs[0].id;
 }
 
+
 // ✅ SEND NOTIFICATION
 async function sendNotif(uid,payload){
-  await db.collection("notifications").doc(uid).collection("items").add({
+db.collection("notifications").doc(uid).collection("inbox").add({
     ...payload,
     read:false,
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
