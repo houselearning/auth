@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -17,7 +16,7 @@
     body {
       margin:0;
       font-family:Inter,Segoe UI,system-ui,Roboto,Arial;
-      background:linear-gradient(180deg,#071021, #071529);
+      background:linear-gradient(180deg,#071021,#071529);
       color:#e6eef6;
       min-height:100vh;
       display:flex;
@@ -79,7 +78,6 @@
 </head>
 
 <body>
-
 <div class="card">
   <header>
     <div>
@@ -142,130 +140,117 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
-  authDomain: "contract-center-llc-10.firebaseapp.com",
-  projectId: "contract-center-llc-10",
-  storageBucket: "contract-center-llc-10.firebasestorage.app",
-  messagingSenderId: "323221512767",
-  appId: "1:323221512767:web:6421260f875997dbf64e8a",
-  measurementId: "G-S2RJ0C6BWH"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const log = msg => 
-  document.getElementById("log").innerHTML = 
-  `[${new Date().toLocaleTimeString()}] ${msg}<br>` + 
-  document.getElementById("log").innerHTML;
+const log = msg => {
+  document.getElementById("log").innerHTML =
+    `[${new Date().toLocaleTimeString()}] ${msg}<br>` + 
+    document.getElementById("log").innerHTML;
+}
 
 const els = {
-  targetEmail:targetEmail,
-  notifType:notifType,
-  severity:severity,
-  notifTitle:notifTitle,
-  notifMessage:notifMessage
+  targetEmail: document.getElementById("targetEmail"),
+  notifType: document.getElementById("notifType"),
+  severity: document.getElementById("severity"),
+  notifTitle: document.getElementById("notifTitle"),
+  notifMessage: document.getElementById("notifMessage")
 };
 
-// ✅ HARD STAFF LOCK + AUTO NOTIFICATION + REDIRECT
+// ----------------------------
+// Staff Lock + Redirect + Notification
+// ----------------------------
 auth.onAuthStateChanged(async user => {
-  if (!user) {
-    location.replace("/auth");
+  if(!user){ location.replace("/auth"); return; }
+
+  const snap = await db.collection("users").doc(user.uid).get();
+  if(!snap.exists){ location.replace("/auth"); return; }
+
+  const data = snap.data();
+
+  if(data.role !== "staff"){
+    if(user){
+      await db.collection("notifications").doc(user.uid).collection("items").add({
+        type:"system",
+        title:"Staff Page Access Blocked",
+        body:"Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
+        read:false,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    location.replace("/home");
     return;
   }
 
-  // ✅ CORRECT ROLE LOOKUP LOCATION
-  const roleSnap = await db.collection("roles").doc(user.uid).get();
-
-  if (!roleSnap.exists) {
-    await blockAndRedirect(user.uid);
-    return;
-  }
-
-  const role = roleSnap.data().role;
-
-  if (role !== "staff" && role !== "admin") {
-    await blockAndRedirect(user.uid);
-    return;
-  }
-
-  // ✅ ACCESS GRANTED
-  document.body.style.visibility = "visible";
-  signedInAs.textContent = "Signed in as " + user.email;
-  staffBadge.textContent = role.toUpperCase();
+  document.body.style.visibility="visible";
+  document.getElementById("signedInAs").textContent = "Signed in as " + user.email;
   log("Staff verified ✅");
 });
 
-async function blockAndRedirect(uid) {
-  try {
-    await db.collection("notifications")
-      .doc(uid)
-      .collection("inbox")   // ✅ MATCHES YOUR RULES
-      .add({
-        type: "system",
-        title: "Staff Page Access Blocked",
-        message: "Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
-        read: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-  } catch (e) {
-    console.log("Notification failed:", e);
-  }
-
-  location.replace("/home");
-}
-
-
-// ✅ EMAIL LOOKUP
-async function getUIDByEmail(email) {
-  const snap = await db.collection("email_lookup")
-    .where("email", "==", email)
-    .get();
-
-  if (snap.empty) return null;
-
+// ----------------------------
+// Lookup UID by Email
+// ----------------------------
+async function getUIDByEmail(email){
+  email = email.trim().toLowerCase();
+  const snap = await db.collection("users").where("email_lower", "==", email).limit(1).get();
+  if(snap.empty) return null;
   return snap.docs[0].id;
 }
 
-
-// ✅ SEND NOTIFICATION
-async function sendNotif(uid,payload){
-db.collection("notifications").doc(uid).collection("inbox").add({
+// ----------------------------
+// Send Notification
+// ----------------------------
+async function sendNotif(uid, payload){
+  await db.collection("notifications").doc(uid).collection("items").add({
     ...payload,
     read:false,
     createdAt:firebase.firestore.FieldValue.serverTimestamp()
   });
 }
 
-// ✅ WARN USER
+// ----------------------------
+// Warn User
+// ----------------------------
 async function warnUser(uid){
-  const ref=db.collection("users").doc(uid);
+  const ref = db.collection("users").doc(uid);
   await db.runTransaction(async t=>{
-    const d=await t.get(ref);
-    t.update(ref,{warnings:(d.data().warnings||0)+1});
+    const d = await t.get(ref);
+    t.update(ref, { warnings:(d.data().warnings||0)+1 });
   });
 }
 
-// ✅ BAN USER
+// ----------------------------
+// Ban User
+// ----------------------------
 async function banUser(uid){
-  await db.collection("users").doc(uid).update({banned:true});
+  await db.collection("users").doc(uid).update({ banned:true });
 }
 
-sendBtn.onclick=()=>handleSend();
-sendAndWarnBtn.onclick=()=>handleSend(true,false);
-sendAndBanBtn.onclick=()=>handleSend(false,true);
+// ----------------------------
+// Button Handlers
+// ----------------------------
+document.getElementById("sendBtn").onclick = ()=>handleSend();
+document.getElementById("sendAndWarnBtn").onclick = ()=>handleSend(true,false);
+document.getElementById("sendAndBanBtn").onclick = ()=>handleSend(false,true);
 
 async function handleSend(warn=false,ban=false){
-  const email=els.targetEmail.value.trim();
-  const uid=await getUIDByEmail(email);
+  const email = els.targetEmail.value;
+  const uid = await getUIDByEmail(email);
   if(!uid) return alert("User not found");
 
-  await sendNotif(uid,{
-    type:els.notifType.value,
-    severity:els.severity.value,
-    title:els.notifTitle.value,
-    body:els.notifMessage.value
+  await sendNotif(uid, {
+    type: els.notifType.value,
+    severity: els.severity.value,
+    title: els.notifTitle.value,
+    body: els.notifMessage.value
   });
 
   if(warn) await warnUser(uid);
@@ -274,7 +259,9 @@ async function handleSend(warn=false,ban=false){
   log(`✅ Sent to ${email} ${warn?"[WARN]":""} ${ban?"[BAN]":""}`);
 }
 
-// ✅ LIGHT/DARK TOGGLE
+// ----------------------------
+// Light/Dark Toggle
+// ----------------------------
 const themeToggle=document.getElementById("themeToggle");
 if(localStorage.getItem("hl-theme")==="light"){
   document.body.classList.add("light");
@@ -288,7 +275,7 @@ themeToggle.onclick=()=>{
   themeToggle.textContent=isLight?"☀️":"🌙";
 };
 
-signOutBtn.onclick=()=>auth.signOut();
+document.getElementById("signOutBtn").onclick=()=>auth.signOut();
 </script>
 </body>
 </html>
