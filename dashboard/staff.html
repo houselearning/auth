@@ -3,199 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <title>HouseLearning Notification Sender</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Firebase v8 SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <style>
-    :root {
-      --primary: #4285f4;
-      --border: #dadce0;
-    }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif;
-      background: #f7f7f7;
-      margin: 0;
-      padding: 0;
-    }
-    .wrap {
-      max-width: 720px;
-      margin: 40px auto;
-      background: #fff;
-      border: 1px solid #eee;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      padding: 24px;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 22px;
-    }
-    .sub {
-      color: #666;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .row {
-      display: grid;
-      gap: 12px;
-      margin-bottom: 16px;
-      grid-template-columns: 1fr 1fr;
-    }
-    .row.full { grid-template-columns: 1fr; }
-    label {
-      font-size: 13px;
-      color: #333;
-      margin-bottom: 6px;
-      display: block;
-    }
-    input[type="text"], input[type="url"], textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 14px;
-      background: #fff;
-    }
-    textarea { min-height: 100px; resize: vertical; }
-    .actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    button {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: #fff;
-      padding: 10px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    .primary {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-    .primary:hover { filter: brightness(0.95); }
-    .muted {
-      color: #555;
-    }
-    .status {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #444;
-    }
-    .ok { color: #0a7c2f; }
-    .err { color: #b00020; }
-    .card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 16px;
-      background: #fafafa;
-    }
-    .small {
-      font-size: 12px;
-      color: #777;
-    }
-    .grid-3 {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(3, 1fr);
-    }
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      background: #f5f7fb;
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #eee;
-    }
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h1 { font-size: 20px; }
+    input, textarea { width: 100%; padding: 8px; margin: 6px 0; font-size: 14px; }
+    button { padding: 8px 12px; margin: 6px 0; font-size: 14px; cursor: pointer; }
+    .notif { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #fff; border-radius: 6px; }
+    .unread { border-left: 4px solid #ff3b30; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Send notifications to HouseLearning</h1>
-    <div class="sub">Sign in, enter a recipient UID, and send a real-time notification to the platform.</div>
+  <h1>Send Notification to HouseLearning</h1>
+  <button id="signin">Sign in with Google</button>
+  <button id="signout">Sign out</button>
+  <p id="user-status">Not signed in</p>
 
-    <div class="card" id="auth-card">
-      <div class="row full">
-        <div>
-          <label>Authentication</label>
-          <div class="actions">
-            <button id="google-signin" class="primary">Sign in with Google</button>
-            <button id="signout" class="muted">Sign out</button>
-          </div>
-          <div id="auth-status" class="status">Not signed in.</div>
-        </div>
-      </div>
-      <div class="small">Signed-in users must have Firestore rules permitting writes to the <span class="mono">notifications</span> collection.</div>
-    </div>
+  <hr />
 
-    <div class="card" style="margin-top:16px;">
-      <div class="row full">
-        <div>
-          <label>Your UID (auto):</label>
-          <div id="current-uid" class="mono">—</div>
-        </div>
-      </div>
+  <label>Recipient UID</label>
+  <input type="text" id="recipientUid" placeholder="Enter recipient UID" />
 
-      <div class="row">
-        <div>
-          <label>Recipient UID</label>
-          <input type="text" id="recipient-uid" placeholder="e.g., aFirebaseAuthUidString" />
-        </div>
-        <div>
-          <label>Optional URL</label>
-          <input type="url" id="notif-url" placeholder="https://example.com/something" />
-        </div>
-      </div>
+  <label>Title</label>
+  <input type="text" id="title" placeholder="Notification title" />
 
-      <div class="row">
-        <div>
-          <label>Title</label>
-          <input type="text" id="notif-title" placeholder="Notification title" />
-        </div>
-        <div>
-          <label>Mark as read (default false)</label>
-          <div class="actions">
-            <button id="set-unread" class="muted">Set unread</button>
-            <button id="set-read" class="muted">Set read</button>
-          </div>
-          <div class="small">Current: <span id="read-state" class="mono">false</span></div>
-        </div>
-      </div>
+  <label>Body</label>
+  <textarea id="body" placeholder="Notification body"></textarea>
 
-      <div class="row full">
-        <div>
-          <label>Body</label>
-          <textarea id="notif-body" placeholder="Message body"></textarea>
-        </div>
-      </div>
+  <label>Optional URL</label>
+  <input type="text" id="url" placeholder="https://example.com" />
 
-      <div class="actions">
-        <button id="send-notif" class="primary">Send notification</button>
-        <button id="send-self" class="muted">Send to myself</button>
-      </div>
+  <label>Mark as Read</label>
+  <select id="read">
+    <option value="false">Unread</option>
+    <option value="true">Read</option>
+  </select>
 
-      <div id="send-status" class="status">—</div>
-    </div>
+  <button id="send">Send Notification</button>
+  <p id="status"></p>
 
-    <div class="card" style="margin-top:16px;">
-      <div class="row full">
-        <div>
-          <label>Most recent sent (this session)</label>
-          <div id="last-doc" class="mono">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <hr />
+  <h2>Live Notifications</h2>
+  <div id="notifications"></div>
 
   <script>
-    // Firebase config from your platform
     const firebaseConfig = {
       apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
       authDomain: "contract-center-llc-10.firebaseapp.com",
@@ -205,148 +58,103 @@
       appId: "1:323221512767:web:6421260f875997dbf64e8a",
     };
 
-    // Initialize
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // UI refs
-    const googleBtn = document.getElementById('google-signin');
-    const signOutBtn = document.getElementById('signout');
-    const authStatus = document.getElementById('auth-status');
-    const currentUidEl = document.getElementById('current-uid');
+    const signinBtn = document.getElementById('signin');
+    const signoutBtn = document.getElementById('signout');
+    const userStatus = document.getElementById('user-status');
+    const sendBtn = document.getElementById('send');
+    const status = document.getElementById('status');
+    const notificationsDiv = document.getElementById('notifications');
 
-    const recipientUidEl = document.getElementById('recipient-uid');
-    const urlEl = document.getElementById('notif-url');
-    const titleEl = document.getElementById('notif-title');
-    const bodyEl = document.getElementById('notif-body');
-    const sendBtn = document.getElementById('send-notif');
-    const sendSelfBtn = document.getElementById('send-self');
-    const sendStatus = document.getElementById('send-status');
-    const lastDocEl = document.getElementById('last-doc');
+    let currentUser = null;
+    let unsubscribe = null;
 
-    const setUnreadBtn = document.getElementById('set-unread');
-    const setReadBtn = document.getElementById('set-read');
-    const readStateEl = document.getElementById('read-state');
-
-    let markRead = false;
-
-    // Auth handlers
-    googleBtn.addEventListener('click', async () => {
+    signinBtn.onclick = async () => {
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         await auth.signInWithPopup(provider);
       } catch (e) {
-        authStatus.textContent = `Sign-in failed: ${e.message}`;
-        authStatus.className = 'status err';
+        alert("Sign-in failed: " + e.message);
       }
-    });
+    };
 
-    signOutBtn.addEventListener('click', async () => {
-      try {
-        await auth.signOut();
-      } catch (e) {
-        authStatus.textContent = `Sign-out failed: ${e.message}`;
-        authStatus.className = 'status err';
-      }
-    });
+    signoutBtn.onclick = async () => {
+      if (unsubscribe) unsubscribe();
+      await auth.signOut();
+    };
 
     auth.onAuthStateChanged(user => {
       if (user) {
-        authStatus.textContent = `Signed in as ${user.displayName || user.email || user.uid}`;
-        authStatus.className = 'status ok';
-        currentUidEl.textContent = user.uid;
+        currentUser = user;
+        userStatus.textContent = `Signed in as ${user.displayName || user.email}`;
+        listenToNotifications(user.uid);
       } else {
-        authStatus.textContent = 'Not signed in.';
-        authStatus.className = 'status';
-        currentUidEl.textContent = '—';
+        currentUser = null;
+        userStatus.textContent = "Not signed in";
+        notificationsDiv.innerHTML = "";
       }
     });
 
-    // Read state toggles
-    setUnreadBtn.addEventListener('click', () => {
-      markRead = false;
-      readStateEl.textContent = 'false';
-    });
-    setReadBtn.addEventListener('click', () => {
-      markRead = true;
-      readStateEl.textContent = 'true';
-    });
-
-    // Helpers
-    function assertSignedIn() {
-      const u = auth.currentUser;
-      if (!u) throw new Error('You must sign in before sending.');
-      return u;
+    function listenToNotifications(uid) {
+      if (unsubscribe) unsubscribe();
+      unsubscribe = db.collection("notifications")
+        .where("recipientUid", "==", uid)
+        .orderBy("timestamp", "desc")
+        .onSnapshot(snapshot => {
+          notificationsDiv.innerHTML = "";
+          if (snapshot.empty) {
+            notificationsDiv.innerHTML = "<p>No notifications</p>";
+            return;
+          }
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.className = "notif" + (data.read ? "" : " unread");
+            div.innerHTML = `
+              <strong>${data.title}</strong><br/>
+              <p>${data.body}</p>
+              <small>${data.timestamp?.toDate?.().toLocaleString() || ""}</small><br/>
+              ${data.url ? `<a href="${data.url}" target="_blank">Open Link</a>` : ""}
+            `;
+            notificationsDiv.appendChild(div);
+          });
+        });
     }
-    function trimOrNull(v) {
-      const s = (v || '').trim();
-      return s.length ? s : null;
-    }
 
-    // Send to myself convenience
-    sendSelfBtn.addEventListener('click', () => {
-      const u = auth.currentUser;
-      if (!u) {
-        sendStatus.textContent = 'You must sign in first.';
-        sendStatus.className = 'status err';
+    sendBtn.onclick = async () => {
+      if (!currentUser) {
+        alert("Sign in first");
         return;
       }
-      recipientUidEl.value = u.uid;
-      sendStatus.textContent = 'Recipient set to your UID.';
-      sendStatus.className = 'status';
-    });
 
-    // Send notification
-    sendBtn.addEventListener('click', async () => {
-      sendStatus.textContent = 'Sending...';
-      sendStatus.className = 'status';
+      const recipientUid = document.getElementById('recipientUid').value.trim();
+      const title = document.getElementById('title').value.trim();
+      const body = document.getElementById('body').value.trim();
+      const url = document.getElementById('url').value.trim();
+      const read = document.getElementById('read').value === "true";
+
+      if (!recipientUid || !title || !body) {
+        status.textContent = "Recipient UID, title, and body are required.";
+        return;
+      }
 
       try {
-        const sender = assertSignedIn();
-        const recipientUid = trimOrNull(recipientUidEl.value);
-        const title = trimOrNull(titleEl.value);
-        const body = trimOrNull(bodyEl.value);
-        const url = trimOrNull(urlEl.value);
-
-        if (!recipientUid) throw new Error('Recipient UID is required.');
-        if (!title) throw new Error('Title is required.');
-        if (!body) throw new Error('Body is required.');
-
-        // Document shape aligned with your listener
-        const doc = {
+        await db.collection("notifications").add({
           recipientUid,
           title,
           body,
           url: url || null,
-          read: !!markRead,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          // Optional extras you might want:
-          // createdByUid: sender.uid,
-          // createdByName: sender.displayName || sender.email || null
-        };
-
-        const ref = await db.collection('notifications').add(doc);
-        const snapshot = await ref.get();
-
-        // Resolve server timestamp for display (may be null until on server)
-        const data = snapshot.data() || {};
-        const ts = data.timestamp && data.timestamp.toDate ? data.timestamp.toDate().toISOString() : '(server timestamp pending)';
-
-        lastDocEl.textContent = JSON.stringify({ id: ref.id, ...doc, timestamp: ts }, null, 2);
-        sendStatus.textContent = 'Notification sent.';
-        sendStatus.className = 'status ok';
-
-        // Optional: clear fields after send
-        // titleEl.value = '';
-        // bodyEl.value = '';
-        // urlEl.value = '';
-        // markRead = false; readStateEl.textContent = 'false';
+          read,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        status.textContent = "Notification sent!";
       } catch (e) {
-        sendStatus.textContent = `Send failed: ${e.message}`;
-        sendStatus.className = 'status err';
+        status.textContent = "Error sending: " + e.message;
       }
-    });
+    };
   </script>
 </body>
 </html>
