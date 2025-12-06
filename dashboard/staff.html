@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HouseLearning — Staff Centre</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <style>
+    :root {
+      --bg:#0f1720;
+      --card:#0b1220;
+      --accent:#61dafb;
+      --muted:#9aa6b2;
+    }
+
+    body {
+      margin:0;
+      font-family:Inter,Segoe UI,system-ui,Roboto,Arial;
+      background:linear-gradient(180deg,#071021, #071529);
+      color:#e6eef6;
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:40px;
+      visibility:hidden;
+    }
+
+    body.light{
+      background:#f4f7fb;
+      color:#0f1720;
+    }
+
+    .card {
+      width:900px;
+      background:#07121a;
+      border-radius:14px;
+      padding:22px;
+      box-shadow:0 10px 30px rgba(0,0,0,.7);
+    }
+
+    body.light .card { background:white; }
+
+    input, select, textarea, button {
+      width:100%;
+      padding:10px;
+      border-radius:8px;
+      border:none;
+      margin-top:6px;
+      font-size:14px;
+    }
+
+    textarea { min-height:100px; resize:vertical; }
+
+    button { cursor:pointer; background:var(--accent); font-weight:700; }
+    button.ghost { background:#1e293b; color:white; }
+    button.danger { background:#ff4d4d; color:white; }
+
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .half { flex:1; min-width:260px; }
+
+    .log {
+      background:#021018;
+      border-radius:8px;
+      padding:12px;
+      max-height:260px;
+      overflow:auto;
+      font-size:13px;
+      margin-top:8px;
+    }
+
+    body.light .log{ background:#eef2f7; }
+
+    .badge { background:#1e293b; padding:6px 10px; border-radius:8px; font-weight:700; }
+
+    header { display:flex; align-items:center; justify-content:space-between; }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <header>
+    <div>
+      <h2>HouseLearning Staff Centre</h2>
+      <small id="signedInAs">authorizing...</small>
+    </div>
+    <div>
+      <span id="staffBadge" class="badge">STAFF</span>
+      <button id="themeToggle" class="ghost">🌙</button>
+      <button id="signOutBtn" class="ghost">Sign Out</button>
+    </div>
+  </header>
+
+  <hr>
+
+  <label>User Email</label>
+  <input id="targetEmail" placeholder="user@email.com">
+
+  <div class="row">
+    <div class="half">
+      <label>Type</label>
+      <select id="notifType">
+        <option value="system">System</option>
+        <option value="warning">Warning</option>
+        <option value="ban">Ban</option>
+        <option value="payment">Payment</option>
+        <option value="random">Random</option>
+      </select>
+    </div>
+
+    <div class="half">
+      <label>Severity</label>
+      <select id="severity">
+        <option value="info">Info</option>
+        <option value="important">Important</option>
+        <option value="critical">Critical</option>
+      </select>
+    </div>
+  </div>
+
+  <label>Title</label>
+  <input id="notifTitle" placeholder="Title">
+
+  <label>Message</label>
+  <textarea id="notifMessage" placeholder="Message..."></textarea>
+
+  <div class="row">
+    <button id="sendBtn">Send Only</button>
+    <button id="sendAndWarnBtn" class="ghost">Send + Warn</button>
+    <button id="sendAndBanBtn" class="danger">Send + Ban</button>
+  </div>
+
+  <div class="log" id="log">Waiting for action...</div>
+</div>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
+  authDomain: "contract-center-llc-10.firebaseapp.com",
+  projectId: "contract-center-llc-10",
+  storageBucket: "contract-center-llc-10.appspot.com",
+  messagingSenderId: "323221512767",
+  appId: "1:323221512767:web:6421260f875997dbf64e8a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const log = msg => 
+  document.getElementById("log").innerHTML = 
+  `[${new Date().toLocaleTimeString()}] ${msg}<br>` + 
+  document.getElementById("log").innerHTML;
+
+const els = {
+  targetEmail:targetEmail,
+  notifType:notifType,
+  severity:severity,
+  notifTitle:notifTitle,
+  notifMessage:notifMessage
+};
+
+// ✅ HARD STAFF LOCK + AUTO NOTIFICATION + REDIRECT
+auth.onAuthStateChanged(async user=>{
+  if(!user){ location.replace("/auth"); return; }
+
+  const snap = await db.collection("users").doc(user.uid).get();
+  if(!snap.exists){ location.replace("/auth"); return; }
+
+  const data = snap.data();
+
+  if(data.role !== "staff"){
+    await db.collection("notifications").doc(user.uid).collection("items").add({
+      type:"system",
+      title:"Staff Page Access Blocked",
+      body:"Hey! You tried accessing a HouseLearning Staff Only page! Try not to do that next time.",
+      read:false,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    location.replace("/home");
+    return;
+  }
+
+  document.body.style.visibility="visible";
+  signedInAs.textContent = "Signed in as " + user.email;
+  log("Staff verified ✅");
+});
+
+// ✅ EMAIL LOOKUP
+async function getUIDByEmail(email){
+  const snap = await db.collection("users").where("email","==",email).get();
+  if(snap.empty) return null;
+  return snap.docs[0].id;
+}
+
+// ✅ SEND NOTIFICATION
+async function sendNotif(uid,payload){
+  await db.collection("notifications").doc(uid).collection("items").add({
+    ...payload,
+    read:false,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+// ✅ WARN USER
+async function warnUser(uid){
+  const ref=db.collection("users").doc(uid);
+  await db.runTransaction(async t=>{
+    const d=await t.get(ref);
+    t.update(ref,{warnings:(d.data().warnings||0)+1});
+  });
+}
+
+// ✅ BAN USER
+async function banUser(uid){
+  await db.collection("users").doc(uid).update({banned:true});
+}
+
+sendBtn.onclick=()=>handleSend();
+sendAndWarnBtn.onclick=()=>handleSend(true,false);
+sendAndBanBtn.onclick=()=>handleSend(false,true);
+
+async function handleSend(warn=false,ban=false){
+  const email=els.targetEmail.value.trim();
+  const uid=await getUIDByEmail(email);
+  if(!uid) return alert("User not found");
+
+  await sendNotif(uid,{
+    type:els.notifType.value,
+    severity:els.severity.value,
+    title:els.notifTitle.value,
+    body:els.notifMessage.value
+  });
+
+  if(warn) await warnUser(uid);
+  if(ban) await banUser(uid);
+
+  log(`✅ Sent to ${email} ${warn?"[WARN]":""} ${ban?"[BAN]":""}`);
+}
+
+// ✅ LIGHT/DARK TOGGLE
+const themeToggle=document.getElementById("themeToggle");
+if(localStorage.getItem("hl-theme")==="light"){
+  document.body.classList.add("light");
+  themeToggle.textContent="☀️";
+}
+
+themeToggle.onclick=()=>{
+  document.body.classList.toggle("light");
+  const isLight=document.body.classList.contains("light");
+  localStorage.setItem("hl-theme",isLight?"light":"dark");
+  themeToggle.textContent=isLight?"☀️":"🌙";
+};
+
+signOutBtn.onclick=()=>auth.signOut();
+</script>
+</body>
+</html>
