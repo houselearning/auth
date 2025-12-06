@@ -67,10 +67,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <script>
-    // 1. REPLACE WITH YOUR GAS WEB APP URL
-    const GAS_ENDPOINT = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE"; 
+    // 1. YOUR NEW DEPLOYMENT URL
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwqKyNDoywzUcN0r6vuVkIspUTqoCHFDitrpn1rBC0fwTKS-KPwWLDcjEZptCq-Ds0r/exec"; 
 
-    // 2. FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyDoXSwni65CuY1_32ZE8B1nwfQO_3VNpTw",
         authDomain: "contract-center-llc-10.firebaseapp.com",
@@ -79,33 +78,37 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // 3. STAFF VERIFICATION LIST (Simple static check)
-    // Add the emails of your staff members here.
-    const ALLOWED_STAFF = [
-        "your.email@example.com", 
-        "staff.member@example.com"
-    ];
-
-    // --- UI LOGIC ---
+    // UI Elements
     const loginView = document.getElementById('login-view');
     const staffView = document.getElementById('staff-view');
     const loginBtn = document.getElementById('login-btn');
-    const logoutLink = document.getElementById('logout-link');
-    const sendBtn = document.getElementById('send-btn');
     const statusMsg = document.getElementById('status-msg');
-    const templateSelect = document.getElementById('template-select');
 
-    // Auth Listener
-    auth.onAuthStateChanged(user => {
+    // --- AUTH & VERIFICATION LOGIC ---
+    auth.onAuthStateChanged(async user => {
         if (user) {
-            // Check if user is staff
-            if (ALLOWED_STAFF.includes(user.email)) {
-                loginView.classList.add('hidden');
-                staffView.classList.remove('hidden');
-                document.getElementById('staff-email').textContent = user.email;
-            } else {
-                alert("Access Denied: You are not authorized staff.");
-                auth.signOut();
+            // Instead of checking a local array, we ask the Server (GAS)
+            statusMsg.textContent = "Verifying staff access...";
+            
+            try {
+                // We fetch the GAS URL with the email as a parameter
+                const response = await fetch(`${GAS_ENDPOINT}?email=${user.email}`);
+                const data = await response.json();
+
+                if (data.isStaff === true) {
+                    // Success!
+                    loginView.classList.add('hidden');
+                    staffView.classList.remove('hidden');
+                    document.getElementById('staff-email').textContent = user.email;
+                    statusMsg.textContent = "";
+                } else {
+                    // Server said NO
+                    alert("Access Denied: Your email is not on the staff whitelist.");
+                    auth.signOut();
+                }
+            } catch (error) {
+                console.error("Verification failed", error);
+                alert("Could not verify staff status. Check console.");
             }
         } else {
             loginView.classList.remove('hidden');
@@ -113,73 +116,62 @@
         }
     });
 
+    // Login
     loginBtn.onclick = () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(e => alert(e.message));
     };
 
-    logoutLink.onclick = () => auth.signOut();
+    // Logout
+    document.getElementById('logout-link').onclick = () => auth.signOut();
 
-    // Template Selector Logic
-    templateSelect.onchange = () => {
-        const val = templateSelect.value;
+    // Template Selector
+    document.getElementById('template-select').onchange = (e) => {
+        const val = e.target.value;
         if(val) {
-            const text = templateSelect.options[templateSelect.selectedIndex].text;
+            const text = e.target.options[e.target.selectedIndex].text;
             document.getElementById('notif-title').value = val.includes(":") ? val.split(":")[0] : val;
             document.getElementById('notif-body').value = text;
         }
     };
 
-    // Send Logic
-    sendBtn.onclick = async () => {
+    // --- SEND LOGIC ---
+    document.getElementById('send-btn').onclick = async () => {
         const email = document.getElementById('recipient-email').value;
         const title = document.getElementById('notif-title').value;
         const body = document.getElementById('notif-body').value;
         const type = document.getElementById('notif-type').value;
-        const accessCode = document.getElementById('access-code').value;
+        const sender = auth.currentUser.email; // We send this to verify again!
 
-        if (!email || !title || !body) {
-            alert("Please fill in all fields");
-            return;
-        }
+        if (!email || !title || !body) return alert("Fill all fields");
 
         statusMsg.textContent = "Sending...";
-        sendBtn.disabled = true;
+        document.getElementById('send-btn').disabled = true;
 
         const payload = {
-            accessCode: accessCode,
+            senderEmail: sender, // Validation happens here too
             email: email,
-            notification: {
-                title: title,
-                body: body,
-                type: type
-            }
+            notification: { title, body, type }
         };
 
         try {
-            // Send to Google Apps Script
-            const response = await fetch(GAS_ENDPOINT, {
+            await fetch(GAS_ENDPOINT, {
                 method: "POST",
-                mode: "no-cors", // 'no-cors' is required for simple GAS POSTs from browser
+                mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
 
-            // Note: with 'no-cors', we can't read the response JSON directly in the browser easily.
-            // We assume success if no network error occurred.
-            statusMsg.textContent = "Request sent! Check the user dashboard.";
+            statusMsg.textContent = "Notification Sent!";
             statusMsg.style.color = "green";
-            
-            // Clear form
+            // clear inputs
             document.getElementById('notif-title').value = "";
             document.getElementById('notif-body').value = "";
-            
         } catch (error) {
-            console.error(error);
-            statusMsg.textContent = "Error sending notification.";
+            statusMsg.textContent = "Error sending.";
             statusMsg.style.color = "red";
         } finally {
-            sendBtn.disabled = false;
+            document.getElementById('send-btn').disabled = false;
         }
     };
 </script>
