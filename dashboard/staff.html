@@ -1,52 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>HouseLearning Notification Sender</title>
+  <meta charset="UTF-8">
+  <title>HouseLearning Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    h1 { font-size: 20px; }
-    input, textarea { width: 100%; padding: 8px; margin: 6px 0; font-size: 14px; }
-    button { padding: 8px 12px; margin: 6px 0; font-size: 14px; cursor: pointer; }
-    .notif { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #fff; border-radius: 6px; }
-    .unread { border-left: 4px solid #ff3b30; }
+    :root {
+      --primary: #4285f4;
+      --primary-dark: #3367d6;
+      --bg: #f7f9fc;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 40px;
+      color: var(--text);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: var(--primary-dark);
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: block;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s ease;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: var(--primary-dark);
+    }
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .ok { color: #0a7c2f; }
+    .err { color: #b00020; }
   </style>
 </head>
 <body>
-  <h1>Send Notification to HouseLearning</h1>
-  <button id="signin">Sign in with Google</button>
-  <button id="signout">Sign out</button>
-  <p id="user-status">Not signed in</p>
+  <h1>HouseLearning Admin Dashboard</h1>
+  <div class="card">
+    <form id="notifForm">
+      <label for="recipientUid">Recipient UID</label>
+      <input type="text" id="recipientUid" placeholder="Enter user UID" required>
 
-  <hr />
+      <label for="title">Title</label>
+      <input type="text" id="title" placeholder="Notification title" required>
 
-  <label>Recipient UID</label>
-  <input type="text" id="recipientUid" placeholder="Enter recipient UID" />
+      <label for="body">Body</label>
+      <textarea id="body" placeholder="Notification body" required></textarea>
 
-  <label>Title</label>
-  <input type="text" id="title" placeholder="Notification title" />
+      <label for="url">Optional URL</label>
+      <input type="text" id="url" placeholder="https://example.com">
 
-  <label>Body</label>
-  <textarea id="body" placeholder="Notification body"></textarea>
-
-  <label>Optional URL</label>
-  <input type="text" id="url" placeholder="https://example.com" />
-
-  <label>Mark as Read</label>
-  <select id="read">
-    <option value="false">Unread</option>
-    <option value="true">Read</option>
-  </select>
-
-  <button id="send">Send Notification</button>
-  <p id="status"></p>
-
-  <hr />
-  <h2>Live Notifications</h2>
-  <div id="notifications"></div>
+      <button type="submit">Send Notification</button>
+    </form>
+    <p id="status"></p>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -57,89 +112,15 @@
       messagingSenderId: "323221512767",
       appId: "1:323221512767:web:6421260f875997dbf64e8a",
     };
-
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const signinBtn = document.getElementById('signin');
-    const signoutBtn = document.getElementById('signout');
-    const userStatus = document.getElementById('user-status');
-    const sendBtn = document.getElementById('send');
-    const status = document.getElementById('status');
-    const notificationsDiv = document.getElementById('notifications');
-
-    let currentUser = null;
-    let unsubscribe = null;
-
-    signinBtn.onclick = async () => {
-      try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await auth.signInWithPopup(provider);
-      } catch (e) {
-        alert("Sign-in failed: " + e.message);
-      }
-    };
-
-    signoutBtn.onclick = async () => {
-      if (unsubscribe) unsubscribe();
-      await auth.signOut();
-    };
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        userStatus.textContent = `Signed in as ${user.displayName || user.email}`;
-        listenToNotifications(user.uid);
-      } else {
-        currentUser = null;
-        userStatus.textContent = "Not signed in";
-        notificationsDiv.innerHTML = "";
-      }
-    });
-
-    function listenToNotifications(uid) {
-      if (unsubscribe) unsubscribe();
-      unsubscribe = db.collection("notifications")
-        .where("recipientUid", "==", uid)
-        .orderBy("timestamp", "desc")
-        .onSnapshot(snapshot => {
-          notificationsDiv.innerHTML = "";
-          if (snapshot.empty) {
-            notificationsDiv.innerHTML = "<p>No notifications</p>";
-            return;
-          }
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const div = document.createElement("div");
-            div.className = "notif" + (data.read ? "" : " unread");
-            div.innerHTML = `
-              <strong>${data.title}</strong><br/>
-              <p>${data.body}</p>
-              <small>${data.timestamp?.toDate?.().toLocaleString() || ""}</small><br/>
-              ${data.url ? `<a href="${data.url}" target="_blank">Open Link</a>` : ""}
-            `;
-            notificationsDiv.appendChild(div);
-          });
-        });
-    }
-
-    sendBtn.onclick = async () => {
-      if (!currentUser) {
-        alert("Sign in first");
-        return;
-      }
-
+    document.getElementById('notifForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
       const recipientUid = document.getElementById('recipientUid').value.trim();
       const title = document.getElementById('title').value.trim();
       const body = document.getElementById('body').value.trim();
       const url = document.getElementById('url').value.trim();
-      const read = document.getElementById('read').value === "true";
-
-      if (!recipientUid || !title || !body) {
-        status.textContent = "Recipient UID, title, and body are required.";
-        return;
-      }
 
       try {
         await db.collection("notifications").add({
@@ -147,14 +128,18 @@
           title,
           body,
           url: url || null,
-          read,
+          read: false,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        status.textContent = "Notification sent!";
-      } catch (e) {
-        status.textContent = "Error sending: " + e.message;
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = "✅ Notification sent!";
+        statusEl.className = "ok";
+      } catch (err) {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = "❌ Error: " + err.message;
+        statusEl.className = "err";
       }
-    };
+    });
   </script>
 </body>
 </html>
