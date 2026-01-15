@@ -1,68 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CoolMathTime - Login / Sign Up</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://houselearning.org/cookiebanner.js"></script>  
-  <script src="https://houselearning.org/feedback.js"></script>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CoolMathTime - Login / Sign Up</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://houselearning.org/cookiebanner.js"></script>  
+<script src="https://houselearning.org/feedback.js"></script>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <a href="https://houselearning.org/home/#">Home</a>
-            <a href="https://houselearning.org/home/math-page.html#">Math Games</a>
-            <a href="https://houselearning.org/home/science-page.html#">Science Fun</a>
-            <a href="https://houselearning.org/home/computer-science-page.html#">Coding Challenges</a>
-        </div>
-    </nav>
+<nav class="navbar">
+    <div class="navbar-content">
+        <a href="https://houselearning.org/home/#">Home</a>
+        <a href="https://houselearning.org/home/math-page.html#">Math Games</a>
+        <a href="https://houselearning.org/home/science-page.html#">Science Fun</a>
+        <a href="https://houselearning.org/home/computer-science-page.html#">Coding Challenges</a>
+    </div>
+</nav>
 
-    <main class="container">
-        <div class="auth-card">
-            <h2 id="form-title">Login</h2>
-            <p id="error-message" class="error-message"></p>
+<main class="container">
+    <div class="auth-card">
+        <h2 id="form-title">Login</h2>
+        <p id="error-message" class="error-message"></p>
 
-            <form id="auth-form">
-                <div class="input-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" required>
-                </div>
+        <form id="auth-form">
+            <div class="input-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+            </div>
 
-                <div class="input-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" required>
-                </div>
-                
-                <button type="submit" id="submit-button">Log In</button>
-<button type="button" id="google-signin-button" class="google-signin-button">
-    <img src="img/g-logo.png" 
-         alt="Google logo" 
-         style="width: 18px; height: 18px; margin-right: 10px; vertical-align: middle;">
-    Sign in with Google
-</button>
-<button type="button" id="github-signin-button" class="github-signin-button">
-    <img src="img/octoicon.svg" 
-         alt="GitHub logo" 
-         style="width: 18px; height: 18px; margin-right: 10px; vertical-align: middle;">
-    Sign in with GitHub
-</button>
-            </form>
+            <div class="input-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+            </div>
+            
+            <!-- reCAPTCHA for Sign Up only -->
+            <div id="recaptcha-container" style="margin-top:10px; display:none;">
+                <div class="g-recaptcha" data-sitekey="6LeNBUwsAAAAAMwDhp2LCD6iy_uDg0exFUxqNfFi"></div>
+            </div>
+            
+            <button type="submit" id="submit-button">Log In</button>
+            <button type="button" id="google-signin-button" class="google-signin-button">
+                <img src="img/g-logo.png" alt="Google logo" style="width:18px;height:18px;margin-right:10px;vertical-align:middle;">
+                Sign in with Google
+            </button>
+            <button type="button" id="github-signin-button" class="github-signin-button">
+                <img src="img/octoicon.svg" alt="GitHub logo" style="width:18px;height:18px;margin-right:10px;vertical-align:middle;">
+                Sign in with GitHub
+            </button>
+        </form>
 
-            <p class="toggle-link">
-                Don't have an account? 
-                <a href="#" id="toggle-auth">Sign Up</a>
-            </p>
+        <p class="toggle-link">
+            Don't have an account? 
+            <a href="#" id="toggle-auth">Sign Up</a>
+        </p>
 
-            <div id="success-message" class="success-message" style="display: none;"></div>
-        </div>
-    </main>
+        <div id="success-message" class="success-message" style="display: none;"></div>
+    </div>
+</main>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    
-    <script src="auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+<script src="auth.js"></script>
 
+<script src="recaptcha.js">
+
+</script>
 </body>
 </html>
