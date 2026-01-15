@@ -65,12 +65,14 @@
 <script src="auth.js"></script>
 
 <script>
+// Grab existing elements
 const toggleAuthLink = document.getElementById("toggle-auth");
-const formTitle = document.getElementById("form-title");
 const recaptchaContainer = document.getElementById("recaptcha-container");
 const authForm = document.getElementById("auth-form");
 const errorMessage = document.getElementById("error-message");
+const formTitle = document.getElementById("form-title"); // <-- use existing element, no duplicate declaration
 
+// Toggle between Login and Sign Up
 toggleAuthLink.addEventListener("click", (e) => {
     e.preventDefault();
     if(formTitle.textContent === "Login") {
@@ -86,12 +88,13 @@ toggleAuthLink.addEventListener("click", (e) => {
     }
 });
 
+// Form submission
 authForm.addEventListener("submit", function(e) {
     e.preventDefault();
     errorMessage.textContent = "";
 
     if(formTitle.textContent === "Sign Up") {
-        // Check reCAPTCHA
+        // Check reCAPTCHA for Sign Up
         const captchaResponse = grecaptcha.getResponse();
         if(!captchaResponse) {
             errorMessage.textContent = "Please complete the CAPTCHA to Sign Up.";
@@ -101,9 +104,6 @@ authForm.addEventListener("submit", function(e) {
     }
 
     // Continue with normal login or sign-up logic
-    // Example: firebase.auth().createUserWithEmailAndPassword(...) for Sign Up
-    // or firebase.auth().signInWithEmailAndPassword(...) for Login
-
     console.log("Form submitted for", formTitle.textContent);
 });
 </script>
