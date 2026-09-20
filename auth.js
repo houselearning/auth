@@ -11,6 +11,10 @@ const firebaseConfig = {
   measurementId: "G-S2RJ0C6BWH"
 };
 
+if (window.HouseLearningOnlineFeatures && window.HouseLearningOnlineFeatures.isLocal) {
+    console.info('[HouseLearning] Authentication disabled for local preview.');
+} else {
+
 // Declare app and auth globally, but initialize them later.
 let app;
 let auth;
@@ -280,3 +284,4 @@ function formatFirebaseError(code) {
 
 // Start the initialization check after the DOM is ready
 document.addEventListener('DOMContentLoaded', initializeAuthAndListeners);
+}
