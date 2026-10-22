@@ -710,16 +710,16 @@
 
             if (!classData) {
                 showModalAlert("Error", "Could not find class data. Please reload your dashboard.");
-                renderDashboard(role);
+                renderDashboard('student');
                 return;
             }
 
-            renderClassDashboard(classData, role);
+            renderClassDashboard(classData, 'student');
             loadAndRenderPosts(classCode);
         }
 
         function renderClassDashboard(classData, role) {
-            const isTeacher = role === 'teacher';
+            const isTeacher = false;
             const allowPosting = classData.allowPosting === true || classData.allowPosting === 'TRUE';
             const allowCommenting = classData.allowCommenting === true || classData.allowCommenting === 'TRUE';
             
@@ -867,13 +867,17 @@
         }
 
         async function loadUserRole(userId) {
-            const docRef = db.collection('user_profiles').doc(userId);
             try {
-                const doc = await docRef.get();
-                let role = 'student';
-                if (doc.exists) role = doc.data().role || 'student';
-                else await docRef.set({ role: 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                renderDashboard(role);
+                const tokenResult = await auth.currentUser.getIdTokenResult();
+                const claims = tokenResult.claims || {};
+                const isAdmin = claims.admin === true
+                    || auth.currentUser.email === 'cajm23331@gmail.com'
+                    || userId === '2nuzhsYAXiaMhm4RhRWksNLIBcJ3';
+                if (isAdmin || claims.role === 'teacher') {
+                    window.location.replace('teacher.html');
+                    return;
+                }
+                renderDashboard('student');
             } catch (error) {
                 renderDashboard('student');
             }
@@ -881,15 +885,12 @@
 
         async function saveNewRole(newRole) {
             if (!currentUserId) return;
-            try {
-                await db.collection('user_profiles').doc(currentUserId).set({
-                    role: newRole, lastSwitchedAt: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                roleSwitchModal.style.display = 'none';
-                renderDashboard(newRole);
-            } catch (error) {
-                showModalAlert('Save role failed', `Error: ${error.message}`);
+            if (newRole === 'teacher') {
+                window.location.assign('teacher.html');
+                return;
             }
+            roleSwitchModal.style.display = 'none';
+            renderDashboard('student');
         }
         
         // JSONP Handlers
@@ -973,16 +974,7 @@
         }
 
         function loadClasses() {
-            const loadingMsg = document.getElementById('loading-classes');
-            if (loadingMsg) loadingMsg.style.display = 'block';
-            const classManagementList = document.getElementById('class-management-list');
-            if (classManagementList) classManagementList.innerHTML = '<div class="loading-message">Loading classes...</div>';
-
-            const currentUserName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher";
-            const script = document.createElement('script');
-            script.src = `${SCRIPT_URL}?action=loadClasses&teacher=${currentUserName}&callback=handleClassesResponse`;
-            document.head.appendChild(script);
-            script.onload = () => { document.head.removeChild(script); if (loadingMsg) loadingMsg.style.display = 'none'; };
+            window.location.assign('teacher.html');
         }
         
         function loadStudentData(userId) {
@@ -997,42 +989,14 @@
             loadAssignments(userId);
         }
 
-        function loadTeacherData(userId) { loadClasses(); }
+        function loadTeacherData() { window.location.assign('teacher.html'); }
 
         function createClass() {
-            const modal = document.getElementById('create-class-modal');
-            modal.style.display = 'block';
-            document.getElementById('submit-class-btn').onclick = () => {
-                const className = document.getElementById('create-class-name-input').value;
-                if (!className || className.trim() === "") { showModalAlert('Cancelled', 'Class creation cancelled.'); return; }
-
-                const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : "DemoTeacher"; 
-                const joinCode = generateJoinCode();
-                const createButton = document.getElementById('createClassBtn');
-                if (createButton) { createButton.disabled = true; createButton.textContent = 'Creating...'; }
-
-                const form = document.createElement('form');
-                form.action = SCRIPT_URL; form.method = 'POST'; form.target = 'hidden_iframe'; form.style.display = 'none';
-                form.appendChild(createHiddenInput('action', 'createClass'));
-                form.appendChild(createHiddenInput('name', className.trim()));
-                form.appendChild(createHiddenInput('teacher', teacherName));
-                form.appendChild(createHiddenInput('code', joinCode));
-                form.appendChild(createHiddenInput('allowPosting', 'TRUE')); 
-                form.appendChild(createHiddenInput('allowCommenting', 'TRUE')); 
-                document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-                modal.style.display = 'none';
-            };
+            window.location.assign('teacher.html');
         }
 
         function submitDeleteClass(classCode) {
-            classSettingsModal.style.display = 'none';
-            document.getElementById('confirm-dialog-modal').style.display = 'none';
-            deleteClassBtn.disabled = true;
-            const form = document.createElement('form');
-            form.action = SCRIPT_URL; form.method = 'POST'; form.target = 'hidden_iframe'; form.style.display = 'none';
-            form.appendChild(createHiddenInput('action', 'deleteClass'));
-            form.appendChild(createHiddenInput('code', classCode));
-            document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+            window.location.assign('teacher.html');
         }
 
         function joinClass(inviteCode = null) {
@@ -1160,10 +1124,8 @@
             if (classes.length > 0) {
                 classes.forEach(cls => {
                     const classCode = cls.code || 'N/A'; 
-                    const isTeacherForThisClass = auth.currentUser && auth.currentUser.email.split('@')[0] === cls.teacher;
-                    const roleToOpenAs = isTeacherForThisClass ? 'teacher' : 'student';
-                    const cardActionText = isTeacherForThisClass ? 'View Coach Dashboard' : 'View Class Stream';
-                    const cardTitle = isTeacherForThisClass ? `🏫 ${cls.name}` : `👩‍🏫 ${cls.name}`;
+                    const cardActionText = 'View Class Stream';
+                    const cardTitle = `👩‍🏫 ${cls.name}`;
                     
                     classGrid.innerHTML += `
                         <div class="feature-card" data-class-code="${classCode}" data-class-name="${cls.name || 'Untitled Class'}"> 
@@ -1185,8 +1147,7 @@
                      const classCode = card.dataset.classCode;
                      const classData = globalClassList.find(c => c.code === classCode);
                      if (classData) {
-                         const isTeacherForThisClass = auth.currentUser && auth.currentUser.email.split('@')[0] === classData.teacher;
-                         openClassDashboard(classCode, isTeacherForThisClass ? 'teacher' : 'student');
+                         openClassDashboard(classCode, 'student');
                      }
                 };
             });
@@ -1250,17 +1211,7 @@
         }
 
         function saveClassSettings() {
-            const classCode = document.getElementById('save-settings-btn').dataset.classCode;
-            const newClassName = document.getElementById('class-name-input').value.trim();
-            const allowPosting = document.getElementById('allow-posting-toggle').checked;
-            const allowCommenting = document.getElementById('allow-commenting-toggle').checked;
-            
-            if (!classCode || !newClassName) return;
-            saveSettingsBtn.disabled = true; 
-            const form = document.createElement('form');
-            form.action = SCRIPT_URL; form.method = 'POST'; form.target = 'hidden_iframe'; form.style.display = 'none';
-            form.appendChild(createHiddenInput('action', 'updateClass')); form.appendChild(createHiddenInput('code', classCode)); form.appendChild(createHiddenInput('name', newClassName)); form.appendChild(createHiddenInput('allowPosting', allowPosting.toString().toUpperCase())); form.appendChild(createHiddenInput('allowCommenting', allowCommenting.toString().toUpperCase())); 
-            document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+            window.location.assign('teacher.html');
         }
 
         function renderDashboard(role) {
@@ -1272,7 +1223,7 @@
             if (role === 'student') {
                 header = `
                     <div class="header-controls"><h1>Your Learning Dashboard</h1><button id="logout-btn" class="logout-button">Sign Out</button></div>
-                    <div class="role-switch"><span>Current View:</span><span id="current-role" class="active-role">Student</span><button id="teacher-role-btn">Switch to Coach View</button></div>
+                    <div class="role-switch"><span>Current View:</span><span id="current-role" class="active-role">Student</span><button id="teacher-role-btn">Teacher access</button></div>
                 `;
                 content = `
                     <h2 class="section-title">📚 My Joined Classes</h2>
@@ -1332,9 +1283,8 @@
             const logoutBtn = document.getElementById('logout-btn'), teacherRoleBtn = document.getElementById('teacher-role-btn');
             if (logoutBtn) logoutBtn.onclick = async () => { try { await auth.signOut(); } catch (error) { console.error("Logout Error:", error); } };
             if (teacherRoleBtn) teacherRoleBtn.onclick = () => {
-                const targetRole = currentRole === 'student' ? 'teacher' : 'student';
-                if (currentRole === 'student' && targetRole === 'teacher') { roleSwitchModal.style.display = 'block'; confirmSwitchBtn.onclick = () => saveNewRole(targetRole); cancelSwitchBtn.onclick = () => roleSwitchModal.style.display = 'none'; } 
-                else saveNewRole(targetRole);
+                if (currentRole === 'student') window.location.assign('teacher.html');
+                else saveNewRole('student');
             };
 
             if (currentRole === 'teacher') {
@@ -1388,24 +1338,7 @@
 
         /* ---------- Assignment dropdown/editor functionality ---------- */
         function showAssignmentDropdown(defaultClassCode = '') {
-            if (!auth.currentUser) { showModalAlert('Sign in required', 'You must be signed in to create assignments.'); return; }
-            const dd = document.getElementById('assignment-dropdown'), select = document.getElementById('assignment-class-select-dropdown');
-            select.innerHTML = '<option value="">Select class</option>';
-            const teacherName = auth.currentUser ? auth.currentUser.email.split('@')[0] : null;
-            if (globalClassList && globalClassList.length) { globalClassList.filter(c => c.teacher === teacherName).forEach(c => { const opt = document.createElement('option'); opt.value = c.code; opt.textContent = `${c.name} (${c.code})`; select.appendChild(opt); }); }
-            if (defaultClassCode) select.value = defaultClassCode;
-            document.getElementById('assignment-title-dropdown').value = ''; document.getElementById('assignment-desc-dropdown').value = ''; document.getElementById('assignment-due-dropdown').value = '';
-
-            const assignBtn = document.getElementById('assignment-assign-btn'), titleField = document.getElementById('assignment-title-dropdown');
-            function updateAssignState() { assignBtn.disabled = !(titleField.value.trim().length >= 3 && select.value.trim() !== ''); }
-            titleField.oninput = updateAssignState; select.onchange = updateAssignState;
-
-            document.getElementById('assignment-cancel-btn').onclick = () => { dd.style.display = 'none'; dd.setAttribute('aria-hidden','true'); };
-            assignBtn.onclick = async () => {
-                const payload = { title: document.getElementById('assignment-title-dropdown').value.trim(), description: document.getElementById('assignment-desc-dropdown').value.trim(), dueDate: document.getElementById('assignment-due-dropdown').value || null, classCode: document.getElementById('assignment-class-select-dropdown').value };
-                dd.style.display = 'none'; dd.setAttribute('aria-hidden','true'); await submitAssignmentByData(payload);
-            };
-            dd.style.display = 'block'; dd.setAttribute('aria-hidden','false'); titleField.focus();
+            window.location.assign('teacher.html');
         }
 
         (function assignmentToolbar() {
@@ -1419,31 +1352,7 @@
         })();
 
         async function submitAssignmentByData({ title, description, dueDate, classCode }) {
-            if (!auth.currentUser) { showModalAlert('Not authenticated', 'Please sign in to continue.'); return; }
-            if (!title || !classCode) { showModalAlert('Missing data', 'Title and class required'); return; }
-
-            try {
-                await db.collection('assignments').add({ title, description, dueDate, classCode, teacherId: auth.currentUser.uid, teacherName: auth.currentUser.email ? auth.currentUser.email.split('@')[0] : null, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                const posterEmail = auth.currentUser.email || 'teacher@example.com', postContent = `📚 New Assignment: ${title}\n${description ? description + '\n' : ''}Due: ${dueDate || 'No due date provided'}`;
-                const form = document.createElement('form'); form.action = SCRIPT_URL; form.method = 'POST'; form.target = 'hidden_iframe'; form.style.display = 'none';
-                form.appendChild(createHiddenInput('action','createPost')); form.appendChild(createHiddenInput('code', classCode)); form.appendChild(createHiddenInput('email', posterEmail)); form.appendChild(createHiddenInput('content', postContent));
-                document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-                showModalAlert('Assignment Created', `Assignment "${title}" created for class ${classCode}.`); loadAssignments(currentUserId);
-            } catch (err) {
-                console.error('Assignment creation failed:', err);
-                const msg = (err && (err.message || '')).toString().toLowerCase(), code = err && err.code ? err.code.toString().toLowerCase() : '';
-                if (code.includes('permission-denied') || msg.includes('missing or insufficient permissions')) {
-                    fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode }); showModalAlert('Assignment Queued', 'Assignment submitted to server fallback; it will appear shortly.');
-                } else showModalAlert('Assignment Error', 'Could not create assignment: ' + (err.message || err));
-            }
-        }
-        
-        function fallbackSubmitAssignmentToAppsScript({ title, description, dueDate, classCode }) {
-            const posterEmail = auth.currentUser ? auth.currentUser.email : "teacher@example.com";
-            const form = document.createElement('form'); form.action = SCRIPT_URL; form.method = 'POST'; form.target = 'hidden_iframe'; form.style.display = 'none';
-            form.appendChild(createHiddenInput('action', 'createAssignment')); form.appendChild(createHiddenInput('title', title)); form.appendChild(createHiddenInput('description', description)); form.appendChild(createHiddenInput('dueDate', dueDate || '')); form.appendChild(createHiddenInput('classCode', classCode)); form.appendChild(createHiddenInput('teacherEmail', posterEmail));
-            document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-            loadAssignments(currentUserId);
+            window.location.assign('teacher.html');
         }
 
         document.addEventListener('click', (e) => {
@@ -1452,19 +1361,15 @@
             if (dd.style.display === 'block') { const target = e.target; if (!dd.contains(target) && target !== navActionButton && !target.closest('.sidebar-action-button')) { dd.style.display = 'none'; dd.setAttribute('aria-hidden','true'); } }
         });
 
-        window.openCreateAssignmentModal = function(defaultClassCode = '') { showAssignmentDropdown(defaultClassCode); };
+        window.openCreateAssignmentModal = function() { window.location.assign('teacher.html'); };
 
         navActionButton.addEventListener('click', () => { if (navActionButton.dataset.action === 'create-assignment') openCreateAssignmentModal(); else if (navActionButton.dataset.action === 'student-add-assignment') openJoinClassModal(); });
 
         function loadRoster(classCode) {
-            const rosterList = document.getElementById('class-roster-list');
-            if (!rosterList) return;
-            rosterList.innerHTML = '<div class="loading-message">Loading roster...</div>'; document.getElementById('class-roster-modal').style.display = 'block';
-            const script = document.createElement('script'); script.src = `${SCRIPT_URL}?action=loadRoster&code=${classCode}&callback=handleRosterResponse`;
-            document.head.appendChild(script); script.onload = () => document.head.removeChild(script); script.onerror = () => { rosterList.innerHTML = '<div class="empty-state-message" style="color:var(--ka-red-dark);">Network error loading roster.</div>'; };
+            window.location.assign('teacher.html');
         }
 
-        function openClassRosterModal(classCode) { loadRoster(classCode); }
+        function openClassRosterModal(classCode) { window.location.assign('teacher.html'); }
 
         function handleRosterResponse(result) {
             const rosterList = document.getElementById('class-roster-list');

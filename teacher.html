@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Manage HouseLearning classes, assignments, student work, announcements, and learning resources.">
+  <title>Teacher Workspace | HouseLearning</title>
+  <link rel="stylesheet" href="teacher.css">
+  <script type="module" src="teacher.js"></script>
+</head>
+<body>
+  <header class="teacher-header">
+    <a class="brand" href="https://houselearning.org/home/">HouseLearning</a>
+    <nav aria-label="Account navigation">
+      <a href="dashboard.html">Student dashboard</a>
+      <button id="sign-out" type="button" class="quiet-button" hidden>Sign out</button>
+    </nav>
+  </header>
+  <main class="page-shell">
+    <p id="page-status" class="status-line" role="status" aria-live="polite">Checking your account…</p>
+
+    <section id="access-panel" class="access-panel" hidden aria-labelledby="access-title">
+      <p class="eyebrow">Educator access</p>
+      <h1 id="access-title">Teacher workspace</h1>
+      <p id="access-description">Apply for teacher access or join a class with a code from your teacher.</p>
+
+      <form id="application-form" class="form-section" hidden>
+        <h2>Request teacher access</h2>
+        <label for="teacher-name">Your name</label>
+        <input id="teacher-name" name="displayName" autocomplete="name" maxlength="100" required>
+        <label for="teacher-school">School or learning community</label>
+        <input id="teacher-school" name="school" autocomplete="organization" maxlength="160">
+        <label for="teacher-experience">How will you use HouseLearning with learners?</label>
+        <textarea id="teacher-experience" name="experience" rows="4" maxlength="1200" required></textarea>
+        <button class="primary-button" type="submit">Submit application</button>
+      </form>
+
+      <form id="join-class-form" class="form-section" hidden>
+        <h2>Join a class</h2>
+        <label for="join-code">Class code</label>
+        <div class="inline-form">
+          <input id="join-code" name="joinCode" autocomplete="off" inputmode="text" minlength="6" maxlength="6" pattern="[A-HJ-NP-Z2-9]{6}" required>
+          <button class="primary-button" type="submit">Join class</button>
+        </div>
+      </form>
+
+      <section id="application-state" class="notice" hidden aria-live="polite"></section>
+      <section id="admin-review" class="form-section" hidden aria-labelledby="review-title">
+        <h2 id="review-title">Teacher applications</h2>
+        <div id="application-list" class="stack-list"></div>
+      </section>
+      <section id="student-classes" class="form-section" hidden aria-labelledby="student-classes-title">
+        <h2 id="student-classes-title">Your classes</h2>
+        <div id="student-class-list" class="stack-list"></div>
+      </section>
+      <section id="student-work" class="form-section" hidden aria-labelledby="student-work-title">
+        <h2 id="student-work-title">Published assignments</h2>
+        <div id="student-assignment-list" class="stack-list"></div>
+      </section>
+      <section id="student-class-feed" class="form-section" hidden aria-labelledby="student-feed-title">
+        <h2 id="student-feed-title">Class updates and resources</h2>
+        <div id="student-feed-list" class="stack-list"></div>
+      </section>
+    </section>
+
+    <section id="teacher-panel" hidden aria-labelledby="dashboard-title">
+      <div class="dashboard-heading">
+        <div>
+          <p class="eyebrow">Teaching workspace</p>
+          <h1 id="dashboard-title">Your classes</h1>
+          <p>Manage class work, follow submissions, and share learning resources.</p>
+        </div>
+      </div>
+      <div class="metric-row" id="teacher-metrics" aria-label="Class summary"></div>
+      <div class="teacher-layout">
+        <aside class="class-sidebar" aria-labelledby="class-list-title">
+          <h2 id="class-list-title">Classes</h2>
+          <div id="teacher-class-list" class="stack-list"></div>
+          <form id="class-create-form" class="compact-form">
+            <h3>Create a class</h3>
+            <label for="new-class-name">Class name</label>
+            <input id="new-class-name" maxlength="80" required>
+            <label for="new-class-description">Description</label>
+            <textarea id="new-class-description" rows="3" maxlength="1000"></textarea>
+            <button class="primary-button" type="submit">Create class</button>
+          </form>
+        </aside>
+        <section class="class-workspace" aria-labelledby="active-class-title">
+          <div id="class-empty-state" class="empty-state">
+            <h2 id="active-class-title">Choose a class</h2>
+            <p>Create a class or select one to see its roster and activity.</p>
+          </div>
+          <div id="class-details" hidden>
+            <div class="class-heading">
+              <div>
+                <h2 id="active-class-title">Class</h2>
+                <p id="class-description"></p>
+              </div>
+              <div class="class-actions">
+                <button id="copy-code" type="button" class="secondary-button">Copy join code</button>
+                <button id="archive-class" type="button" class="danger-button">Archive</button>
+                <button id="delete-class" type="button" class="danger-button">Delete permanently</button>
+              </div>
+            </div>
+            <form id="class-edit-form" class="inline-edit">
+              <label for="edit-class-name">Class name</label>
+              <input id="edit-class-name" maxlength="80" required>
+              <label for="edit-class-description">Description</label>
+              <input id="edit-class-description" maxlength="1000">
+              <button class="secondary-button" type="submit">Save details</button>
+            </form>
+            <form id="co-teacher-form" class="inline-edit">
+              <label for="co-teacher-emails">Replace co-teachers (comma-separated emails; leave blank to remove all)</label>
+              <input id="co-teacher-emails" type="text" autocomplete="off" placeholder="teacher@example.org">
+              <button class="secondary-button" type="submit">Save co-teachers</button>
+            </form>
+            <nav class="workspace-tabs" aria-label="Class workspace">
+              <button type="button" data-tab="overview" aria-current="page">Overview</button>
+              <button type="button" data-tab="assignments">Assignments</button>
+              <button type="button" data-tab="roster">Roster</button>
+              <button type="button" data-tab="announcements">Announcements</button>
+              <button type="button" data-tab="materials">Materials</button>
+              <button type="button" data-tab="sessions">Sessions</button>
+            </nav>
+            <div id="workspace-content" class="workspace-content" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -34,12 +34,19 @@ const successMessage = document.getElementById('success-message');
 // NEW: Get the Google and GitHub Sign-In button elements
 const googleSignInButton = document.getElementById('google-signin-button');
 const githubSignInButton = document.getElementById('github-signin-button');
+const recaptchaContainer = document.getElementById('recaptcha-container');
 
 
 let isLoginMode = true; 
 // CHANGED: Redirect to a verification message page instead of dashboard immediately
 const DASHBOARD_URL = 'dashboard.html'; 
 const VERIFICATION_MESSAGE_URL = 'verification-pending.html'; // New page for verification message
+
+function getPostAuthUrl() {
+    return new URLSearchParams(window.location.search).get('continue') === 'teacher.html'
+        ? 'teacher.html'
+        : DASHBOARD_URL;
+}
 
 
 /**
@@ -70,7 +77,7 @@ function initializeAuthAndListeners() {
             if (user) {
                 // ADDED: Check if the user is verified before redirecting to the dashboard
                 if (user.emailVerified) {
-                    window.location.replace(DASHBOARD_URL);
+                    window.location.replace(getPostAuthUrl());
                 } else if (!isLoginMode) {
                     // If the user *just* signed up and is not verified, 
                     // redirect them to the pending verification message page.
@@ -135,6 +142,7 @@ function updateUI() {
     // Show social buttons if they exist in the HTML
     if (googleSignInButton) googleSignInButton.style.display = 'block';
     if (githubSignInButton) githubSignInButton.style.display = 'block';
+    if (recaptchaContainer) recaptchaContainer.style.display = isLoginMode ? 'none' : 'block';
 }
 
 
@@ -148,6 +156,12 @@ async function handleFormSubmission(e) {
 
     const email = emailInput.value;
     const password = passwordInput.value;
+
+    if (!isLoginMode && recaptchaContainer && (!window.grecaptcha || !window.grecaptcha.getResponse())) {
+        errorMessage.textContent = 'Please complete the CAPTCHA to create an account.';
+        errorMessage.className = 'error-message';
+        return;
+    }
 
     if (isLoginMode) {
         // --- LOGIN LOGIC (With Persistence) ---
