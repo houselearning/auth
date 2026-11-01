@@ -377,7 +377,10 @@ async function loadTeacherClasses() {
   ]);
   const combined = new Map();
   for (const snapshot of [...owned.docs, ...shared.docs]) {
-    if (snapshot.data().archived !== true) combined.set(snapshot.id, { id: snapshot.id, ...snapshot.data() });
+    const classData = snapshot.data();
+    if (classData.archived !== true || classData.teacherId === currentUser.uid) {
+      combined.set(snapshot.id, { id: snapshot.id, ...classData });
+    }
   }
   teacherClasses = [...combined.values()].sort((left, right) => left.name.localeCompare(right.name));
   teacherClassList.replaceChildren();
@@ -388,7 +391,9 @@ async function loadTeacherClasses() {
     return;
   }
   for (const classItem of teacherClasses) {
-    const select = makeButton(classItem.name, () => openTeacherClass(classItem.id), 'class-button secondary-button');
+    const label = classItem.archived === true ? `${classItem.name} (Archived)` : classItem.name;
+    const select = makeButton(label, () => openTeacherClass(classItem.id), 'class-button secondary-button');
+    select.dataset.classId = classItem.id;
     select.setAttribute('aria-pressed', String(currentClass?.id === classItem.id));
     teacherClassList.append(select);
   }
@@ -398,22 +403,29 @@ async function loadTeacherClasses() {
 
 async function openTeacherClass(classId) {
   const snapshot = await getDoc(doc(db, 'classes', classId));
-  if (!snapshot.exists() || snapshot.data().archived === true) throw new Error('This class is unavailable.');
+  if (!snapshot.exists()) throw new Error('This class is unavailable.');
   currentClass = { id: snapshot.id, ...snapshot.data() };
+  if (currentClass.archived === true && currentClass.teacherId !== currentUser.uid) {
+    throw new Error('Only the lead teacher can manage this archived class.');
+  }
   byId('active-class-title').textContent = currentClass.name;
   byId('class-description').textContent = currentClass.description || 'No description.';
   byId('edit-class-name').value = currentClass.name;
   byId('edit-class-description').value = currentClass.description || '';
   byId('co-teacher-emails').value = '';
   const isLeadTeacher = currentClass.teacherId === currentUser.uid;
-  byId('class-edit-form').hidden = !isLeadTeacher;
-  byId('co-teacher-form').hidden = !isLeadTeacher;
+  const isArchived = currentClass.archived === true;
+  byId('class-edit-form').hidden = !isLeadTeacher || isArchived;
+  byId('co-teacher-form').hidden = !isLeadTeacher || isArchived;
   byId('archive-class').hidden = !isLeadTeacher;
+  byId('archive-class').textContent = isArchived ? 'Restore class' : 'Archive';
+  byId('copy-code').hidden = isArchived;
   byId('delete-class').hidden = !isLeadTeacher;
+  document.querySelector('.workspace-tabs').hidden = isArchived;
   classEmptyState.hidden = true;
   classDetails.hidden = false;
   for (const button of teacherClassList.querySelectorAll('.class-button')) {
-    button.setAttribute('aria-pressed', String(button.textContent === currentClass.name));
+    button.setAttribute('aria-pressed', String(button.dataset.classId === currentClass.id));
   }
   await renderTeacherTab(currentTab);
 }
@@ -455,12 +467,19 @@ byId('class-edit-form').addEventListener('submit', async event => {
 });
 
 byId('archive-class').addEventListener('click', async () => {
-  if (!currentClass || !window.confirm(`Archive ${currentClass.name}? Students will lose access to its active class space.`)) return;
+  if (!currentClass) return;
+  const archive = currentClass.archived !== true;
+  const prompt = archive
+    ? `Archive ${currentClass.name}? Students will lose access to its active class space.`
+    : `Restore ${currentClass.name} and reopen it to enrolled students?`;
+  if (!window.confirm(prompt)) return;
   try {
-    await updateDoc(doc(db, 'classes', currentClass.id), { archived: true, updatedAt: serverTimestamp() });
-    currentClass = null;
+    await updateDoc(doc(db, 'classes', currentClass.id), { archived: archive, updatedAt: serverTimestamp() });
+    currentClass = { ...currentClass, archived: archive };
     await loadTeacherClasses();
-    setStatus('Class archived. Existing grades and submissions are retained.', 'success');
+    setStatus(archive
+      ? 'Class archived. Existing grades and submissions are retained.'
+      : 'Class restored. Enrolled students can access it again.', 'success');
   } catch (error) {
     setStatus(error.message || 'Could not archive the class.', 'error');
   }
@@ -515,6 +534,10 @@ for (const button of document.querySelectorAll('[data-tab]')) {
 
 async function renderTeacherTab(tab) {
   if (!currentClass) return;
+  if (currentClass.archived === true) {
+    workspaceContent.replaceChildren(element('p', 'This class is archived. Restore it to reopen the roster and class activity.', 'list-item-meta'));
+    return;
+  }
   workspaceContent.replaceChildren(element('p', 'Loading class data…', 'list-item-meta'));
   try {
     if (tab === 'overview') await renderOverview();

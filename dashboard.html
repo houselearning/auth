@@ -270,6 +270,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+<script src="https://www.houselearning.org/home/site-runtime.js" defer data-houselearning-shared-runtime></script>
 </head>
 <body>
 
@@ -277,6 +278,7 @@
         <div class="logo">CoolMathTime Dashboard</div>
         <div class="navbar-content">
             <button id="nav-action-button" class="main-nav-button">Action</button>
+            <a href="https://houselearning.org/home/student-learning.html" style="color:var(--ka-blue-bright);text-decoration:none;padding:10px 12px;font-weight:600;">Learning Hub</a>
             <a href="https://houselearning.org/auth/dashboard/settings" style="text-decoration:none;">
                 <button class="main-nav-button">Account Settings</button>
             </a>
@@ -1243,9 +1245,14 @@
 
                     <h2 class="section-title">📊 Progress & Mastery</h2>
                     <div class="feature-grid">
-                        <div class="feature-card highlight-progress"><div class="card-header"><span class="icon">✅</span> Full Progress Report</div></div>
-                        <div class="feature-card"><div class="card-header"><span class="icon">🏆</span> Badges & Energy</div><div class="card-meta">You have 1,500 energy points.</div></div>
-                        <div class="feature-card"><div class="card-header"><span class="icon">📌</span> Review Course Enrollment</div><div class="card-meta">You are enrolled in 3 courses.</div></div>
+                        <a class="feature-card highlight-progress" href="https://houselearning.org/home/student-learning.html" style="color:inherit;text-decoration:none;">
+                            <div class="card-header"><span class="icon">📖</span> Open Learning Hub</div>
+                            <div class="card-meta">Continue from saved lesson activity and see verified skill progress.</div>
+                        </a>
+                        <a class="feature-card" href="https://houselearning.org/home/courses.html" style="color:inherit;text-decoration:none;">
+                            <div class="card-header"><span class="icon">🔎</span> Browse Lessons</div>
+                            <div class="card-meta">Choose a subject and grade to find lessons and practice.</div>
+                        </a>
                     </div>
                 `;
             } else {

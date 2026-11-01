@@ -24,11 +24,13 @@ Student work and class data are scoped by Firestore rules. Permanent class delet
 
 ## No-Cost Design
 
-The portal does not upload files to Cloud Storage. Teachers attach resources as HTTPS links, avoiding a new Storage dependency. Firebase Auth, Firestore, and Functions are existing dependencies; Firebase's free quotas are not a guarantee of zero cost, so monitor usage and billing settings before production deployment.
+GitHub Pages serves the static HouseLearning and `/auth` pages. Firebase is used for Authentication, Firestore, and callable Functions, not for serving the website. The portal does not upload files to Cloud Storage; teachers attach resources as HTTPS links. Firebase's free quotas are not a guarantee of zero cost, so monitor usage and billing settings before production deployment.
 
 ## Deploy and Test
 
-The complete rules file is [houselearning-home/firestore.rules](../houselearning-home/firestore.rules), with the matching assignment index in `houselearning-home/firestore.indexes.json`. Deploy the rules/indexes before exposing the portal:
+The UI is deployed through GitHub Pages. The Firebase CLI commands below deploy backend resources only; do not use Firebase Hosting to publish the pages. The complete rules file is [houselearning-home/firestore.rules](../houselearning-home/firestore.rules), with the matching assignment index in `houselearning-home/firestore.indexes.json`.
+
+Deploy Firestore rules and indexes to the configured Firebase project when ready:
 
 ```sh
 firebase deploy --only firestore:rules,firestore:indexes
@@ -45,6 +47,7 @@ Run local checks from `houselearning-home`:
 ```sh
 npm --prefix functions test
 python3 -m unittest discover -s tests -p 'test_teacher_firestore_rules.py' -v
+firebase emulators:exec --project demo-houselearning-teacher --only firestore "npm --prefix functions run test:rules-emulator"
 ```
 
-The rules tests currently use static policy assertions. Run the Firebase Emulator Suite rules tests before production; the Firebase CLI/emulator is not installed in the current environment.
+The Python test checks rule structure; the emulator test exercises owner, student, teacher, co-teacher, admin, and unauthenticated Firestore access with isolated fixture data. The `demo-houselearning-teacher` project ID prevents emulator tests from targeting a production Firebase project. Install the Firebase CLI and Functions package dependencies before running the emulator command.
